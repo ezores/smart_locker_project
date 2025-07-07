@@ -2,132 +2,129 @@
 
 A comprehensive smart locker management system built with **Flask** (backend) and **React** (frontend), designed for deployment on Raspberry Pi 5 with full hardware integration capabilities.
 
+---
+
 ## 🚀 Features
 
 ### Backend (Flask)
 
-- **Authentication System**: JWT-based authentication with role-based access
-- **Database Management**: SQLite with SQLAlchemy ORM
-- **Hardware Integration**: RFID reader and RS485 communication support
-- **Internationalization**: Multi-language support (EN, FR, ES, TR)
-- **RESTful API**: Complete API for React frontend integration
-- **Logging System**: Comprehensive activity logging and CSV export
+- JWT-based authentication with role-based access
+- SQLite with SQLAlchemy ORM
+- Hardware integration (RFID, RS485)
+- Multi-language support (EN, FR, ES, TR)
+- RESTful API for React frontend
+- Activity logging and CSV export
 
 ### Frontend (React)
 
-- **Modern UI/UX**: Clean, responsive design with Tailwind CSS
-- **Real-time Updates**: Live data synchronization with backend
-- **Mobile-First**: Optimized for touch interfaces
-- **Internationalization**: Full i18n support matching backend
-- **Role-based Interface**: Different UIs for users and administrators
+- Modern, responsive UI (Tailwind CSS)
+- Real-time updates
+- Mobile-first design
+- Full i18n support
+- Role-based interface (admin/user)
+
+---
 
 ## 🛠 Tech Stack
 
-### Backend
+- **Backend:** Python 3.8+ (Flask, SQLAlchemy, Flask-Babel, PyJWT, pyserial)
+- **Frontend:** React 18, Vite, Tailwind CSS, React Router, Axios
 
-- **Python 3.8+** with Flask framework
-- **SQLAlchemy** for database management
-- **Flask-Babel** for internationalization
-- **PyJWT** for authentication
-- **pyserial** for hardware communication
-
-### Frontend
-
-- **React 18** with modern hooks
-- **Vite** for fast development and building
-- **Tailwind CSS** for styling
-- **React Router** for navigation
-- **Axios** for API communication
+---
 
 ## 📋 Prerequisites
 
-- Python 3.8 or higher
-- Node.js 16 or higher
-- pip (Python package manager)
-- npm (Node.js package manager)
+- Python 3.8+
+- Node.js 16+
+- npm (or yarn)
 
-## 🚀 Quick Start
+---
 
-### 1. Clone and Setup
+## ⚡ Quick Start (Recommended)
+
+### 1. Clone the repository
 
 ```bash
 git clone <repository-url>
 cd smart_locker_project
 ```
 
-### 2. Backend Setup (Flask)
+### 2. Use the Startup Script
 
 ```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Initialize database
-python app.py --port 8080
+./start_dev.sh
 ```
 
-### 3. Frontend Setup (React)
+This will:
+
+- Create/activate Python virtual environment
+- Install Python dependencies
+- Install Node.js dependencies
+- Start Flask backend on port 5050
+- Start React frontend on port 5173
+
+### 3. Access the Application
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:5050/api/\*
+
+---
+
+## 🖐 Manual Setup (Alternative)
+
+### Backend (Flask)
 
 ```bash
-# Install Node.js dependencies
-npm install
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python app.py --port 5050
+```
 
-# Start development server
+### Frontend (React)
+
+```bash
+npm install
 npm run dev
 ```
 
-### 4. Access the Application
-
-- **React Frontend**: http://localhost:3000 (main application)
-- **Flask Backend API**: http://localhost:8080/api/\* (API endpoints)
-- **Flask Templates**: http://localhost:8080 (traditional interface)
+---
 
 ## 🔐 Authentication
 
 ### Default Credentials
 
-| Username   | Password      | Role     | Access                         |
-| ---------- | ------------- | -------- | ------------------------------ |
-| `admin`    | `admin123`    | Admin    | Full system access             |
-| `employee` | `employee123` | Employee | Basic borrow/return operations |
+| Username   | Password      | Role     |
+| ---------- | ------------- | -------- |
+| `admin`    | `admin123`    | Admin    |
+| `employee` | `employee123` | Employee |
 
-### Role Permissions
+- **Admin:** Full access to all features
+- **Employee:** Can borrow/return items, view own history
 
-- **Admin**: Full access to all features including user management, system configuration, and reports
-- **Employee**: Can borrow and return items, view their own history
+---
 
 ## 🌍 Internationalization
 
-The system supports multiple languages:
+- English (en, default)
+- French (fr)
+- Spanish (es)
+- Turkish (tr)
 
-- **English** (en) - Default
-- **French** (fr)
-- **Spanish** (es)
-- **Turkish** (tr)
+---
 
-Language can be changed via the UI language selector or API endpoints.
-
-## 📱 API Endpoints
-
-### Authentication
+## 📱 API Endpoints (Sample)
 
 - `POST /api/auth/login` - User login
 - `GET /api/user/profile` - Get user profile
-
-### Items & Lockers
-
 - `GET /api/items` - List all items
 - `GET /api/lockers` - List all lockers
 - `POST /api/borrow` - Borrow an item
 - `POST /api/return` - Return an item
-
-### Admin
-
 - `GET /api/admin/stats` - System statistics
 - `GET /api/admin/recent-activity` - Recent activity logs
+
+---
 
 ## 🏗 Project Structure
 
@@ -136,7 +133,6 @@ smart_locker_project/
 ├── app.py                 # Main Flask application
 ├── models.py              # Database models
 ├── requirements.txt       # Python dependencies
-├── requirements-pi.txt    # Raspberry Pi specific dependencies
 ├── package.json           # Node.js dependencies
 ├── vite.config.js         # Vite configuration
 ├── tailwind.config.js     # Tailwind CSS configuration
@@ -149,112 +145,81 @@ smart_locker_project/
 ├── static/                # Static files (CSS, images)
 ├── translations/          # Babel translation files
 ├── db/                    # SQLite database
-└── utils/                 # Utility functions
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file for production:
-
-```env
-FLASK_SECRET_KEY=your-secret-key-here
-JWT_SECRET_KEY=your-jwt-secret-here
-DATABASE_URL=sqlite:///path/to/database.db
-```
-
-### Hardware Configuration
-
-For Raspberry Pi deployment, install additional dependencies:
-
-```bash
-pip install -r requirements-pi.txt
-```
-
-## 🚀 Deployment
-
-### Development
-
-1. **Backend**: `python app.py --port 8080`
-2. **Frontend**: `npm run dev`
-
-### Production
-
-1. **Build Frontend**: `npm run build`
-2. **Serve Static Files**: Copy `dist/` to Flask's static directory
-3. **Use Production WSGI**: Gunicorn or uWSGI
-
-### Raspberry Pi Deployment
-
-```bash
-# Install system dependencies
-sudo apt-get update
-sudo apt-get install python3-pip nodejs npm
-
-# Setup the application
-cd smart_locker_project
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-pi.txt
-npm install
-npm run build
-
-# Run as service
-sudo systemctl enable smart-locker
-sudo systemctl start smart-locker
-```
-
-## 🔒 Security Features
-
-- JWT-based authentication
-- Password hashing with Werkzeug
-- Role-based access control
-- Input validation and sanitization
-- CORS configuration for API
-- Secure session management
-
-## 📊 Monitoring & Logging
-
-- Comprehensive activity logging
-- CSV export functionality
-- Real-time system statistics
-- Error tracking and reporting
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is developed for LACIME and is proprietary software.
-
-## 🆘 Support
-
-For technical support or questions:
-
-- Check the documentation
-- Review the API endpoints
-- Check the logs in the `db/` directory
-- Ensure all dependencies are installed
-
-## 🔄 Updates
-
-To update the system:
-
-```bash
-# Backend
-pip install -r requirements.txt --upgrade
-
-# Frontend
-npm update
-npm run build
+├── utils/                 # Utility functions
+├── start_dev.sh           # Dev startup script
+└── ...
 ```
 
 ---
 
-**Built with ❤️ for LACIME Smart Locker System**
+## ⚙️ Configuration & Environment
+
+- Environment variables: `.env` (see example in code)
+- For Raspberry Pi: use `requirements-pi.txt`
+
+---
+
+## 🧑‍💻 Development Notes
+
+- Flask backend uses SQLite at `db/locker.db`
+- React frontend uses Vite (port 5173)
+- CORS is enabled for local dev
+- JWT authentication for API
+- Vite proxy is set to `http://localhost:5050` for `/api` routes
+
+---
+
+## 🐞 Troubleshooting
+
+### Import Errors
+
+- Ensure you're in the virtual environment: `source .venv/bin/activate`
+- Reinstall dependencies: `pip install -r requirements.txt`
+
+### Port Already in Use
+
+- Backend: Use `python app.py --port <different_port>`
+- Frontend: Vite will suggest an alternative port if 5173 is busy
+
+### Database Issues
+
+- The Flask app auto-creates the DB on first run
+- Ensure `db/` exists and is writable
+
+---
+
+## 🚀 Production & Deployment
+
+### Build Frontend
+
+```bash
+npm run build
+```
+
+- Copy `dist/` to Flask's static directory for production serving
+
+### Use Production WSGI
+
+- Use Gunicorn or uWSGI for Flask in production
+
+### Raspberry Pi
+
+```bash
+pip install -r requirements-pi.txt
+```
+
+---
+
+## 🏁 Startup Script Details (`start_dev.sh`)
+
+- Checks/creates Python virtual environment
+- Installs Python and Node.js dependencies
+- Starts Flask backend (port 5050)
+- Starts React frontend (port 5173)
+- Cleans up both servers on exit
+
+---
+
+## 📞 Support
+
+If you have issues, please check the troubleshooting section above or open an issue.

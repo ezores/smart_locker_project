@@ -2,6 +2,8 @@
 
 # Smart Locker System Development Startup Script
 
+set -e
+
 echo "🚀 Starting Smart Locker System Development Environment..."
 
 # Check if virtual environment exists
@@ -12,14 +14,12 @@ fi
 
 # Activate virtual environment and install Python dependencies
 echo "📦 Installing Python dependencies..."
-source .venv/bin/activate
+source .venv/bin/activate || { echo "❌ Failed to activate virtual environment. Exiting."; exit 1; }
 pip install -r requirements.txt
 
-# Check if node_modules exists
-if [ ! -d "node_modules" ]; then
-    echo "📦 Installing Node.js dependencies..."
-    npm install
-fi
+# Always install Node.js dependencies to ensure up-to-date
+echo "📦 Installing Node.js dependencies..."
+npm install
 
 # Start Flask backend in background
 echo "🔧 Starting Flask backend on port 5050..."
@@ -30,16 +30,17 @@ BACKEND_PID=$!
 # Wait a moment for backend to start
 sleep 3
 
-# Start React frontend
+# Start React frontend on port 5173
 echo "⚛️  Starting React frontend on port 5173..."
-npm run dev &
+npm run dev -- --port 5173 &
 FRONTEND_PID=$!
 
-echo "✅ Development environment started!"
-echo "   Backend: http://localhost:5050"
+# Print summary
+sleep 2
+echo "\n✅ Development environment started!"
+echo "   Backend:  http://localhost:5050"
 echo "   Frontend: http://localhost:5173"
-echo ""
-echo "Press Ctrl+C to stop both servers"
+echo "\nPress Ctrl+C to stop both servers."
 
 # Function to cleanup on exit
 cleanup() {

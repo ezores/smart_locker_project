@@ -24,12 +24,23 @@ body {
   flex: 0 0 auto;
 }
 
+.logo-link {
+  display: block;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.logo-link:hover {
+  transform: scale(1.05);
+}
+
 .logo-img {
   width: 50px;
   height: 50px;
   border-radius: 8px;
   background: #fff;
   padding: 5px;
+  object-fit: contain;
 }
 
 .brand {

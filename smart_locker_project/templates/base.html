@@ -14,7 +14,23 @@
   <body>
     <header class="header">
       <div class="logo">
-        <img src="/static/logo.png" alt="LACIME Logo" class="logo-img" />
+        {% if session.get('user_id') %}
+        <a href="/" class="logo-link">
+          <img
+            src="/static/images/ETS-logo.png"
+            alt="ETS Logo"
+            class="logo-img"
+          />
+        </a>
+        {% else %}
+        <a href="/login" class="logo-link">
+          <img
+            src="/static/images/ETS-logo.png"
+            alt="ETS Logo"
+            class="logo-img"
+          />
+        </a>
+        {% endif %}
       </div>
       <div class="brand">
         <h1 class="brand-name">LACIME</h1>

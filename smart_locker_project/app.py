@@ -1,4 +1,5 @@
 import os
+import argparse
 from flask import Flask, render_template, redirect, url_for, session, request, flash  # type: ignore[import]
 from flask_sqlalchemy import SQLAlchemy  # type: ignore[import]
 from werkzeug.security import generate_password_hash, check_password_hash  # type: ignore[import]
@@ -86,6 +87,12 @@ def logs():
     return render_template('logs.html')
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Smart Locker System')
+    parser.add_argument('--port', type=int, default=5050, help='Port to run the server on (default: 5050)')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
+    args = parser.parse_args()
+    
     with app.app_context():
         init_db()
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    print(f"Starting Smart Locker System on http://{args.host}:{args.port}")
+    app.run(debug=True, host=args.host, port=args.port) 

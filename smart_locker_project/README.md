@@ -13,7 +13,8 @@ A comprehensive smart locker management system built with **Flask** (backend) an
 - Hardware integration (RFID, RS485)
 - Multi-language support (EN, FR, ES, TR)
 - RESTful API for React frontend
-- Activity logging and CSV export
+- Activity logging and export (Excel, PDF, CSV)
+- Demo data generation for testing
 
 ### Frontend (React)
 
@@ -22,6 +23,9 @@ A comprehensive smart locker management system built with **Flask** (backend) an
 - Mobile-first design
 - Full i18n support
 - Role-based interface (admin/user)
+- Dark mode support
+- Hamburger menu navigation
+- Admin reporting dashboard with export functionality
 
 ---
 
@@ -52,7 +56,11 @@ cd smart_locker_project
 ### 2. Use the Startup Script
 
 ```bash
+# Start without demo data
 ./start_dev.sh
+
+# Start with demo data for testing
+./start_dev.sh --demo
 ```
 
 This will:
@@ -62,6 +70,7 @@ This will:
 - Install Node.js dependencies
 - Start Flask backend on port 5050
 - Start React frontend on port 5173
+- Load demo data (when using --demo flag)
 
 ### 3. Access the Application
 
@@ -99,7 +108,15 @@ npm run dev
 | `admin`    | `admin123`    | Admin    |
 | `employee` | `employee123` | Employee |
 
-- **Admin:** Full access to all features
+**Demo Data Credentials (when using --demo):**
+
+- `admin` / `admin123` (Admin)
+- `john.doe` / `password123` (Employee)
+- `jane.smith` / `password123` (Employee)
+- `mike.wilson` / `password123` (Employee)
+- And 7 more demo users...
+
+- **Admin:** Full access to all features including reporting and exports
 - **Employee:** Can borrow/return items, view own history
 
 ---
@@ -123,6 +140,8 @@ npm run dev
 - `POST /api/return` - Return an item
 - `GET /api/admin/stats` - System statistics
 - `GET /api/admin/recent-activity` - Recent activity logs
+- `GET /api/admin/reports` - Generate reports
+- `GET /api/admin/export` - Export reports (Excel, PDF, CSV)
 
 ---
 
@@ -147,6 +166,8 @@ smart_locker_project/
 ├── db/                    # SQLite database
 ├── utils/                 # Utility functions
 ├── start_dev.sh           # Dev startup script
+├── demo_data.py           # Demo data generator
+├── test_exports.py        # Export testing script
 └── ...
 ```
 
@@ -210,12 +231,45 @@ pip install -r requirements-pi.txt
 
 ---
 
+## 🆕 New Features
+
+### Dark Mode & UI Improvements
+
+- Toggle dark/light mode with system preference detection
+- Responsive hamburger menu navigation
+- Admin-only navigation items
+- Modern, accessible UI design
+
+### Admin Reporting System
+
+- Comprehensive transaction reports with date range filters
+- Export functionality: Excel (.xlsx), PDF, and CSV formats
+- Periodic reports: daily, weekly, monthly, yearly
+- Real-time data visualization
+
+### Demo Data System
+
+- Load realistic test data with `./start_dev.sh --demo`
+- 10 demo users with various roles
+- 12 lockers across 4 buildings
+- 15 different items (laptops, projectors, tools, etc.)
+- 30 days of transaction history (5-15 transactions per day)
+
+### Testing Tools
+
+- `test_exports.py` - Verify export functionality
+- Demo data generation for comprehensive testing
+- Export format validation
+
+---
+
 ## 🏁 Startup Script Details (`start_dev.sh`)
 
 - Checks/creates Python virtual environment
 - Installs Python and Node.js dependencies
 - Starts Flask backend (port 5050)
 - Starts React frontend (port 5173)
+- Loads demo data when `--demo` flag is used
 - Cleans up both servers on exit
 
 ---

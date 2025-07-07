@@ -1,6 +1,15 @@
+/**
+ * Smart Locker System - Main App Component
+ *
+ * @author Alp
+ * @date 2024-12-XX
+ * @description Main application component with routing and dark mode support
+ */
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { useLanguage } from "./contexts/LanguageContext";
+import { useDarkMode } from "./contexts/DarkModeContext";
 import Header from "./components/Header";
 import Login from "./pages/Login";
 import MainMenu from "./pages/MainMenu";
@@ -17,9 +26,14 @@ import AdminRoute from "./components/AdminRoute";
 function App() {
   const { user } = useAuth();
   const { currentLanguage } = useLanguage();
+  const { isDarkMode } = useDarkMode();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className={`min-h-screen transition-colors duration-200 ${
+        isDarkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
+      }`}
+    >
       <Header />
       <main className="pt-20 pb-8">
         <Routes>

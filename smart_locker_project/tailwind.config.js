@@ -1,6 +1,15 @@
+/**
+ * Smart Locker System - Tailwind CSS Configuration
+ *
+ * @author Alp
+ * @date 2024-12-XX
+ * @description Tailwind CSS configuration with custom colors, animations, and dark mode support
+ */
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  darkMode: "class", // Enable dark mode with class strategy
   theme: {
     extend: {
       colors: {

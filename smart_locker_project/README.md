@@ -12,6 +12,8 @@ A self-contained smart locker management system for Raspberry Pi 5 and MacBook d
 
 ## Setup
 
+### MacBook Development
+
 1. Install dependencies:
    ```bash
    pip install -r requirements.txt
@@ -21,6 +23,23 @@ A self-contained smart locker management system for Raspberry Pi 5 and MacBook d
    python app.py
    ```
 3. Access via [http://localhost:5000](http://localhost:5000)
+
+### Raspberry Pi Deployment
+
+1. Install dependencies (includes hardware support):
+   ```bash
+   pip install -r requirements-pi.txt
+   ```
+2. Run the app:
+   ```bash
+   python app.py
+   ```
+3. Access via [http://localhost:5000](http://localhost:5000)
+
+## Default Login
+
+- **Admin:** username: `admin`, password: `admin123`
+- **Employee:** username: `employee`, password: `employee123`
 
 ## Folder Structure
 

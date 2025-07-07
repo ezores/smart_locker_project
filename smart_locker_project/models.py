@@ -1,5 +1,5 @@
 from datetime import datetime
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash  # type: ignore[import]
 
 def init_models(db):
     class User(db.Model):

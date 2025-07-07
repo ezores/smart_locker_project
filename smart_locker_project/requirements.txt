@@ -1,7 +1,10 @@
+# Core dependencies (required for both MacBook and Raspberry Pi)
 Flask
 Flask-SQLAlchemy
 Werkzeug
 bcrypt
 pyserial
-evdev
-pyusb 
+
+# Hardware dependencies (Linux/Raspberry Pi only)
+# evdev
+# pyusb 

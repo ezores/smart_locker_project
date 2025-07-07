@@ -1,12 +1,20 @@
-from flask import Flask, render_template, redirect, url_for, session, request, flash
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import timedelta
 import os
+from flask import Flask, render_template, redirect, url_for, session, request, flash  # type: ignore[import]
+from flask_sqlalchemy import SQLAlchemy  # type: ignore[import]
+from werkzeug.security import generate_password_hash, check_password_hash  # type: ignore[import]
+from datetime import timedelta
+
+# Set up base directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, 'db')
+DB_PATH = os.path.join(DB_DIR, 'locker.db')
+
+if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'supersecretkey'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/locker.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
@@ -78,8 +86,6 @@ def logs():
     return render_template('logs.html')
 
 if __name__ == '__main__':
-    if not os.path.exists('db'):
-        os.makedirs('db')
     with app.app_context():
         init_db()
     app.run(debug=True, host='0.0.0.0', port=5000) 

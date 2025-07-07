@@ -1,5 +1,5 @@
 import csv
-from flask import Response
+from flask import Response  # type: ignore[import]
 
 def export_logs(logs):
     def generate():

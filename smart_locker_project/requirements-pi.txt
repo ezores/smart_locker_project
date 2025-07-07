@@ -1,0 +1,8 @@
+# Raspberry Pi requirements (includes hardware dependencies)
+Flask
+Flask-SQLAlchemy
+Werkzeug
+bcrypt
+pyserial
+evdev
+pyusb 

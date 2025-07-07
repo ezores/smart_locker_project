@@ -26,22 +26,21 @@ app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'fr', 'es', 'tr']
 app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
 
 db = SQLAlchemy(app)
-babel = Babel(app)
 
-# Import models using the new init_models function
-def import_models():
-    from models import init_models
-    return init_models(db)
-
-User, Locker, Item, Log, init_db = import_models()
-
-@babel.localeselector
 def get_locale():
     # Check if user has selected a language
     if 'language' in session:
         return session['language']
     # Try to guess the language from the user accept header
     return request.accept_languages.best_match(app.config['BABEL_SUPPORTED_LOCALES'])
+
+babel = Babel(app, locale_selector=get_locale)
+
+def import_models():
+    from models import init_models
+    return init_models(db)
+
+User, Locker, Item, Log, init_db = import_models()
 
 @app.before_request
 def before_request():

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Borrow Item - Smart Locker</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Borrow Item</h1>
+      <form method="post">
+        <input
+          type="text"
+          name="rfid"
+          placeholder="Scan RFID or enter code"
+          class="input-large"
+        /><br />
+        <select name="item_id" class="input-large">
+          <option value="">Select Item</option></select
+        ><br />
+        <button type="submit" class="btn-large">Borrow</button>
+      </form>
+      <a href="/" class="btn-large">Back</a>
+    </div>
+  </body>
+</html>

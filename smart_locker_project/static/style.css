@@ -4,19 +4,93 @@ body {
   margin: 0;
   padding: 0;
 }
+
+.header {
+  background: #1976d2;
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.logo {
+  flex: 0 0 auto;
+}
+
+.logo-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 5px;
+}
+
+.brand {
+  flex: 1;
+  text-align: center;
+}
+
+.brand-name {
+  font-size: 2.5em;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 3px;
+}
+
+.language-flags {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+}
+
+.flag-link {
+  display: inline-block;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.flag-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.flag-link.active {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.flag-icon {
+  width: 24px;
+  height: 18px;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .container {
   max-width: 500px;
-  margin: 40px auto;
+  margin: 120px auto 40px;
   background: #fff;
   padding: 32px 24px;
   border-radius: 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   text-align: center;
 }
+
 h1 {
   font-size: 2.2em;
   margin-bottom: 32px;
 }
+
 .input-large {
   width: 90%;
   font-size: 1.4em;
@@ -25,6 +99,7 @@ h1 {
   border-radius: 8px;
   border: 1px solid #bbb;
 }
+
 .btn-large {
   display: block;
   width: 90%;
@@ -39,20 +114,34 @@ h1 {
   transition: background 0.2s;
   text-decoration: none;
 }
+
 .btn-large:hover {
   background: #125ea2;
 }
+
 .table-large {
   width: 100%;
   font-size: 1.2em;
   margin-bottom: 24px;
   border-collapse: collapse;
 }
+
 .table-large th,
 .table-large td {
   padding: 14px 8px;
   border-bottom: 1px solid #ddd;
 }
+
 .table-large th {
   background: #e3e3e3;
+}
+
+.alert {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  margin: 16px 0;
+  border-radius: 8px;
+  border: 1px solid #ffcdd2;
+  font-size: 1.1em;
 }

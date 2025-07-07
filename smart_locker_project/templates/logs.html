@@ -1,24 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Logs - Smart Locker</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1>Logs</h1>
-      <table class="table-large">
-        <tr>
-          <th>User</th>
-          <th>Item</th>
-          <th>Locker</th>
-          <th>Timestamp</th>
-          <th>Action</th>
-        </tr>
-        <!-- Log rows go here -->
-      </table>
-      <a href="/admin" class="btn-large">Back</a>
-    </div>
-  </body>
-</html>
+{% extends "base.html" %} {% block title %}{{ _('Logs') }}{% endblock %} {%
+block content %}
+<h1>{{ _('Logs') }}</h1>
+<table class="table-large">
+  <tr>
+    <th>{{ _('User') }}</th>
+    <th>{{ _('Item') }}</th>
+    <th>{{ _('Locker') }}</th>
+    <th>{{ _('Timestamp') }}</th>
+    <th>{{ _('Action') }}</th>
+  </tr>
+  <!-- Log rows go here -->
+</table>
+<a href="/admin" class="btn-large">{{ _('Back') }}</a>
+{% endblock %}

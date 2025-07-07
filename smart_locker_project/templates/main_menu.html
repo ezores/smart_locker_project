@@ -1,17 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Main Menu - Smart Locker</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1>Main Menu</h1>
-      <a href="/borrow" class="btn-large">Borrow Item</a>
-      <a href="/return" class="btn-large">Return Item</a>
-      <a href="/admin" class="btn-large">Admin Dashboard</a>
-      <a href="/logout" class="btn-large">Logout</a>
-    </div>
-  </body>
-</html>
+{% extends "base.html" %} {% block title %}{{ _('Main Menu') }}{% endblock %} {%
+block content %}
+<h1>{{ _('Main Menu') }}</h1>
+<a href="/borrow" class="btn-large">{{ _('Borrow Item') }}</a>
+<a href="/return" class="btn-large">{{ _('Return Item') }}</a>
+<a href="/admin" class="btn-large">{{ _('Admin Dashboard') }}</a>
+<a href="/logout" class="btn-large">{{ _('Logout') }}</a>
+{% endblock %}

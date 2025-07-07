@@ -4,5 +4,6 @@ Flask-SQLAlchemy
 Werkzeug
 bcrypt
 pyserial
+Flask-Babel
 evdev
 pyusb 

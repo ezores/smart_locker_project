@@ -1,23 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Manage Lockers - Smart Locker</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1>Manage Lockers</h1>
-      <table class="table-large">
-        <tr>
-          <th>Name</th>
-          <th>Items</th>
-          <th>Actions</th>
-        </tr>
-        <!-- Locker rows go here -->
-      </table>
-      <button class="btn-large">Add Locker</button>
-      <a href="/admin" class="btn-large">Back</a>
-    </div>
-  </body>
-</html>
+{% extends "base.html" %} {% block title %}{{ _('Manage Lockers') }}{% endblock
+%} {% block content %}
+<h1>{{ _('Manage Lockers') }}</h1>
+<table class="table-large">
+  <tr>
+    <th>{{ _('Name') }}</th>
+    <th>{{ _('Items') }}</th>
+    <th>{{ _('Actions') }}</th>
+  </tr>
+  <!-- Locker rows go here -->
+</table>
+<button class="btn-large">{{ _('Add Locker') }}</button>
+<a href="/admin" class="btn-large">{{ _('Back') }}</a>
+{% endblock %}

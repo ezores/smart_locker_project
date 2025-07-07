@@ -1,0 +1,129 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Smart Locker System\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Smart Locker System"
+msgstr "Smart Locker System"
+
+msgid "Login"
+msgstr "Login"
+
+msgid "Username"
+msgstr "Username"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Invalid username or password"
+msgstr "Invalid username or password"
+
+msgid "Main Menu"
+msgstr "Main Menu"
+
+msgid "Borrow Item"
+msgstr "Borrow Item"
+
+msgid "Return Item"
+msgstr "Return Item"
+
+msgid "Admin Dashboard"
+msgstr "Admin Dashboard"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "Scan RFID or enter code"
+msgstr "Scan RFID or enter code"
+
+msgid "Select Item"
+msgstr "Select Item"
+
+msgid "Borrow"
+msgstr "Borrow"
+
+msgid "Return"
+msgstr "Return"
+
+msgid "Manage Users"
+msgstr "Manage Users"
+
+msgid "Manage Items"
+msgstr "Manage Items"
+
+msgid "Manage Lockers"
+msgstr "Manage Lockers"
+
+msgid "View Logs"
+msgstr "View Logs"
+
+msgid "Export Logs"
+msgstr "Export Logs"
+
+msgid "Export Inventory"
+msgstr "Export Inventory"
+
+msgid "Add User"
+msgstr "Add User"
+
+msgid "Add Item"
+msgstr "Add Item"
+
+msgid "Add Locker"
+msgstr "Add Locker"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "English"
+msgstr "English"
+
+msgid "French"
+msgstr "French"
+
+msgid "Spanish"
+msgstr "Spanish"
+
+msgid "Turkish"
+msgstr "Turkish"
+
+msgid "Role"
+msgstr "Role"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Locker"
+msgstr "Locker"
+
+msgid "Items"
+msgstr "Items"
+
+msgid "User"
+msgstr "User"
+
+msgid "Item"
+msgstr "Item"
+
+msgid "Timestamp"
+msgstr "Timestamp"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Logs"
+msgstr "Logs" 

@@ -4,6 +4,7 @@ Flask-SQLAlchemy
 Werkzeug
 bcrypt
 pyserial
+Flask-Babel
 
 # Hardware dependencies (Linux/Raspberry Pi only)
 # evdev

@@ -1,0 +1,129 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Smart Locker System\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Smart Locker System"
+msgstr "Système de Casiers Intelligents"
+
+msgid "Login"
+msgstr "Connexion"
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Invalid username or password"
+msgstr "Nom d'utilisateur ou mot de passe invalide"
+
+msgid "Main Menu"
+msgstr "Menu Principal"
+
+msgid "Borrow Item"
+msgstr "Emprunter un Article"
+
+msgid "Return Item"
+msgstr "Retourner un Article"
+
+msgid "Admin Dashboard"
+msgstr "Tableau de Bord Admin"
+
+msgid "Logout"
+msgstr "Déconnexion"
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "Scan RFID or enter code"
+msgstr "Scanner RFID ou entrer le code"
+
+msgid "Select Item"
+msgstr "Sélectionner un Article"
+
+msgid "Borrow"
+msgstr "Emprunter"
+
+msgid "Return"
+msgstr "Retourner"
+
+msgid "Manage Users"
+msgstr "Gérer les Utilisateurs"
+
+msgid "Manage Items"
+msgstr "Gérer les Articles"
+
+msgid "Manage Lockers"
+msgstr "Gérer les Casiers"
+
+msgid "View Logs"
+msgstr "Voir les Journaux"
+
+msgid "Export Logs"
+msgstr "Exporter les Journaux"
+
+msgid "Export Inventory"
+msgstr "Exporter l'Inventaire"
+
+msgid "Add User"
+msgstr "Ajouter un Utilisateur"
+
+msgid "Add Item"
+msgstr "Ajouter un Article"
+
+msgid "Add Locker"
+msgstr "Ajouter un Casier"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "English"
+msgstr "Anglais"
+
+msgid "French"
+msgstr "Français"
+
+msgid "Spanish"
+msgstr "Espagnol"
+
+msgid "Turkish"
+msgstr "Turc"
+
+msgid "Role"
+msgstr "Rôle"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Locker"
+msgstr "Casier"
+
+msgid "Items"
+msgstr "Articles"
+
+msgid "User"
+msgstr "Utilisateur"
+
+msgid "Item"
+msgstr "Article"
+
+msgid "Timestamp"
+msgstr "Horodatage"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Logs"
+msgstr "Journaux" 

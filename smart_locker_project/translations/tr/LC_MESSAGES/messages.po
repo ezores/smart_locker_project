@@ -1,0 +1,129 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Smart Locker System\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: \n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Smart Locker System"
+msgstr "Akıllı Dolap Sistemi"
+
+msgid "Login"
+msgstr "Giriş"
+
+msgid "Username"
+msgstr "Kullanıcı Adı"
+
+msgid "Password"
+msgstr "Şifre"
+
+msgid "Invalid username or password"
+msgstr "Geçersiz kullanıcı adı veya şifre"
+
+msgid "Main Menu"
+msgstr "Ana Menü"
+
+msgid "Borrow Item"
+msgstr "Eşya Ödünç Al"
+
+msgid "Return Item"
+msgstr "Eşya İade Et"
+
+msgid "Admin Dashboard"
+msgstr "Yönetici Paneli"
+
+msgid "Logout"
+msgstr "Çıkış"
+
+msgid "Back"
+msgstr "Geri"
+
+msgid "Scan RFID or enter code"
+msgstr "RFID tarayın veya kod girin"
+
+msgid "Select Item"
+msgstr "Eşya Seç"
+
+msgid "Borrow"
+msgstr "Ödünç Al"
+
+msgid "Return"
+msgstr "İade Et"
+
+msgid "Manage Users"
+msgstr "Kullanıcıları Yönet"
+
+msgid "Manage Items"
+msgstr "Eşyaları Yönet"
+
+msgid "Manage Lockers"
+msgstr "Dolapları Yönet"
+
+msgid "View Logs"
+msgstr "Kayıtları Görüntüle"
+
+msgid "Export Logs"
+msgstr "Kayıtları Dışa Aktar"
+
+msgid "Export Inventory"
+msgstr "Envanteri Dışa Aktar"
+
+msgid "Add User"
+msgstr "Kullanıcı Ekle"
+
+msgid "Add Item"
+msgstr "Eşya Ekle"
+
+msgid "Add Locker"
+msgstr "Dolap Ekle"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "English"
+msgstr "İngilizce"
+
+msgid "French"
+msgstr "Fransızca"
+
+msgid "Spanish"
+msgstr "İspanyolca"
+
+msgid "Turkish"
+msgstr "Türkçe"
+
+msgid "Role"
+msgstr "Rol"
+
+msgid "Actions"
+msgstr "İşlemler"
+
+msgid "Name"
+msgstr "Ad"
+
+msgid "Locker"
+msgstr "Dolap"
+
+msgid "Items"
+msgstr "Eşyalar"
+
+msgid "User"
+msgstr "Kullanıcı"
+
+msgid "Item"
+msgstr "Eşya"
+
+msgid "Timestamp"
+msgstr "Zaman Damgası"
+
+msgid "Action"
+msgstr "İşlem"
+
+msgid "Logs"
+msgstr "Kayıtlar" 

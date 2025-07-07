@@ -1,9 +1,12 @@
 import os
 import argparse
-from flask import Flask, render_template, redirect, url_for, session, request, flash, g  # type: ignore[import]
+from flask import Flask, render_template, redirect, url_for, session, request, flash, g, jsonify  # type: ignore[import]
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy  # type: ignore[import]
 from flask_babel import Babel, gettext, ngettext  # type: ignore[import]
 from werkzeug.security import generate_password_hash, check_password_hash  # type: ignore[import]
+import jwt
+from datetime import datetime, timedelta
 from datetime import timedelta
 
 # Set up base directory
@@ -15,7 +18,9 @@ if not os.path.exists(DB_DIR):
     os.makedirs(DB_DIR)
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
@@ -130,6 +135,109 @@ def logs():
     if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('main_menu'))
     return render_template('logs.html')
+
+# --- API Routes for React Frontend ---
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    user = User.query.filter_by(username=username).first()
+    if user and check_password_hash(user.password_hash, password):
+        # Create JWT token
+        token = jwt.encode({
+            'user_id': user.id,
+            'username': user.username,
+            'role': user.role,
+            'exp': datetime.utcnow() + timedelta(hours=24)
+        }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+        
+        return jsonify({
+            'token': token,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'role': user.role
+            }
+        })
+    else:
+        return jsonify({'message': 'Invalid username or password'}), 401
+
+@app.route('/api/user/profile')
+def api_user_profile():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'No token provided'}), 401
+    
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        user = User.query.get(payload['user_id'])
+        if user:
+            return jsonify({
+                'id': user.id,
+                'username': user.username,
+                'role': user.role
+            })
+        else:
+            return jsonify({'message': 'User not found'}), 404
+    except jwt.ExpiredSignatureError:
+        return jsonify({'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'message': 'Invalid token'}), 401
+
+@app.route('/api/items')
+def api_items():
+    items = Item.query.all()
+    return jsonify([{
+        'id': item.id,
+        'name': item.name,
+        'locker_id': item.locker_id
+    } for item in items])
+
+@app.route('/api/lockers')
+def api_lockers():
+    lockers = Locker.query.all()
+    return jsonify([{
+        'id': locker.id,
+        'number': locker.name,
+        'location': f'Location {locker.id}',
+        'status': 'available'
+    } for locker in lockers])
+
+@app.route('/api/borrow', methods=['POST'])
+def api_borrow():
+    data = request.get_json()
+    # Mock borrow functionality
+    return jsonify({'message': 'Item borrowed successfully'})
+
+@app.route('/api/return', methods=['POST'])
+def api_return():
+    data = request.get_json()
+    # Mock return functionality
+    return jsonify({'message': 'Item returned successfully'})
+
+@app.route('/api/admin/stats')
+def api_admin_stats():
+    return jsonify({
+        'totalUsers': User.query.count(),
+        'totalItems': Item.query.count(),
+        'totalLockers': Locker.query.count(),
+        'activeBorrows': Log.query.filter_by(action_type='borrow').count()
+    })
+
+@app.route('/api/admin/recent-activity')
+def api_recent_activity():
+    logs = Log.query.order_by(Log.timestamp.desc()).limit(10).all()
+    return jsonify([{
+        'id': log.id,
+        'type': log.action_type,
+        'user': User.query.get(log.user_id).username if log.user_id else 'Unknown',
+        'item': Item.query.get(log.item_id).name if log.item_id else 'Unknown',
+        'timestamp': log.timestamp.isoformat(),
+        'status': 'completed'
+    } for log in logs])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Smart Locker System')

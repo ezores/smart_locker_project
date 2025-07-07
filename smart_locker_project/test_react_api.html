@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Test</title>
+  </head>
+  <body>
+    <h1>Smart Locker API Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <div id="result"></div>
+
+    <script>
+      async function testLogin() {
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "Testing...";
+
+        try {
+          const response = await fetch("http://localhost:8080/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: "admin",
+              password: "admin123",
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resultDiv.innerHTML = `
+                        <h3>✅ Login Successful!</h3>
+                        <p><strong>Token:</strong> ${data.token.substring(
+                          0,
+                          50
+                        )}...</p>
+                        <p><strong>User:</strong> ${data.user.username} (${
+              data.user.role
+            })</p>
+                    `;
+          } else {
+            resultDiv.innerHTML = `
+                        <h3>❌ Login Failed</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${
+                          data.message || "Unknown error"
+                        }</p>
+                    `;
+          }
+        } catch (error) {
+          resultDiv.innerHTML = `
+                    <h3>❌ Connection Error</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Make sure Flask backend is running on port 8080</p>
+                `;
+        }
+      }
+    </script>
+  </body>
+</html>

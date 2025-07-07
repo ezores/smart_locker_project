@@ -8,4 +8,8 @@ Flask-Babel
 
 # Hardware dependencies (Linux/Raspberry Pi only)
 # evdev
-# pyusb 
+# pyusb
+
+# API dependencies
+PyJWT==2.8.0
+Flask-CORS==4.0.0 

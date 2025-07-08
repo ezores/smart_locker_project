@@ -31,6 +31,7 @@ def create_demo_data(db, User, Locker, Item, Log):
     
     # Create demo users
     demo_users = [
+        {'username': 'student', 'password': 'password123', 'role': 'student'},
         {'username': 'john.doe', 'password': 'password123', 'role': 'student'},
         {'username': 'jane.smith', 'password': 'password123', 'role': 'student'},
         {'username': 'mike.wilson', 'password': 'password123', 'role': 'student'},

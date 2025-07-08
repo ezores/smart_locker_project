@@ -278,11 +278,22 @@ const Reports = () => {
       {/* Export Buttons */}
       <div className="flex items-center space-x-4 mb-6">
         <button
-          onClick={() => exportReport("xlsx")}
+          onClick={() => exportReport("csv")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             isDarkMode
               ? "bg-green-600 text-white hover:bg-green-700"
               : "bg-green-600 text-white hover:bg-green-700"
+          }`}
+        >
+          <Download className="h-4 w-4" />
+          <span>{t("export_csv") || "Export CSV"}</span>
+        </button>
+        <button
+          onClick={() => exportReport("xlsx")}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            isDarkMode
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-blue-600 text-white hover:bg-blue-700"
           }`}
         >
           <Download className="h-4 w-4" />

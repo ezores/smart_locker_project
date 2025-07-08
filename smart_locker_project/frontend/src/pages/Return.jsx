@@ -47,22 +47,8 @@ const Return = () => {
 
   const fetchBorrowedItems = async (identifier) => {
     try {
-      // Simulate fetching borrowed items
-      const mockItems = [
-        {
-          id: 1,
-          name: "Laptop Dell XPS 13",
-          locker: { number: "A1", location: "Building A" },
-          borrowed_at: "2024-01-15T10:30:00Z",
-        },
-        {
-          id: 2,
-          name: "Projector Epson",
-          locker: { number: "B2", location: "Building B" },
-          borrowed_at: "2024-01-14T14:20:00Z",
-        },
-      ];
-      setBorrowedItems(mockItems);
+      const response = await axios.get(`/api/borrowed-items/${identifier}`);
+      setBorrowedItems(response.data);
     } catch (error) {
       console.error("Error fetching borrowed items:", error);
       setError(t("error_fetching_items"));
@@ -86,6 +72,14 @@ const Return = () => {
       });
 
       setSuccess(t("return_success"));
+
+      // Refresh borrowed items after successful return
+      if (useUserId) {
+        await fetchBorrowedItems(userId);
+      } else {
+        await fetchBorrowedItems(rfidCard);
+      }
+
       setTimeout(() => {
         navigate("/");
       }, 2000);

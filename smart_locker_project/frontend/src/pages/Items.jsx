@@ -127,7 +127,7 @@ const Items = () => {
 
   const getLockerName = (lockerId) => {
     const locker = lockers.find((l) => l.id === lockerId);
-    return locker ? locker.name : t("unknown");
+    return locker ? locker.name : t("unknown") || "Unknown";
   };
 
   if (loading) {
@@ -211,12 +211,14 @@ const Items = () => {
                 isDarkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              No items found
+              {t("no_items_found") || "No items found"}
             </h3>
             <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
               {searchTerm || lockerFilter !== "all"
-                ? "Try adjusting your search or filter criteria"
-                : "Get started by adding your first item"}
+                ? t("try_adjusting_search") ||
+                  "Try adjusting your search or filter criteria"
+                : t("get_started_adding_item") ||
+                  "Get started by adding your first item"}
             </p>
           </div>
         ) : (
@@ -229,21 +231,21 @@ const Items = () => {
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Item
+                    {t("item") || "Item"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Locker
+                    {t("locker") || "Locker"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Actions
+                    {t("actions") || "Actions"}
                   </th>
                 </tr>
               </thead>
@@ -336,7 +338,7 @@ const Items = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                Add New Item
+                {t("add_new_item") || "Add New Item"}
               </h3>
               <button
                 onClick={closeModal}
@@ -356,7 +358,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Item Name
+                  {t("item_name") || "Item Name"}
                 </label>
                 <input
                   type="text"
@@ -378,7 +380,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Locker
+                  {t("locker") || "Locker"}
                 </label>
                 <select
                   value={formData.locker_id}
@@ -391,7 +393,9 @@ const Items = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  <option value="">Select a locker</option>
+                  <option value="">
+                    {t("select_locker") || "Select a locker"}
+                  </option>
                   {lockers.map((locker) => (
                     <option key={locker.id} value={locker.id}>
                       {locker.name}
@@ -430,13 +434,13 @@ const Items = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  Cancel
+                  {t("cancel") || "Cancel"}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  Add Item
+                  {t("add_item") || "Add Item"}
                 </button>
               </div>
             </form>
@@ -458,7 +462,7 @@ const Items = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                Edit Item
+                {t("edit_item") || "Edit Item"}
               </h3>
               <button
                 onClick={closeModal}
@@ -478,7 +482,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Item Name
+                  {t("item_name") || "Item Name"}
                 </label>
                 <input
                   type="text"
@@ -500,7 +504,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Locker
+                  {t("locker") || "Locker"}
                 </label>
                 <select
                   value={formData.locker_id}
@@ -513,7 +517,9 @@ const Items = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  <option value="">Select a locker</option>
+                  <option value="">
+                    {t("select_locker") || "Select a locker"}
+                  </option>
                   {lockers.map((locker) => (
                     <option key={locker.id} value={locker.id}>
                       {locker.name}
@@ -552,13 +558,13 @@ const Items = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  Cancel
+                  {t("cancel") || "Cancel"}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  Save Changes
+                  {t("save_changes") || "Save Changes"}
                 </button>
               </div>
             </form>

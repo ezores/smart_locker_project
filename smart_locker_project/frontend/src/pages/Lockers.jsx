@@ -258,35 +258,35 @@ const Lockers = () => {
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Locker
+                    {t("locker") || "Locker"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Location
+                    {t("location") || "Location"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Status
+                    {t("status") || "Status"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Items
+                    {t("items") || "Items"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Actions
+                    {t("actions") || "Actions"}
                   </th>
                 </tr>
               </thead>
@@ -337,7 +337,9 @@ const Lockers = () => {
                             isDarkMode ? "text-gray-300" : "text-gray-900"
                           }`}
                         >
-                          {locker.location || "Not specified"}
+                          {locker.location ||
+                            t("not_specified") ||
+                            "Not specified"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -351,7 +353,7 @@ const Lockers = () => {
                               isDarkMode ? "text-gray-300" : "text-gray-900"
                             }`}
                           >
-                            {itemsInLocker.length} items
+                            {itemsInLocker.length} {t("items") || "items"}
                           </span>
                         </div>
                       </td>
@@ -394,7 +396,7 @@ const Lockers = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                Add New Locker
+                {t("add_new_locker") || "Add New Locker"}
               </h3>
               <button
                 onClick={closeModal}
@@ -436,7 +438,7 @@ const Lockers = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Location
+                  {t("location") || "Location"}
                 </label>
                 <input
                   type="text"
@@ -458,7 +460,7 @@ const Lockers = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Status
+                  {t("status") || "Status"}
                 </label>
                 <select
                   value={formData.status}
@@ -471,9 +473,15 @@ const Lockers = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  <option value="available">Available</option>
-                  <option value="occupied">Occupied</option>
-                  <option value="maintenance">Maintenance</option>
+                  <option value="available">
+                    {t("available") || "Available"}
+                  </option>
+                  <option value="occupied">
+                    {t("occupied") || "Occupied"}
+                  </option>
+                  <option value="maintenance">
+                    {t("maintenance") || "Maintenance"}
+                  </option>
                 </select>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -486,13 +494,13 @@ const Lockers = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  Cancel
+                  {t("cancel") || "Cancel"}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  Add Locker
+                  {t("add_locker") || "Add Locker"}
                 </button>
               </div>
             </form>

@@ -76,4 +76,4 @@ if __name__ == "__main__":
     test_logs(admin_token)
     
     print("\n" + "=" * 50)
-    print("✅ API testing complete!") 
+    print("API testing complete!") 

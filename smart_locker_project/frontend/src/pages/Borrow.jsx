@@ -92,6 +92,11 @@ const Borrow = () => {
       });
 
       setSuccess(t("borrow_success"));
+
+      // Refresh data after successful borrow
+      await fetchItems();
+      await fetchLockers();
+
       setTimeout(() => {
         navigate("/");
       }, 2000);

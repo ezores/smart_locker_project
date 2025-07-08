@@ -156,4 +156,148 @@ msgid "all_items"
 msgstr "Tüm Öğeler"
 
 msgid "failed_export_borrows"
-msgstr "Ödünç dışa aktarma başarısız" 
+msgstr "Ödünç dışa aktarma başarısız"
+
+msgid "payments"
+msgstr "Ödemeler"
+
+msgid "payments_description"
+msgstr "Ödemeleri ve fatura bilgilerini yönetin"
+
+msgid "payments_menu_description"
+msgstr "Ödemeleri ve faturalandırmayı yönetin"
+
+msgid "search_payments"
+msgstr "Ödeme ara..."
+
+msgid "all_statuses"
+msgstr "Tüm durumlar"
+
+msgid "completed"
+msgstr "Tamamlandı"
+
+msgid "pending"
+msgstr "Beklemede"
+
+msgid "failed"
+msgstr "Başarısız"
+
+msgid "new_payment"
+msgstr "Yeni ödeme"
+
+msgid "no_payments_found"
+msgstr "Ödeme bulunamadı"
+
+msgid "no_payments_yet"
+msgstr "Henüz ödeme yapılmadı"
+
+msgid "failed_export_payments"
+msgstr "Ödemeleri dışa aktarma başarısız"
+
+msgid "stripe_integration"
+msgstr "Stripe Entegrasyonu"
+
+msgid "stripe_notice"
+msgstr "Bu ödeme sistemi, güvenli ödeme işleme için Stripe ile entegre olacak şekilde tasarlanmıştır. Entegrasyon şunları içerir:"
+
+msgid "stripe_feature_1"
+msgstr "Stripe Checkout ile güvenli ödeme işleme"
+
+msgid "stripe_feature_2"
+msgstr "Otomatik ödeme onayı ve webhook işleme"
+
+msgid "stripe_feature_3"
+msgstr "Ödeme geçmişi ve makbuz oluşturma"
+
+msgid "stripe_feature_4"
+msgstr "Yinelenen ödemeler için abonelik yönetimi"
+
+msgid "view_current_borrows"
+msgstr "Şu anda ödünç alınan öğeleri görüntüle"
+
+msgid "system_logs"
+msgstr "Sistem günlükleri"
+
+msgid "view_activity_logs"
+msgstr "Tüm sistem etkinliğini görüntüle"
+
+msgid "add_edit_users"
+msgstr "Kullanıcı ekle, düzenle veya kaldır"
+
+msgid "export_csv"
+msgstr "CSV Dışa Aktar"
+
+msgid "my_balance"
+msgstr "Bakiyem"
+
+msgid "balance_description"
+msgstr "Hesap bakiyenizi ve ödeme geçmişinizi yönetin"
+
+msgid "current_balance"
+msgstr "Mevcut Bakiye"
+
+msgid "add_money"
+msgstr "Para Ekle"
+
+msgid "failed_add_money"
+msgstr "Para ekleme başarısız"
+
+msgid "amount"
+msgstr "Miktar"
+
+msgid "cancel"
+msgstr "İptal"
+
+msgid "save_changes"
+msgstr "Değişiklikleri Kaydet"
+
+msgid "add_new_item"
+msgstr "Yeni Eşya Ekle"
+
+msgid "item_name"
+msgstr "Eşya Adı"
+
+msgid "select_locker"
+msgstr "Bir dolap seçin"
+
+msgid "description_optional"
+msgstr "Açıklama (İsteğe Bağlı)"
+
+msgid "edit_item"
+msgstr "Eşyayı Düzenle"
+
+msgid "unknown"
+msgstr "Bilinmiyor"
+
+msgid "add_new_locker"
+msgstr "Yeni Dolap Ekle"
+
+msgid "locker_name"
+msgstr "Dolap Adı"
+
+msgid "not_specified"
+msgstr "Belirtilmemiş"
+
+msgid "action"
+msgstr "Eylem"
+
+msgid "details"
+msgstr "Detaylar"
+
+msgid "get_started"
+msgstr "Başla"
+
+msgid "view_current_borrows"
+msgstr "Şu anda ödünç alınan eşyaları görüntüle"
+
+msgid "no_items_found"
+msgstr "Eşya bulunamadı"
+
+msgid "try_adjusting_search"
+msgstr "Arama veya filtre kriterlerinizi ayarlamayı deneyin"
+
+msgid "get_started_adding_item"
+msgstr "İlk eşyanızı ekleyerek başlayın"
+
+msgid "borrowed_at"
+msgstr "Ödünç Alınma Tarihi" 

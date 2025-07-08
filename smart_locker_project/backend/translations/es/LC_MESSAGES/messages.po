@@ -156,4 +156,148 @@ msgid "all_items"
 msgstr "Todos los Artículos"
 
 msgid "failed_export_borrows"
-msgstr "Error al exportar préstamos" 
+msgstr "Error al exportar préstamos"
+
+msgid "payments"
+msgstr "Pagos"
+
+msgid "payments_description"
+msgstr "Gestionar pagos e información de facturación"
+
+msgid "payments_menu_description"
+msgstr "Gestionar pagos y facturación"
+
+msgid "search_payments"
+msgstr "Buscar pagos..."
+
+msgid "all_statuses"
+msgstr "Todos los estados"
+
+msgid "completed"
+msgstr "Completado"
+
+msgid "pending"
+msgstr "Pendiente"
+
+msgid "failed"
+msgstr "Fallido"
+
+msgid "new_payment"
+msgstr "Nuevo pago"
+
+msgid "no_payments_found"
+msgstr "No se encontraron pagos"
+
+msgid "no_payments_yet"
+msgstr "Aún no se han realizado pagos"
+
+msgid "failed_export_payments"
+msgstr "Error al exportar pagos"
+
+msgid "stripe_integration"
+msgstr "Integración Stripe"
+
+msgid "stripe_notice"
+msgstr "Este sistema de pagos está diseñado para integrarse con Stripe para el procesamiento seguro de pagos. La integración incluye:"
+
+msgid "stripe_feature_1"
+msgstr "Procesamiento seguro de pagos con Stripe Checkout"
+
+msgid "stripe_feature_2"
+msgstr "Confirmación automática de pagos y manejo de webhooks"
+
+msgid "stripe_feature_3"
+msgstr "Historial de pagos y generación de recibos"
+
+msgid "stripe_feature_4"
+msgstr "Gestión de suscripciones para pagos recurrentes"
+
+msgid "view_current_borrows"
+msgstr "Ver artículos actualmente prestados"
+
+msgid "system_logs"
+msgstr "Registros del sistema"
+
+msgid "view_activity_logs"
+msgstr "Ver toda la actividad del sistema"
+
+msgid "add_edit_users"
+msgstr "Agregar, editar o eliminar usuarios"
+
+msgid "export_csv"
+msgstr "Exportar CSV"
+
+msgid "my_balance"
+msgstr "Mi Saldo"
+
+msgid "balance_description"
+msgstr "Gestionar tu saldo de cuenta e historial de pagos"
+
+msgid "current_balance"
+msgstr "Saldo Actual"
+
+msgid "add_money"
+msgstr "Agregar Dinero"
+
+msgid "failed_add_money"
+msgstr "Error al agregar dinero"
+
+msgid "amount"
+msgstr "Cantidad"
+
+msgid "cancel"
+msgstr "Cancelar"
+
+msgid "save_changes"
+msgstr "Guardar Cambios"
+
+msgid "add_new_item"
+msgstr "Agregar Nuevo Artículo"
+
+msgid "item_name"
+msgstr "Nombre del Artículo"
+
+msgid "select_locker"
+msgstr "Seleccionar un casillero"
+
+msgid "description_optional"
+msgstr "Descripción (Opcional)"
+
+msgid "edit_item"
+msgstr "Editar Artículo"
+
+msgid "unknown"
+msgstr "Desconocido"
+
+msgid "add_new_locker"
+msgstr "Agregar Nuevo Casillero"
+
+msgid "locker_name"
+msgstr "Nombre del Casillero"
+
+msgid "not_specified"
+msgstr "No especificado"
+
+msgid "action"
+msgstr "Acción"
+
+msgid "details"
+msgstr "Detalles"
+
+msgid "get_started"
+msgstr "Comenzar"
+
+msgid "view_current_borrows"
+msgstr "Ver artículos actualmente prestados"
+
+msgid "no_items_found"
+msgstr "No se encontraron artículos"
+
+msgid "try_adjusting_search"
+msgstr "Intenta ajustar tus criterios de búsqueda o filtrado"
+
+msgid "get_started_adding_item"
+msgstr "Comienza agregando tu primer artículo"
+
+msgid "borrowed_at"
+msgstr "Prestado El" 

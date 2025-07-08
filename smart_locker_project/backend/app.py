@@ -17,7 +17,7 @@ Features:
 - Real-time statistics and reporting
 
 @author Alp
-@date 2024-12-XX
+@date 06/07/2025 - In memory of Yusuf Alpdogan & Mehmet Ugurlu
 @version 1.0.0
 @description Main Flask application for the Smart Locker Management System
 """
@@ -309,18 +309,40 @@ def api_lockers():
 @app.route('/api/borrow', methods=['POST'])
 def api_borrow():
     data = request.get_json()
-    user_id = data.get('user_id')
+    rfid_card = data.get('rfid_card')
     item_id = data.get('item_id')
     locker_id = data.get('locker_id')
     
+    # Find user by RFID card or use a default user for demo
+    user = User.query.filter_by(rfid_card=rfid_card).first()
+    if not user:
+        # For demo purposes, use the first student user
+        user = User.query.filter_by(role='student').first()
+        if not user:
+            return jsonify({'error': 'No user found'}), 400
+    
+    # Check if item is available
+    item = Item.query.get(item_id)
+    if not item:
+        return jsonify({'error': 'Item not found'}), 404
+    
+    # Check if locker is available
+    locker = Locker.query.get(locker_id)
+    if not locker or locker.status != 'available':
+        return jsonify({'error': 'Locker not available'}), 400
+    
     # Create borrow log
     log = Log(
-        user_id=user_id,
+        user_id=user.id,
         item_id=item_id,
         locker_id=locker_id,
         action_type='borrow'
     )
     db.session.add(log)
+    
+    # Update locker status to occupied
+    locker.status = 'occupied'
+    
     db.session.commit()
     
     return jsonify({'message': 'Item borrowed successfully'})
@@ -328,18 +350,40 @@ def api_borrow():
 @app.route('/api/return', methods=['POST'])
 def api_return():
     data = request.get_json()
-    user_id = data.get('user_id')
+    rfid_card = data.get('rfid_card')
     item_id = data.get('item_id')
     locker_id = data.get('locker_id')
     
+    # Find user by RFID card or use a default user for demo
+    user = User.query.filter_by(rfid_card=rfid_card).first()
+    if not user:
+        # For demo purposes, use the first student user
+        user = User.query.filter_by(role='student').first()
+        if not user:
+            return jsonify({'error': 'No user found'}), 400
+    
+    # Check if item exists
+    item = Item.query.get(item_id)
+    if not item:
+        return jsonify({'error': 'Item not found'}), 404
+    
+    # Check if locker exists
+    locker = Locker.query.get(locker_id)
+    if not locker:
+        return jsonify({'error': 'Locker not found'}), 404
+    
     # Create return log
     log = Log(
-        user_id=user_id,
+        user_id=user.id,
         item_id=item_id,
         locker_id=locker_id,
         action_type='return'
     )
     db.session.add(log)
+    
+    # Update locker status to available
+    locker.status = 'available'
+    
     db.session.commit()
     
     return jsonify({'message': 'Item returned successfully'})
@@ -389,6 +433,61 @@ def api_recent_activity():
         'timestamp': log.timestamp.isoformat(),
         'status': 'completed'
     } for log in logs])
+
+@app.route('/api/borrowed-items/<identifier>')
+def api_borrowed_items(identifier):
+    """Get borrowed items for a specific user (by RFID or user ID)"""
+    try:
+        # Try to find user by RFID card first
+        user = User.query.filter_by(rfid_card=identifier).first()
+        
+        # If not found by RFID, try by username
+        if not user:
+            user = User.query.filter_by(username=identifier).first()
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Get all borrow logs for this user
+        borrow_logs = db.session.query(Log).filter(
+            and_(
+                Log.action_type == 'borrow',
+                Log.user_id == user.id
+            )
+        ).all()
+        
+        borrowed_items = []
+        for borrow_log in borrow_logs:
+            # Check if there's a return log for this item after the borrow timestamp
+            has_return = db.session.query(Log).filter(
+                and_(
+                    Log.action_type == 'return',
+                    Log.item_id == borrow_log.item_id,
+                    Log.user_id == borrow_log.user_id,
+                    Log.timestamp > borrow_log.timestamp
+                )
+            ).first()
+            
+            # If no return log exists after the borrow, this is still borrowed
+            if not has_return:
+                item = Item.query.get(borrow_log.item_id)
+                locker = Locker.query.get(borrow_log.locker_id) if borrow_log.locker_id else None
+                
+                borrowed_items.append({
+                    'id': borrow_log.id,
+                    'item_id': borrow_log.item_id,
+                    'name': item.name if item else 'Unknown',
+                    'description': item.description if item else '',
+                    'locker': {
+                        'id': locker.id if locker else None,
+                        'name': locker.name if locker else 'Unknown'
+                    },
+                    'borrowed_at': borrow_log.timestamp.isoformat()
+                })
+        
+        return jsonify(borrowed_items)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/active-borrows')
 def api_active_borrows():
@@ -1215,6 +1314,71 @@ def api_export_logs():
         except ImportError:
             return jsonify({'error': 'pandas and openpyxl are required for Excel export'}), 500
     
+    elif format_type == 'pdf':
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.lib import colors
+            
+            # Create PDF
+            output = io.BytesIO()
+            doc = SimpleDocTemplate(output, pagesize=letter)
+            elements = []
+            
+            # Title
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=16,
+                spaceAfter=30,
+                alignment=1  # Center alignment
+            )
+            title = Paragraph("System Logs Report", title_style)
+            elements.append(title)
+            elements.append(Spacer(1, 20))
+            
+            # Table data
+            table_data = [['ID', 'Action', 'User', 'Item', 'Locker', 'Timestamp']]
+            for log, username, item_name, locker_name in logs:
+                table_data.append([
+                    str(log.id),
+                    log.action_type,
+                    username or 'Unknown',
+                    item_name or 'N/A',
+                    locker_name or 'N/A',
+                    log.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+            
+            # Create table
+            table = Table(table_data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white])
+            ]))
+            
+            elements.append(table)
+            doc.build(elements)
+            output.seek(0)
+            
+            return Response(
+                output.getvalue(),
+                mimetype='application/pdf',
+                headers={"Content-Disposition": f"attachment;filename=logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"}
+            )
+        except ImportError:
+            return jsonify({'error': 'PDF generation requires reportlab library'}), 500
+    
     else:
         return jsonify({'error': 'Unsupported format'}), 400
 
@@ -1259,9 +1423,9 @@ if __name__ == '__main__':
             try:
                 from demo_data import create_demo_data
                 create_demo_data(db, User, Locker, Item, Log)
-                print("✅ Demo data loaded successfully!")
+                print("Demo data loaded successfully!")
             except Exception as e:
-                print(f"❌ Error loading demo data: {e}")
+                print(f"Error loading demo data: {e}")
     
     print(f"Starting Smart Locker System on http://{args.host}:{args.port}")
     app.run(debug=True, host=args.host, port=args.port) 

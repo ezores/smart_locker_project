@@ -276,6 +276,13 @@ const Logs = () => {
             <FileText className="h-4 w-4" />
             <span>{t("export_excel")}</span>
           </button>
+          <button
+            onClick={() => exportLogs("pdf")}
+            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            <span>PDF</span>
+          </button>
         </div>
       </div>
 
@@ -384,28 +391,28 @@ const Logs = () => {
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Action
+                    {t("action") || "Action"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    User
+                    {t("user") || "User"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Details
+                    {t("details") || "Details"}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    Timestamp
+                    {t("timestamp") || "Timestamp"}
                   </th>
                 </tr>
               </thead>

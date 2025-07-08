@@ -156,4 +156,148 @@ msgid "all_items"
 msgstr "Tous les Articles"
 
 msgid "failed_export_borrows"
-msgstr "Échec de l'exportation des emprunts" 
+msgstr "Échec de l'exportation des emprunts"
+
+msgid "payments"
+msgstr "Paiements"
+
+msgid "payments_description"
+msgstr "Gérer les paiements et les informations de facturation"
+
+msgid "payments_menu_description"
+msgstr "Gérer les paiements et la facturation"
+
+msgid "search_payments"
+msgstr "Rechercher des paiements..."
+
+msgid "all_statuses"
+msgstr "Tous les statuts"
+
+msgid "completed"
+msgstr "Terminé"
+
+msgid "pending"
+msgstr "En attente"
+
+msgid "failed"
+msgstr "Échoué"
+
+msgid "new_payment"
+msgstr "Nouveau paiement"
+
+msgid "no_payments_found"
+msgstr "Aucun paiement trouvé"
+
+msgid "no_payments_yet"
+msgstr "Aucun paiement n'a encore été effectué"
+
+msgid "failed_export_payments"
+msgstr "Échec de l'exportation des paiements"
+
+msgid "stripe_integration"
+msgstr "Intégration Stripe"
+
+msgid "stripe_notice"
+msgstr "Ce système de paiement est conçu pour s'intégrer avec Stripe pour le traitement sécurisé des paiements. L'intégration comprend :"
+
+msgid "stripe_feature_1"
+msgstr "Traitement sécurisé des paiements avec Stripe Checkout"
+
+msgid "stripe_feature_2"
+msgstr "Confirmation automatique des paiements et gestion des webhooks"
+
+msgid "stripe_feature_3"
+msgstr "Historique des paiements et génération de reçus"
+
+msgid "stripe_feature_4"
+msgstr "Gestion des abonnements pour les paiements récurrents"
+
+msgid "view_current_borrows"
+msgstr "Voir les articles actuellement empruntés"
+
+msgid "system_logs"
+msgstr "Journaux système"
+
+msgid "view_activity_logs"
+msgstr "Voir toute l'activité système"
+
+msgid "add_edit_users"
+msgstr "Ajouter, modifier ou supprimer des utilisateurs"
+
+msgid "export_csv"
+msgstr "Exporter CSV"
+
+msgid "my_balance"
+msgstr "Mon Solde"
+
+msgid "balance_description"
+msgstr "Gérer votre solde de compte et l'historique des paiements"
+
+msgid "current_balance"
+msgstr "Solde Actuel"
+
+msgid "add_money"
+msgstr "Ajouter de l'Argent"
+
+msgid "failed_add_money"
+msgstr "Échec de l'ajout d'argent"
+
+msgid "amount"
+msgstr "Montant"
+
+msgid "cancel"
+msgstr "Annuler"
+
+msgid "save_changes"
+msgstr "Enregistrer les Modifications"
+
+msgid "add_new_item"
+msgstr "Ajouter un Nouvel Article"
+
+msgid "item_name"
+msgstr "Nom de l'Article"
+
+msgid "select_locker"
+msgstr "Sélectionner un casier"
+
+msgid "description_optional"
+msgstr "Description (Optionnel)"
+
+msgid "edit_item"
+msgstr "Modifier l'Article"
+
+msgid "unknown"
+msgstr "Inconnu"
+
+msgid "add_new_locker"
+msgstr "Ajouter un Nouveau Casier"
+
+msgid "locker_name"
+msgstr "Nom du Casier"
+
+msgid "not_specified"
+msgstr "Non spécifié"
+
+msgid "action"
+msgstr "Action"
+
+msgid "details"
+msgstr "Détails"
+
+msgid "get_started"
+msgstr "Commencer"
+
+msgid "view_current_borrows"
+msgstr "Voir les articles actuellement empruntés"
+
+msgid "no_items_found"
+msgstr "Aucun article trouvé"
+
+msgid "try_adjusting_search"
+msgstr "Essayez d'ajuster vos critères de recherche ou de filtrage"
+
+msgid "get_started_adding_item"
+msgstr "Commencez par ajouter votre premier article"
+
+msgid "borrowed_at"
+msgstr "Emprunté Le" 

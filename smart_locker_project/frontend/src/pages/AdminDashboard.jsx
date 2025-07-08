@@ -20,6 +20,7 @@ import {
   Calendar,
   BarChart3,
   ChevronDown,
+  ChevronRight,
   ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
@@ -284,7 +285,7 @@ const AdminDashboard = () => {
                           isDarkMode ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {activity.item}
+                        {activity.item || t("unknown") || "Unknown"}
                       </p>
                     </div>
                     <div className="text-right">
@@ -302,7 +303,9 @@ const AdminDashboard = () => {
                             : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
-                        {activity.status}
+                        {activity.status === "completed"
+                          ? t("completed") || "completed"
+                          : t("pending") || "pending"}
                       </span>
                     </div>
                   </div>
@@ -353,6 +356,97 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <ChevronDown className="h-4 w-4 text-gray-400" />
+                </button>
+
+                <button
+                  onClick={() => (window.location.href = "/actifs")}
+                  className={`w-full flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                    isDarkMode
+                      ? "border-gray-600 hover:bg-gray-700"
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Clock className="h-5 w-5 text-orange-600" />
+                    <div className="text-left">
+                      <p
+                        className={`font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {t("active_borrows") || "Active Borrows"}
+                      </p>
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-500"
+                        }`}
+                      >
+                        {t("view_current_borrows") ||
+                          "View currently borrowed items"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </button>
+
+                <button
+                  onClick={() => (window.location.href = "/logs")}
+                  className={`w-full flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                    isDarkMode
+                      ? "border-gray-600 hover:bg-gray-700"
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Activity className="h-5 w-5 text-purple-600" />
+                    <div className="text-left">
+                      <p
+                        className={`font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {t("system_logs") || "System Logs"}
+                      </p>
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-500"
+                        }`}
+                      >
+                        {t("view_activity_logs") || "View all system activity"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </button>
+
+                <button
+                  onClick={() => (window.location.href = "/users")}
+                  className={`w-full flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                    isDarkMode
+                      ? "border-gray-600 hover:bg-gray-700"
+                      : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Users className="h-5 w-5 text-green-600" />
+                    <div className="text-left">
+                      <p
+                        className={`font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {t("manage_users") || "Manage Users"}
+                      </p>
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-500"
+                        }`}
+                      >
+                        {t("add_edit_users") || "Add, edit, or remove users"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
                 </button>
               </div>
             </div>

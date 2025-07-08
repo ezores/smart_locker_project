@@ -21,6 +21,7 @@ import Items from "./pages/Items";
 import Lockers from "./pages/Lockers";
 import Logs from "./pages/Logs";
 import Emprunts from "./pages/Emprunts";
+import Payments from "./pages/Payments";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -112,6 +113,14 @@ function App() {
               <AdminRoute>
                 <Emprunts />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute>
+                <Payments />
+              </ProtectedRoute>
             }
           />
         </Routes>

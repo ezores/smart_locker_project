@@ -11,6 +11,7 @@ import {
   Activity,
   User,
   Clock,
+  CreditCard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -101,6 +102,14 @@ const MainMenu = () => {
           },
         ]
       : []),
+    {
+      title: t("payments"),
+      description: t("payments_menu_description"),
+      icon: CreditCard,
+      href: "/payments",
+      color: "bg-emerald-500",
+      iconColor: "text-emerald-500",
+    },
   ];
 
   return (
@@ -159,7 +168,9 @@ const MainMenu = () => {
 
                 {/* Hover effect indicator */}
                 <div className="mt-4 flex items-center text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-sm font-medium">Get started</span>
+                  <span className="text-sm font-medium">
+                    {t("get_started") || "Get started"}
+                  </span>
                   <ArrowLeft className="h-4 w-4 ml-1 transform rotate-180" />
                 </div>
               </div>

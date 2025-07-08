@@ -156,4 +156,148 @@ msgid "all_items"
 msgstr "All Items"
 
 msgid "failed_export_borrows"
-msgstr "Failed to export borrows" 
+msgstr "Failed to export borrows"
+
+msgid "payments"
+msgstr "Payments"
+
+msgid "payments_description"
+msgstr "Manage payments and billing information"
+
+msgid "payments_menu_description"
+msgstr "Manage payments and billing"
+
+msgid "search_payments"
+msgstr "Search payments..."
+
+msgid "all_statuses"
+msgstr "All Statuses"
+
+msgid "completed"
+msgstr "Completed"
+
+msgid "pending"
+msgstr "Pending"
+
+msgid "failed"
+msgstr "Failed"
+
+msgid "new_payment"
+msgstr "New Payment"
+
+msgid "no_payments_found"
+msgstr "No payments found"
+
+msgid "no_payments_yet"
+msgstr "No payments have been made yet"
+
+msgid "failed_export_payments"
+msgstr "Failed to export payments"
+
+msgid "stripe_integration"
+msgstr "Stripe Integration"
+
+msgid "stripe_notice"
+msgstr "This payment system is designed to integrate with Stripe for secure payment processing. The integration includes:"
+
+msgid "stripe_feature_1"
+msgstr "Secure payment processing with Stripe Checkout"
+
+msgid "stripe_feature_2"
+msgstr "Automatic payment confirmation and webhook handling"
+
+msgid "stripe_feature_3"
+msgstr "Payment history and receipt generation"
+
+msgid "stripe_feature_4"
+msgstr "Subscription management for recurring payments"
+
+msgid "view_current_borrows"
+msgstr "View currently borrowed items"
+
+msgid "system_logs"
+msgstr "System Logs"
+
+msgid "view_activity_logs"
+msgstr "View all system activity"
+
+msgid "add_edit_users"
+msgstr "Add, edit, or remove users"
+
+msgid "export_csv"
+msgstr "Export CSV"
+
+msgid "my_balance"
+msgstr "My Balance"
+
+msgid "balance_description"
+msgstr "Manage your account balance and payment history"
+
+msgid "current_balance"
+msgstr "Current Balance"
+
+msgid "add_money"
+msgstr "Add Money"
+
+msgid "failed_add_money"
+msgstr "Failed to add money"
+
+msgid "amount"
+msgstr "Amount"
+
+msgid "cancel"
+msgstr "Cancel"
+
+msgid "save_changes"
+msgstr "Save Changes"
+
+msgid "add_new_item"
+msgstr "Add New Item"
+
+msgid "item_name"
+msgstr "Item Name"
+
+msgid "select_locker"
+msgstr "Select a locker"
+
+msgid "description_optional"
+msgstr "Description (Optional)"
+
+msgid "edit_item"
+msgstr "Edit Item"
+
+msgid "unknown"
+msgstr "Unknown"
+
+msgid "add_new_locker"
+msgstr "Add New Locker"
+
+msgid "locker_name"
+msgstr "Locker Name"
+
+msgid "not_specified"
+msgstr "Not specified"
+
+msgid "action"
+msgstr "Action"
+
+msgid "details"
+msgstr "Details"
+
+msgid "get_started"
+msgstr "Get started"
+
+msgid "view_current_borrows"
+msgstr "View currently borrowed items"
+
+msgid "no_items_found"
+msgstr "No items found"
+
+msgid "try_adjusting_search"
+msgstr "Try adjusting your search or filter criteria"
+
+msgid "get_started_adding_item"
+msgstr "Get started by adding your first item"
+
+msgid "borrowed_at"
+msgstr "Borrowed At" 

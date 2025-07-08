@@ -127,7 +127,7 @@ const Items = () => {
 
   const getLockerName = (lockerId) => {
     const locker = lockers.find((l) => l.id === lockerId);
-    return locker ? locker.name : t("unknown") || "Unknown";
+    return locker ? locker.name || locker.number : t("unknown") || "Unknown";
   };
 
   if (loading) {
@@ -185,7 +185,7 @@ const Items = () => {
             <option value="all">{t("all_lockers")}</option>
             {lockers.map((locker) => (
               <option key={locker.id} value={locker.id}>
-                {locker.name}
+                {locker.name || locker.number}
               </option>
             ))}
           </select>
@@ -305,12 +305,14 @@ const Items = () => {
                         <button
                           onClick={() => openEditModal(item)}
                           className="text-blue-600 hover:text-blue-900"
+                          title={t("edit_item") || "Edit Item"}
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteItem(item.id)}
                           className="text-red-600 hover:text-red-900"
+                          title={t("delete_item") || "Delete Item"}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

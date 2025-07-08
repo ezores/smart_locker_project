@@ -300,4 +300,46 @@ msgid "get_started_adding_item"
 msgstr "İlk eşyanızı ekleyerek başlayın"
 
 msgid "borrowed_at"
-msgstr "Ödünç Alınma Tarihi" 
+msgstr "Ödünç Alınma Tarihi"
+
+msgid "payments_menu_description"
+msgstr "Ödemeleri ve fatura bilgilerini yönetin"
+
+msgid "view_activity_logs"
+msgstr "Aktivite günlüklerini ve sistem olaylarını görüntüleyin"
+
+msgid "add_edit_users"
+msgstr "Kullanıcı hesaplarını ekleyin ve düzenleyin"
+
+msgid "completed"
+msgstr "Tamamlandı"
+
+msgid "add_item"
+msgstr "Eşya Ekle"
+
+msgid "edit_locker"
+msgstr "Dolabı Düzenle"
+
+msgid "new_payment"
+msgstr "Yeni Ödeme"
+
+msgid "download_excel"
+msgstr "Excel İndir"
+
+msgid "save_changes"
+msgstr "Değişiklikleri Kaydet"
+
+msgid "locker_name"
+msgstr "Dolap Adı"
+
+msgid "failed"
+msgstr "Başarısız"
+
+msgid "all_statuses"
+msgstr "Tüm Durumlar"
+
+msgid "edit_item"
+msgstr "Eşyayı Düzenle"
+
+msgid "delete_item"
+msgstr "Eşyayı Sil" 

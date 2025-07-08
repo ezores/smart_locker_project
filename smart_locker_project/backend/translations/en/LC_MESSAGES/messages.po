@@ -173,6 +173,12 @@ msgstr "Search payments..."
 msgid "all_statuses"
 msgstr "All Statuses"
 
+msgid "edit_item"
+msgstr "Edit Item"
+
+msgid "delete_item"
+msgstr "Delete Item"
+
 msgid "completed"
 msgstr "Completed"
 
@@ -300,4 +306,40 @@ msgid "get_started_adding_item"
 msgstr "Get started by adding your first item"
 
 msgid "borrowed_at"
-msgstr "Borrowed At" 
+msgstr "Borrowed At"
+
+msgid "payments_menu_description"
+msgstr "Manage payments and billing information"
+
+msgid "view_activity_logs"
+msgstr "View activity logs and system events"
+
+msgid "add_edit_users"
+msgstr "Add and edit user accounts"
+
+msgid "completed"
+msgstr "Completed"
+
+msgid "add_item"
+msgstr "Add Item"
+
+msgid "edit_locker"
+msgstr "Edit Locker"
+
+msgid "new_payment"
+msgstr "New Payment"
+
+msgid "download_excel"
+msgstr "Download Excel"
+
+msgid "save_changes"
+msgstr "Save Changes"
+
+msgid "locker_name"
+msgstr "Locker Name"
+
+msgid "failed"
+msgstr "Failed"
+
+msgid "all_statuses"
+msgstr "All Statuses" 

@@ -291,8 +291,15 @@ const Payments = () => {
           {user.role === "admin" && (
             <>
               <button
-                onClick={() => exportPayments("csv")}
+                onClick={() => exportPayments("excel")}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span>{t("download_excel") || "Excel"}</span>
+              </button>
+              <button
+                onClick={() => exportPayments("csv")}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Download className="h-4 w-4" />
                 <span>CSV</span>

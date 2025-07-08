@@ -37,6 +37,9 @@ const Header = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    setIsMenuOpen(false);
+    setIsLanguageOpen(false);
+    setIsUserMenuOpen(false);
     logout();
     navigate("/login");
   };

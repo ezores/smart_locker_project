@@ -300,4 +300,46 @@ msgid "get_started_adding_item"
 msgstr "Commencez par ajouter votre premier article"
 
 msgid "borrowed_at"
-msgstr "Emprunté Le" 
+msgstr "Emprunté Le"
+
+msgid "payments_menu_description"
+msgstr "Gérer les paiements et les informations de facturation"
+
+msgid "view_activity_logs"
+msgstr "Voir les journaux d'activité et les événements système"
+
+msgid "add_edit_users"
+msgstr "Ajouter et modifier les comptes utilisateurs"
+
+msgid "completed"
+msgstr "Terminé"
+
+msgid "add_item"
+msgstr "Ajouter un Article"
+
+msgid "edit_locker"
+msgstr "Modifier le Casier"
+
+msgid "new_payment"
+msgstr "Nouveau Paiement"
+
+msgid "download_excel"
+msgstr "Télécharger Excel"
+
+msgid "save_changes"
+msgstr "Enregistrer les Modifications"
+
+msgid "locker_name"
+msgstr "Nom du Casier"
+
+msgid "failed"
+msgstr "Échoué"
+
+msgid "all_statuses"
+msgstr "Tous les Statuts"
+
+msgid "edit_item"
+msgstr "Modifier l'Article"
+
+msgid "delete_item"
+msgstr "Supprimer l'Article" 

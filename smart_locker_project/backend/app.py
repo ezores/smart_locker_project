@@ -314,7 +314,7 @@ def api_borrow():
     locker_id = data.get('locker_id')
     
     # Find user by RFID card or use a default user for demo
-    user = User.query.filter_by(rfid_card=rfid_card).first()
+    user = User.query.filter_by(rfid_tag=rfid_card).first()
     if not user:
         # For demo purposes, use the first student user
         user = User.query.filter_by(role='student').first()
@@ -355,7 +355,7 @@ def api_return():
     locker_id = data.get('locker_id')
     
     # Find user by RFID card or use a default user for demo
-    user = User.query.filter_by(rfid_card=rfid_card).first()
+    user = User.query.filter_by(rfid_tag=rfid_card).first()
     if not user:
         # For demo purposes, use the first student user
         user = User.query.filter_by(role='student').first()
@@ -439,7 +439,7 @@ def api_borrowed_items(identifier):
     """Get borrowed items for a specific user (by RFID or user ID)"""
     try:
         # Try to find user by RFID card first
-        user = User.query.filter_by(rfid_card=identifier).first()
+        user = User.query.filter_by(rfid_tag=identifier).first()
         
         # If not found by RFID, try by username
         if not user:

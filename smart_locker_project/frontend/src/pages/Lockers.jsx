@@ -522,7 +522,7 @@ const Lockers = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                Edit Locker
+                {t("edit_locker") || "Edit Locker"}
               </h3>
               <button
                 onClick={closeModal}
@@ -564,7 +564,7 @@ const Lockers = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Location
+                  {t("location") || "Location"}
                 </label>
                 <input
                   type="text"
@@ -599,9 +599,15 @@ const Lockers = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  <option value="available">Available</option>
-                  <option value="occupied">Occupied</option>
-                  <option value="maintenance">Maintenance</option>
+                  <option value="available">
+                    {t("available") || "Available"}
+                  </option>
+                  <option value="occupied">
+                    {t("occupied") || "Occupied"}
+                  </option>
+                  <option value="maintenance">
+                    {t("maintenance") || "Maintenance"}
+                  </option>
                 </select>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -614,13 +620,13 @@ const Lockers = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  Cancel
+                  {t("cancel") || "Cancel"}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  Save Changes
+                  {t("save_changes") || "Save Changes"}
                 </button>
               </div>
             </form>

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   Package,
   ArrowLeft,
@@ -10,15 +11,30 @@ import {
   Activity,
   User,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const MainMenu = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isDarkMode } = useDarkMode();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalItems: 0,
+    totalLockers: 0,
+    activeBorrows: 0,
+  });
+
+  useEffect(() => {
+    if (user.role === "admin") {
+      axios.get("/api/admin/stats").then((res) => setStats(res.data));
+    }
+  }, [user]);
 
   const menuItems = [
     {
       title: t("borrow_item"),
-      description: "Borrow equipment or tools from available lockers",
+      description: t("borrow_description"),
       icon: Package,
       href: "/borrow",
       color: "bg-blue-500",
@@ -26,7 +42,7 @@ const MainMenu = () => {
     },
     {
       title: t("return_item"),
-      description: "Return borrowed items to their assigned lockers",
+      description: t("return_description"),
       icon: ArrowLeft,
       href: "/return",
       color: "bg-green-500",
@@ -36,8 +52,7 @@ const MainMenu = () => {
       ? [
           {
             title: t("admin_panel"),
-            description:
-              "Access administrative functions and system management",
+            description: t("admin_panel_description"),
             icon: Settings,
             href: "/admin",
             color: "bg-purple-500",
@@ -45,7 +60,7 @@ const MainMenu = () => {
           },
           {
             title: t("users"),
-            description: "Manage user accounts and permissions",
+            description: t("manage_accounts"),
             icon: Users,
             href: "/users",
             color: "bg-indigo-500",
@@ -53,7 +68,7 @@ const MainMenu = () => {
           },
           {
             title: t("items"),
-            description: "Manage equipment and tools inventory",
+            description: t("items_description"),
             icon: Box,
             href: "/items",
             color: "bg-orange-500",
@@ -61,7 +76,7 @@ const MainMenu = () => {
           },
           {
             title: t("lockers"),
-            description: "Configure and monitor locker status",
+            description: t("lockers_description"),
             icon: Activity,
             href: "/lockers",
             color: "bg-red-500",
@@ -69,7 +84,7 @@ const MainMenu = () => {
           },
           {
             title: t("logs"),
-            description: "View system activity and transaction logs",
+            description: t("logs_description"),
             icon: Activity,
             href: "/logs",
             color: "bg-gray-500",
@@ -88,10 +103,20 @@ const MainMenu = () => {
             <User className="h-8 w-8 text-primary-600" />
           </div>
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <h1
+          className={`text-4xl font-bold mb-2 ${
+            isDarkMode ? "text-white" : "text-gray-900"
+          }`}
+        >
           {t("welcome")}, {user.username}!
         </h1>
-        <p className="text-xl text-gray-600">{t("select_option")}</p>
+        <p
+          className={`text-xl ${
+            isDarkMode ? "text-gray-300" : "text-gray-600"
+          }`}
+        >
+          {t("select_option")}
+        </p>
       </div>
 
       {/* Menu Grid */}
@@ -106,10 +131,20 @@ const MainMenu = () => {
                     <IconComponent className={`h-8 w-8 ${item.iconColor}`} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                    <h3
+                      className={`text-xl font-semibold group-hover:text-primary-600 transition-colors ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       {item.title}
                     </h3>
-                    <p className="text-gray-600 mt-2">{item.description}</p>
+                    <p
+                      className={`mt-2 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
+                      {item.description}
+                    </p>
                   </div>
                 </div>
 
@@ -127,25 +162,53 @@ const MainMenu = () => {
       {/* Quick Stats for Admin */}
       {user.role === "admin" && (
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Quick Overview
+          <h2
+            className={`text-2xl font-bold mb-6 ${
+              isDarkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {t("quick_overview")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="card text-center">
-              <div className="text-3xl font-bold text-primary-600">12</div>
-              <div className="text-gray-600">{t("total_users")}</div>
+              <div className="text-3xl font-bold text-primary-600">
+                {stats.totalUsers}
+              </div>
+              <div
+                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
+              >
+                {t("total_users")}
+              </div>
             </div>
             <div className="card text-center">
-              <div className="text-3xl font-bold text-green-600">45</div>
-              <div className="text-gray-600">{t("total_items")}</div>
+              <div className="text-3xl font-bold text-green-600">
+                {stats.totalItems}
+              </div>
+              <div
+                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
+              >
+                {t("total_items")}
+              </div>
             </div>
             <div className="card text-center">
-              <div className="text-3xl font-bold text-blue-600">20</div>
-              <div className="text-gray-600">{t("total_lockers")}</div>
+              <div className="text-3xl font-bold text-blue-600">
+                {stats.totalLockers}
+              </div>
+              <div
+                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
+              >
+                {t("total_lockers")}
+              </div>
             </div>
             <div className="card text-center">
-              <div className="text-3xl font-bold text-orange-600">8</div>
-              <div className="text-gray-600">{t("active_borrows")}</div>
+              <div className="text-3xl font-bold text-orange-600">
+                {stats.activeBorrows}
+              </div>
+              <div
+                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
+              >
+                {t("active_borrows")}
+              </div>
             </div>
           </div>
         </div>

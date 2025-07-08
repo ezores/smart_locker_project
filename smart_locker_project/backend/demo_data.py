@@ -15,27 +15,35 @@ def create_demo_data(db, User, Locker, Item, Log):
     
     print("Creating demo data...")
     
-    # Clear existing data (except admin user)
+    # Clear ALL existing data
     Log.query.delete()
     Item.query.delete()
     Locker.query.delete()
-    User.query.filter(User.username != 'admin').delete()
+    User.query.delete()  # Clear all users including admin
+    
+    # Create admin user first
+    admin_user = User(
+        username='admin',
+        password_hash=generate_password_hash('admin123'),
+        role='admin'
+    )
+    db.session.add(admin_user)
     
     # Create demo users
     demo_users = [
-        {'username': 'john.doe', 'password': 'password123', 'role': 'employee'},
-        {'username': 'jane.smith', 'password': 'password123', 'role': 'employee'},
-        {'username': 'mike.wilson', 'password': 'password123', 'role': 'employee'},
-        {'username': 'sarah.jones', 'password': 'password123', 'role': 'employee'},
-        {'username': 'david.brown', 'password': 'password123', 'role': 'employee'},
-        {'username': 'emma.davis', 'password': 'password123', 'role': 'employee'},
-        {'username': 'alex.taylor', 'password': 'password123', 'role': 'employee'},
-        {'username': 'lisa.anderson', 'password': 'password123', 'role': 'employee'},
-        {'username': 'tom.martinez', 'password': 'password123', 'role': 'employee'},
-        {'username': 'anna.garcia', 'password': 'password123', 'role': 'employee'},
+        {'username': 'john.doe', 'password': 'password123', 'role': 'student'},
+        {'username': 'jane.smith', 'password': 'password123', 'role': 'student'},
+        {'username': 'mike.wilson', 'password': 'password123', 'role': 'student'},
+        {'username': 'sarah.jones', 'password': 'password123', 'role': 'student'},
+        {'username': 'david.brown', 'password': 'password123', 'role': 'student'},
+        {'username': 'emma.davis', 'password': 'password123', 'role': 'student'},
+        {'username': 'alex.taylor', 'password': 'password123', 'role': 'student'},
+        {'username': 'lisa.anderson', 'password': 'password123', 'role': 'student'},
+        {'username': 'tom.martinez', 'password': 'password123', 'role': 'student'},
+        {'username': 'anna.garcia', 'password': 'password123', 'role': 'student'},
     ]
     
-    users = []
+    users = [admin_user]  # Start with admin user
     for user_data in demo_users:
         user = User(
             username=user_data['username'],
@@ -130,7 +138,7 @@ def create_demo_data(db, User, Locker, Item, Log):
     print("\nDemo credentials:")
     print("Username: admin, Password: admin123 (Admin)")
     for user in users[:3]:  # Show first 3 users
-        print(f"Username: {user.username}, Password: password123 (Employee)")
+        print(f"Username: {user.username}, Password: password123 (Student)")
 
 def clear_demo_data(db, User, Locker, Item, Log):
     """Clear all demo data from the database"""

@@ -1,18 +1,30 @@
-# Core dependencies (required for both MacBook and Raspberry Pi)
-Flask
-Flask-SQLAlchemy
-Werkzeug
-bcrypt
-pyserial
-Flask-Babel
+# Core Flask dependencies
+Flask==3.1.1
+Flask-SQLAlchemy==3.1.1
+Werkzeug==3.1.3
+bcrypt==4.3.0
+pyserial==3.5
+
+# Internationalization
+Flask-Babel==4.0.0
+
+# Development and testing
+pytest==7.4.0
+requests==2.31.0
+
+# Authentication and security
+PyJWT==2.8.0
+Flask-CORS==4.0.0
+Flask-Login==0.6.3
+
+# Data processing and export
+pandas==2.0.3
+openpyxl==3.1.5
+reportlab==4.4.2
 
 # Hardware dependencies (Linux/Raspberry Pi only)
 # evdev
 # pyusb
-
-# API dependencies
-PyJWT==2.8.0
-Flask-CORS==4.0.0
 
 # Export dependencies
 openpyxl==3.1.5

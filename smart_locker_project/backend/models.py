@@ -37,13 +37,13 @@ def init_models(db):
                 password_hash=generate_password_hash('admin123'),
                 role='admin'
             )
-            emp = User(
-                username='employee',
-                password_hash=generate_password_hash('employee123'),
-                role='employee'
+            student = User(
+                username='student',
+                password_hash=generate_password_hash('student123'),
+                role='student'
             )
             db.session.add(admin)
-            db.session.add(emp)
+            db.session.add(student)
             locker1 = Locker(name='Locker 1')
             locker2 = Locker(name='Locker 2')
             db.session.add(locker1)

@@ -81,28 +81,28 @@ const Header = () => {
           {/* Logo and Brand */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-3">
-              <img
-                src="/static/images/ETS-logo.png"
-                alt="ETS Logo"
-                className="h-10 w-auto"
-              />
-              <div className="hidden sm:block">
-                <h1
-                  className={`text-xl font-bold ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  LACIME
-                </h1>
-                <p
-                  className={`text-sm ${
-                    isDarkMode ? "text-gray-300" : "text-gray-600"
-                  }`}
-                >
-                  Smart Locker System
-                </p>
-              </div>
+              <img src="/ETS-logo.png" alt="ETS Logo" className="h-10 w-auto" />
             </Link>
+          </div>
+
+          {/* Centered Brand */}
+          <div className="flex-1 flex justify-center">
+            <div className="text-center">
+              <h1
+                className={`text-xl font-bold ${
+                  isDarkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                LACIME
+              </h1>
+              <p
+                className={`text-sm ${
+                  isDarkMode ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                Smart Locker System
+              </p>
+            </div>
           </div>
 
           {/* Right side - Language, Dark Mode, User, and Hamburger */}

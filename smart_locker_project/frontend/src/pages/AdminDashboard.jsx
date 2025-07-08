@@ -52,39 +52,14 @@ const AdminDashboard = () => {
       setRecentActivity(activityResponse.data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      // Use mock data for demo
+      // Show 0 values when no data is available
       setStats({
-        totalUsers: 12,
-        totalItems: 45,
-        totalLockers: 20,
-        activeBorrows: 8,
+        totalUsers: 0,
+        totalItems: 0,
+        totalLockers: 0,
+        activeBorrows: 0,
       });
-      setRecentActivity([
-        {
-          id: 1,
-          type: "borrow",
-          user: "john.doe",
-          item: "Laptop",
-          timestamp: new Date().toISOString(),
-          status: "completed",
-        },
-        {
-          id: 2,
-          type: "return",
-          user: "jane.smith",
-          item: "Projector",
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          status: "completed",
-        },
-        {
-          id: 3,
-          type: "borrow",
-          user: "mike.wilson",
-          item: "Camera",
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          status: "completed",
-        },
-      ]);
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }
@@ -106,10 +81,10 @@ const AdminDashboard = () => {
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
-    if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1) return t("just_now");
+    if (diffInMinutes < 60) return `${diffInMinutes} ${t("minutes_ago")}`;
     if (diffInMinutes < 1440)
-      return `${Math.floor(diffInMinutes / 60)} hours ago`;
+      return `${Math.floor(diffInMinutes / 60)} ${t("hours_ago")}`;
     return date.toLocaleDateString();
   };
 
@@ -132,7 +107,7 @@ const AdminDashboard = () => {
           {t("dashboard")}
         </h1>
         <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-          Overview of the Smart Locker System
+          {t("dashboard_description")}
         </p>
       </div>
 

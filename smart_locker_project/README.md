@@ -1,279 +1,317 @@
-# Smart Locker Management System
+# Smart Locker System
 
-A comprehensive smart locker management system built with **Flask** (backend) and **React** (frontend), designed for deployment on Raspberry Pi 5 with full hardware integration capabilities.
+A modern, full-stack smart locker management system built with Flask (Python) backend and React (JavaScript) frontend. The system provides secure equipment borrowing and returning functionality with comprehensive user management, logging, and reporting capabilities.
 
----
+## 🌟 Features
 
-## 🚀 Features
+### Core Functionality
 
-### Backend (Flask)
+- **RFID Card Authentication** - Secure access using RFID cards
+- **User ID Authentication** - Alternative login using numeric user IDs
+- **Equipment Management** - Track and manage equipment inventory
+- **Locker Management** - Monitor locker status and locations
+- **Borrow/Return System** - Streamlined equipment checkout process
+- **Real-time Logging** - Comprehensive activity tracking
 
-- JWT-based authentication with role-based access
-- SQLite with SQLAlchemy ORM
-- Hardware integration (RFID, RS485)
-- Multi-language support (EN, FR, ES, TR)
-- RESTful API for React frontend
-- Activity logging and export (Excel, PDF, CSV)
-- Demo data generation for testing
+### User Management
 
-### Frontend (React)
+- **Multi-role Support** - Admin and Student roles
+- **User Authentication** - Secure login with JWT tokens
+- **Profile Management** - User account administration
+- **Permission Control** - Role-based access control
 
-- Modern, responsive UI (Tailwind CSS)
-- Real-time updates
-- Mobile-first design
-- Full i18n support
-- Role-based interface (admin/user)
-- Dark mode support
-- Hamburger menu navigation
-- Admin reporting dashboard with export functionality
+### Administrative Features
 
----
+- **Dashboard Analytics** - Real-time system statistics
+- **Reporting System** - Export reports in Excel, PDF, and CSV formats
+- **Activity Logs** - Detailed system activity monitoring
+- **Data Management** - CRUD operations for users, items, and lockers
 
-## 🛠 Tech Stack
+### User Experience
 
-- **Backend:** Python 3.8+ (Flask, SQLAlchemy, Flask-Babel, PyJWT, pyserial)
-- **Frontend:** React 18, Vite, Tailwind CSS, React Router, Axios
+- **Multi-language Support** - English, French, Spanish, Turkish
+- **Dark Mode** - Modern dark/light theme toggle
+- **Responsive Design** - Works on desktop and mobile devices
+- **Modern UI/UX** - Clean, intuitive interface
 
----
+## 🏗️ Project Structure
 
-## 📋 Prerequisites
+```
+smart_locker_project/
+├── 📁 backend/                    # Flask backend application
+│   ├── 📁 api/                   # API endpoints
+│   ├── 📁 models/                # Database models
+│   ├── 📁 utils/                 # Utility functions
+│   ├── 📁 config/                # Configuration files
+│   └── 📁 tests/                 # Backend tests
+├── 📁 frontend/                  # React frontend application
+│   ├── 📁 src/
+│   │   ├── 📁 components/        # Reusable UI components
+│   │   ├── 📁 pages/            # Page components
+│   │   ├── 📁 contexts/         # React contexts
+│   │   ├── 📁 hooks/            # Custom React hooks
+│   │   └── 📁 utils/            # Frontend utilities
+│   └── 📁 public/               # Static assets
+├── 📁 docs/                     # Documentation
+├── 📁 scripts/                  # Development scripts
+└── 📁 data/                     # Database and data files
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
 
 - Python 3.8+
 - Node.js 16+
-- npm (or yarn)
+- npm or yarn
 
----
+### Installation
 
-## ⚡ Quick Start (Recommended)
+1. **Clone the repository**
 
-### 1. Clone the repository
+   ```bash
+   git clone <repository-url>
+   cd smart_locker_project
+   ```
 
-```bash
-git clone <repository-url>
-cd smart_locker_project
+2. **Set up the backend**
+
+   ```bash
+   # Create virtual environment
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+   # Install dependencies
+   pip install -r requirements.txt
+   ```
+
+3. **Set up the frontend**
+
+   ```bash
+   # Install dependencies
+   npm install
+   ```
+
+4. **Start the development servers**
+
+   ```bash
+   # Start both backend and frontend
+   ./scripts/start_dev.sh
+
+   # Or start individually:
+   # Backend: python backend/app.py --port 5050 --demo
+   # Frontend: cd frontend && npm run dev
+   ```
+
+5. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5050
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+FLASK_ENV=development
+JWT_SECRET_KEY=your-secret-key-here
+DATABASE_URL=sqlite:///smart_locker.db
 ```
 
-### 2. Use the Startup Script
+### Database Setup
+
+The system uses SQLite by default. For production, consider using PostgreSQL or MySQL.
+
+## 👥 User Roles
+
+### Admin
+
+- Full system access
+- User management
+- Equipment management
+- Locker management
+- System reports and analytics
+- Activity monitoring
+
+### Student
+
+- Borrow equipment
+- Return equipment
+- View personal history
+- Access to assigned lockers
+
+## 🔐 Authentication Methods
+
+### RFID Card Authentication
+
+- Primary authentication method
+- Secure card-based access
+- Real-time validation
+
+### User ID Authentication
+
+- Alternative authentication method
+- Numeric user ID input
+- Fallback when RFID cards are unavailable
+
+## 📊 API Documentation
+
+### Authentication Endpoints
+
+- `POST /api/auth/login` - User login
+- `GET /api/user/profile` - Get user profile
+
+### Equipment Management
+
+- `GET /api/items` - List all items
+- `POST /api/borrow` - Borrow equipment
+- `POST /api/return` - Return equipment
+
+### Administrative Endpoints
+
+- `GET /api/admin/stats` - System statistics
+- `GET /api/admin/users` - User management
+- `GET /api/admin/logs` - Activity logs
+- `POST /api/admin/export` - Export reports
+
+## 🧪 Testing
+
+### Backend Tests
 
 ```bash
-# Start without demo data
-./start_dev.sh
-
-# Start with demo data for testing
-./start_dev.sh --demo
+# Run backend tests
+python -m pytest tests/
 ```
 
-This will:
-
-- Create/activate Python virtual environment
-- Install Python dependencies
-- Install Node.js dependencies
-- Start Flask backend on port 5050
-- Start React frontend on port 5173
-- Load demo data (when using --demo flag)
-
-### 3. Access the Application
-
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:5050/api/\*
-
----
-
-## 🖐 Manual Setup (Alternative)
-
-### Backend (Flask)
+### Frontend Tests
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python app.py --port 5050
+# Run frontend tests
+npm test
 ```
 
-### Frontend (React)
+## 📝 Development
 
-```bash
-npm install
-npm run dev
-```
+### Code Style
 
----
+- Backend: Follow PEP 8 Python style guide
+- Frontend: Use ESLint and Prettier
+- Components: Use functional components with hooks
+- API: RESTful design principles
 
-## 🔐 Authentication
+### Adding New Features
 
-### Default Credentials
-
-| Username   | Password      | Role     |
-| ---------- | ------------- | -------- |
-| `admin`    | `admin123`    | Admin    |
-| `employee` | `employee123` | Employee |
-
-**Demo Data Credentials (when using --demo):**
-
-- `admin` / `admin123` (Admin)
-- `john.doe` / `password123` (Employee)
-- `jane.smith` / `password123` (Employee)
-- `mike.wilson` / `password123` (Employee)
-- And 7 more demo users...
-
-- **Admin:** Full access to all features including reporting and exports
-- **Employee:** Can borrow/return items, view own history
-
----
+1. Create feature branch
+2. Implement backend API endpoints
+3. Create frontend components
+4. Add translations for all supported languages
+5. Write tests
+6. Update documentation
 
 ## 🌍 Internationalization
 
-- English (en, default)
+The system supports multiple languages:
+
+- English (en)
 - French (fr)
 - Spanish (es)
 - Turkish (tr)
 
----
+To add a new language:
 
-## 📱 API Endpoints (Sample)
+1. Add translations to `src/contexts/LanguageContext.jsx`
+2. Update language selector component
+3. Test all UI elements
 
-- `POST /api/auth/login` - User login
-- `GET /api/user/profile` - Get user profile
-- `GET /api/items` - List all items
-- `GET /api/lockers` - List all lockers
-- `POST /api/borrow` - Borrow an item
-- `POST /api/return` - Return an item
-- `GET /api/admin/stats` - System statistics
-- `GET /api/admin/recent-activity` - Recent activity logs
-- `GET /api/admin/reports` - Generate reports
-- `GET /api/admin/export` - Export reports (Excel, PDF, CSV)
+## 🎨 Theming
 
----
+### Dark Mode Support
 
-## 🏗 Project Structure
+- Automatic theme detection
+- Manual theme toggle
+- Consistent styling across all components
+- Proper contrast ratios
 
-```
-smart_locker_project/
-├── app.py                 # Main Flask application
-├── models.py              # Database models
-├── requirements.txt       # Python dependencies
-├── package.json           # Node.js dependencies
-├── vite.config.js         # Vite configuration
-├── tailwind.config.js     # Tailwind CSS configuration
-├── src/                   # React source code
-│   ├── components/        # Reusable React components
-│   ├── contexts/          # React context providers
-│   ├── pages/             # Page components
-│   └── main.jsx           # React entry point
-├── templates/             # Flask HTML templates
-├── static/                # Static files (CSS, images)
-├── translations/          # Babel translation files
-├── db/                    # SQLite database
-├── utils/                 # Utility functions
-├── start_dev.sh           # Dev startup script
-├── demo_data.py           # Demo data generator
-├── test_exports.py        # Export testing script
-└── ...
-```
+### Customization
 
----
+- Primary colors in `tailwind.config.js`
+- Component styling in individual files
+- Global styles in `src/index.css`
 
-## ⚙️ Configuration & Environment
+## 📈 Monitoring and Logging
 
-- Environment variables: `.env` (see example in code)
-- For Raspberry Pi: use `requirements-pi.txt`
+### Activity Logging
 
----
+- User login/logout events
+- Equipment borrow/return transactions
+- Administrative actions
+- System errors and warnings
 
-## 🧑‍💻 Development Notes
+### Export Capabilities
 
-- Flask backend uses SQLite at `db/locker.db`
-- React frontend uses Vite (port 5173)
-- CORS is enabled for local dev
-- JWT authentication for API
-- Vite proxy is set to `http://localhost:5050` for `/api` routes
+- Excel reports (.xlsx)
+- PDF reports (.pdf)
+- CSV data export (.csv)
+- Custom date range filtering
 
----
+## 🔒 Security Features
 
-## 🐞 Troubleshooting
+- JWT token authentication
+- Password hashing with bcrypt
+- Role-based access control
+- Input validation and sanitization
+- SQL injection prevention
+- XSS protection
 
-### Import Errors
+## 🚀 Deployment
 
-- Ensure you're in the virtual environment: `source .venv/bin/activate`
-- Reinstall dependencies: `pip install -r requirements.txt`
+### Production Setup
 
-### Port Already in Use
+1. Set up production database
+2. Configure environment variables
+3. Set up reverse proxy (nginx)
+4. Configure SSL certificates
+5. Set up monitoring and logging
 
-- Backend: Use `python app.py --port <different_port>`
-- Frontend: Vite will suggest an alternative port if 5173 is busy
-
-### Database Issues
-
-- The Flask app auto-creates the DB on first run
-- Ensure `db/` exists and is writable
-
----
-
-## 🚀 Production & Deployment
-
-### Build Frontend
+### Docker Deployment
 
 ```bash
-npm run build
+# Build and run with Docker
+docker-compose up -d
 ```
 
-- Copy `dist/` to Flask's static directory for production serving
+## 🤝 Contributing
 
-### Use Production WSGI
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-- Use Gunicorn or uWSGI for Flask in production
+## 📄 License
 
-### Raspberry Pi
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-```bash
-pip install -r requirements-pi.txt
-```
+## 🆘 Support
 
----
+For support and questions:
 
-## 🆕 New Features
+- Create an issue in the repository
+- Check the documentation
+- Review the code comments
 
-### Dark Mode & UI Improvements
+## 🔄 Version History
 
-- Toggle dark/light mode with system preference detection
-- Responsive hamburger menu navigation
-- Admin-only navigation items
-- Modern, accessible UI design
+### v1.0.0 (Current)
 
-### Admin Reporting System
-
-- Comprehensive transaction reports with date range filters
-- Export functionality: Excel (.xlsx), PDF, and CSV formats
-- Periodic reports: daily, weekly, monthly, yearly
-- Real-time data visualization
-
-### Demo Data System
-
-- Load realistic test data with `./start_dev.sh --demo`
-- 10 demo users with various roles
-- 12 lockers across 4 buildings
-- 15 different items (laptops, projectors, tools, etc.)
-- 30 days of transaction history (5-15 transactions per day)
-
-### Testing Tools
-
-- `test_exports.py` - Verify export functionality
-- Demo data generation for comprehensive testing
-- Export format validation
+- Initial release
+- Core functionality implemented
+- Multi-language support
+- Dark mode support
+- Comprehensive logging
+- Export capabilities
 
 ---
 
-## 🏁 Startup Script Details (`start_dev.sh`)
-
-- Checks/creates Python virtual environment
-- Installs Python and Node.js dependencies
-- Starts Flask backend (port 5050)
-- Starts React frontend (port 5173)
-- Loads demo data when `--demo` flag is used
-- Cleans up both servers on exit
-
----
-
-## 📞 Support
-
-If you have issues, please check the troubleshooting section above or open an issue.
+**Built with ❤️ using Flask and React**

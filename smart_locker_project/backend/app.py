@@ -1,62 +1,126 @@
 """
 Smart Locker System - Flask Backend Application
 
+A comprehensive Flask-based backend for managing equipment borrowing and returning
+operations in a smart locker system. This application provides RESTful API endpoints
+for the React frontend, handles user authentication, equipment management, and
+administrative functions.
+
+Features:
+- JWT-based authentication system
+- Equipment borrowing and returning operations
+- User management (CRUD operations)
+- Locker management and status tracking
+- Comprehensive activity logging
+- Multi-language support (EN, FR, ES, TR)
+- Export functionality (Excel, PDF, CSV)
+- Real-time statistics and reporting
+
 @author Alp
 @date 2024-12-XX
+@version 1.0.0
 @description Main Flask application for the Smart Locker Management System
 """
 
+# Standard library imports
 import os
 import argparse
+from datetime import datetime, timedelta
+from functools import wraps
+
+# Third-party imports
 from flask import Flask, render_template, redirect, url_for, session, request, flash, g, jsonify, Response  # type: ignore[import]
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy  # type: ignore[import]
 from flask_babel import Babel, gettext, ngettext  # type: ignore[import]
 from werkzeug.security import generate_password_hash, check_password_hash  # type: ignore[import]
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user  # type: ignore[import]
 import jwt  # type: ignore[import]
-from datetime import datetime, timedelta
-from datetime import timedelta
 
-# Set up base directory
+# SQLAlchemy imports for advanced queries
+from sqlalchemy.orm import aliased  # type: ignore[import]
+from sqlalchemy import exists, and_  # type: ignore[import]
+
+# =============================================================================
+# APPLICATION CONFIGURATION
+# =============================================================================
+
+# Set up base directory and database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_DIR = os.path.join(BASE_DIR, 'db')
 DB_PATH = os.path.join(DB_DIR, 'locker.db')
 
+# Create database directory if it doesn't exist
 if not os.path.exists(DB_DIR):
     os.makedirs(DB_DIR)
 
+# Initialize Flask application
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
-app.config['SECRET_KEY'] = 'supersecretkey'
-app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-in-production'
+
+# Enable CORS for cross-origin requests (needed for React frontend)
+CORS(app)
+
+# Flask application configuration
+app.config['SECRET_KEY'] = 'supersecretkey'  # Change in production
+app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-in-production'  # Change in production
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
-# Babel configuration
+# Internationalization (i18n) configuration
 app.config['BABEL_DEFAULT_LOCALE'] = 'en'
 app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'fr', 'es', 'tr']
 app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
 
+# Initialize SQLAlchemy database
 db = SQLAlchemy(app)
 
+# =============================================================================
+# INTERNATIONALIZATION (I18N) SETUP
+# =============================================================================
+
 def get_locale():
-    # Check if user has selected a language
+    """
+    Determine the locale for the current request.
+    
+    Returns:
+        str: The locale code (en, fr, es, tr)
+    """
+    # Check if user has selected a language preference
     if 'language' in session:
         return session['language']
-    # Try to guess the language from the user accept header
+    # Try to guess the language from the user's browser accept header
     return request.accept_languages.best_match(app.config['BABEL_SUPPORTED_LOCALES'])
 
+# Initialize Babel for internationalization
 babel = Babel(app, locale_selector=get_locale)
 
+# =============================================================================
+# DATABASE MODELS INITIALIZATION
+# =============================================================================
+
 def import_models():
+    """
+    Import and initialize database models.
+    
+    Returns:
+        tuple: Database models and initialization function
+    """
     from models import init_models
     return init_models(db)
 
+# Import database models
 User, Locker, Item, Log, init_db = import_models()
+
+# =============================================================================
+# REQUEST HANDLERS
+# =============================================================================
 
 @app.before_request
 def before_request():
+    """
+    Set up global variables before each request.
+    """
     g.locale = get_locale()
 
 # --- Language selection ---
@@ -153,6 +217,14 @@ def api_login():
     
     user = User.query.filter_by(username=username).first()
     if user and check_password_hash(user.password_hash, password):
+        # Create login log
+        log = Log(
+            user_id=user.id,
+            action_type='login'
+        )
+        db.session.add(log)
+        db.session.commit()
+        
         # Create JWT token
         token = jwt.encode({
             'user_id': user.id,
@@ -217,22 +289,73 @@ def api_lockers():
 @app.route('/api/borrow', methods=['POST'])
 def api_borrow():
     data = request.get_json()
-    # Mock borrow functionality
+    user_id = data.get('user_id')
+    item_id = data.get('item_id')
+    locker_id = data.get('locker_id')
+    
+    # Create borrow log
+    log = Log(
+        user_id=user_id,
+        item_id=item_id,
+        locker_id=locker_id,
+        action_type='borrow'
+    )
+    db.session.add(log)
+    db.session.commit()
+    
     return jsonify({'message': 'Item borrowed successfully'})
 
 @app.route('/api/return', methods=['POST'])
 def api_return():
     data = request.get_json()
-    # Mock return functionality
+    user_id = data.get('user_id')
+    item_id = data.get('item_id')
+    locker_id = data.get('locker_id')
+    
+    # Create return log
+    log = Log(
+        user_id=user_id,
+        item_id=item_id,
+        locker_id=locker_id,
+        action_type='return'
+    )
+    db.session.add(log)
+    db.session.commit()
+    
     return jsonify({'message': 'Item returned successfully'})
 
 @app.route('/api/admin/stats')
 def api_admin_stats():
+    total_users = User.query.count()
+    total_items = Item.query.count()
+    total_lockers = Locker.query.count()
+
+    # Active borrows: count borrows that have not been returned
+    # A borrow is active if there's no return log for the same item and user after the borrow timestamp
+    # Get all borrow logs
+    borrow_logs = db.session.query(Log).filter(Log.action_type == 'borrow').all()
+    
+    # Count borrows that don't have a corresponding return
+    active_borrows = 0
+    for borrow in borrow_logs:
+        # Check if there's a return log for this item and user after the borrow timestamp
+        has_return = db.session.query(Log).filter(
+            and_(
+                Log.action_type == 'return',
+                Log.item_id == borrow.item_id,
+                Log.user_id == borrow.user_id,
+                Log.timestamp > borrow.timestamp
+            )
+        ).first()
+        
+        if not has_return:
+            active_borrows += 1
+
     return jsonify({
-        'totalUsers': User.query.count(),
-        'totalItems': Item.query.count(),
-        'totalLockers': Locker.query.count(),
-        'activeBorrows': Log.query.filter_by(action_type='borrow').count()
+        'totalUsers': total_users,
+        'totalItems': total_items,
+        'totalLockers': total_lockers,
+        'activeBorrows': active_borrows
     })
 
 @app.route('/api/admin/recent-activity')
@@ -575,6 +698,305 @@ def api_export():
             )
     
     return jsonify({'error': 'Unsupported format'}), 400
+
+# --- User Management API Routes ---
+@app.route('/api/admin/users')
+def api_users():
+    """Get all users (admin only)"""
+    # Check if user is admin (you might want to add JWT verification here)
+    users = User.query.all()
+    return jsonify([{
+        'id': user.id,
+        'username': user.username,
+        'role': user.role
+    } for user in users])
+
+@app.route('/api/admin/users', methods=['POST'])
+def api_create_user():
+    """Create a new user (admin only)"""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    role = data.get('role', 'student')
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
+    
+    # Check if username already exists
+    if User.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already exists'}), 400
+    
+    # Create new user
+    user = User(
+        username=username,
+        password_hash=generate_password_hash(password),
+        role=role
+    )
+    db.session.add(user)
+    db.session.commit()
+    
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'role': user.role
+    }), 201
+
+@app.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+def api_update_user(user_id):
+    """Update a user (admin only)"""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    role = data.get('role')
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    if username:
+        # Check if username already exists (excluding current user)
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user and existing_user.id != user_id:
+            return jsonify({'error': 'Username already exists'}), 400
+        user.username = username
+    
+    if password:
+        user.password_hash = generate_password_hash(password)
+    
+    if role:
+        user.role = role
+    
+    db.session.commit()
+    
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'role': user.role
+    })
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+def api_delete_user(user_id):
+    """Delete a user (admin only)"""
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Prevent deleting admin users
+    if user.role == 'admin':
+        return jsonify({'error': 'Cannot delete admin users'}), 400
+    
+    db.session.delete(user)
+    db.session.commit()
+    
+    return jsonify({'message': 'User deleted successfully'})
+
+# Items Management API
+@app.route('/api/admin/items', methods=['POST'])
+def api_create_item():
+    """Create a new item (admin only)"""
+    data = request.get_json()
+    name = data.get('name')
+    locker_id = data.get('locker_id')
+    description = data.get('description', '')
+    
+    if not name:
+        return jsonify({'error': 'Item name is required'}), 400
+    
+    # Create new item
+    item = Item(
+        name=name,
+        locker_id=locker_id if locker_id else None,
+        description=description
+    )
+    db.session.add(item)
+    db.session.commit()
+    
+    return jsonify({
+        'id': item.id,
+        'name': item.name,
+        'locker_id': item.locker_id,
+        'description': item.description
+    }), 201
+
+@app.route('/api/admin/items/<int:item_id>', methods=['PUT'])
+def api_update_item(item_id):
+    """Update an item (admin only)"""
+    item = Item.query.get_or_404(item_id)
+    data = request.get_json()
+    
+    if 'name' in data:
+        item.name = data['name']
+    if 'locker_id' in data:
+        item.locker_id = data['locker_id'] if data['locker_id'] else None
+    if 'description' in data:
+        item.description = data['description']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'id': item.id,
+        'name': item.name,
+        'locker_id': item.locker_id,
+        'description': item.description
+    })
+
+@app.route('/api/admin/items/<int:item_id>', methods=['DELETE'])
+def api_delete_item(item_id):
+    """Delete an item (admin only)"""
+    item = Item.query.get_or_404(item_id)
+    db.session.delete(item)
+    db.session.commit()
+    
+    return jsonify({'message': 'Item deleted successfully'})
+
+# Lockers Management API
+@app.route('/api/admin/lockers', methods=['POST'])
+def api_create_locker():
+    """Create a new locker (admin only)"""
+    data = request.get_json()
+    name = data.get('name')
+    location = data.get('location', '')
+    status = data.get('status', 'available')
+    
+    if not name:
+        return jsonify({'error': 'Locker name is required'}), 400
+    
+    # Create new locker
+    locker = Locker(
+        name=name,
+        location=location,
+        status=status
+    )
+    db.session.add(locker)
+    db.session.commit()
+    
+    return jsonify({
+        'id': locker.id,
+        'name': locker.name,
+        'location': locker.location,
+        'status': locker.status
+    }), 201
+
+@app.route('/api/admin/lockers/<int:locker_id>', methods=['PUT'])
+def api_update_locker(locker_id):
+    """Update a locker (admin only)"""
+    locker = Locker.query.get_or_404(locker_id)
+    data = request.get_json()
+    
+    if 'name' in data:
+        locker.name = data['name']
+    if 'location' in data:
+        locker.location = data['location']
+    if 'status' in data:
+        locker.status = data['status']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'id': locker.id,
+        'name': locker.name,
+        'location': locker.location,
+        'status': locker.status
+    })
+
+@app.route('/api/admin/lockers/<int:locker_id>', methods=['DELETE'])
+def api_delete_locker(locker_id):
+    """Delete a locker (admin only)"""
+    locker = Locker.query.get_or_404(locker_id)
+    db.session.delete(locker)
+    db.session.commit()
+    
+    return jsonify({'message': 'Locker deleted successfully'})
+
+# Logs Export API
+@app.route('/api/admin/logs/export')
+def api_export_logs():
+    """Export logs in various formats (admin only)"""
+    format_type = request.args.get('format', 'csv')
+    
+    # Get all logs with user, item, and locker information
+    logs = db.session.query(Log, User.username, Item.name.label('item_name'), Locker.name.label('locker_name'))\
+        .outerjoin(User, Log.user_id == User.id)\
+        .outerjoin(Item, Log.item_id == Item.id)\
+        .outerjoin(Locker, Log.locker_id == Locker.id)\
+        .order_by(Log.timestamp.desc()).all()
+    
+    if format_type == 'csv':
+        import csv
+        from io import StringIO
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['ID', 'Action', 'User', 'Item', 'Locker', 'Description', 'Timestamp'])
+        
+        for log, username, item_name, locker_name in logs:
+            writer.writerow([
+                log.id,
+                log.action_type,
+                username or 'Unknown',
+                item_name or 'N/A',
+                locker_name or 'N/A',
+                '',  # Log model doesn't have description field
+                log.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+        
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename=logs_{datetime.now().strftime("%Y%m%d")}.csv'}
+        )
+    
+    elif format_type == 'excel':
+        try:
+            import pandas as pd
+            from io import BytesIO
+            
+            # Prepare data for pandas
+            data = []
+            for log, username, item_name, locker_name in logs:
+                data.append({
+                    'ID': log.id,
+                    'Action': log.action_type,
+                    'User': username or 'Unknown',
+                    'Item': item_name or 'N/A',
+                    'Locker': locker_name or 'N/A',
+                    'Description': '',  # Log model doesn't have description field
+                    'Timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                })
+            
+            df = pd.DataFrame(data)
+            
+            # Create Excel file in memory
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name='Logs', index=False)
+            
+            output.seek(0)
+            return Response(
+                output.getvalue(),
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                headers={'Content-Disposition': f'attachment; filename=logs_{datetime.now().strftime("%Y%m%d")}.xlsx'}
+            )
+        except ImportError:
+            return jsonify({'error': 'pandas and openpyxl are required for Excel export'}), 500
+    
+    else:
+        return jsonify({'error': 'Unsupported format'}), 400
+
+@app.route('/api/logs')
+def api_logs():
+    """Get all logs"""
+    logs = Log.query.order_by(Log.timestamp.desc()).all()
+    return jsonify([{
+        'id': log.id,
+        'action': log.action_type,
+        'user_id': log.user_id,
+        'item_id': log.item_id,
+        'locker_id': log.locker_id,
+        'description': '',  # Log model doesn't have description field
+        'timestamp': log.timestamp.isoformat()
+    } for log in logs])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Smart Locker System')

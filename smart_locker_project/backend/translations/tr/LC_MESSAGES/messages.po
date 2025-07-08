@@ -126,4 +126,34 @@ msgid "Action"
 msgstr "İşlem"
 
 msgid "Logs"
-msgstr "Kayıtlar" 
+msgstr "Kayıtlar"
+
+msgid "active_borrows_menu_description"
+msgstr "Şu anda ödünç alınan tüm öğeleri görüntüle"
+
+msgid "active_borrows"
+msgstr "Aktif Ödünçler"
+
+msgid "active_borrows_description"
+msgstr "Şu anda ödünç alınan tüm öğeleri görüntüle ve yönet"
+
+msgid "search_borrows"
+msgstr "Ödünç arama..."
+
+msgid "filter_by_user"
+msgstr "Kullanıcıya Göre Filtrele"
+
+msgid "filter_by_item"
+msgstr "Öğeye Göre Filtrele"
+
+msgid "filter_by_date"
+msgstr "Tarihe Göre Filtrele"
+
+msgid "all_users"
+msgstr "Tüm Kullanıcılar"
+
+msgid "all_items"
+msgstr "Tüm Öğeler"
+
+msgid "failed_export_borrows"
+msgstr "Ödünç dışa aktarma başarısız" 

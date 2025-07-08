@@ -95,16 +95,18 @@ def create_demo_data(db, User, Locker, Item, Log):
     # Commit to get IDs
     db.session.commit()
     
-    # Create demo logs (transactions)
-    actions = ['borrow', 'return']
+    # Create demo logs (transactions) - More realistic scenario
     now = datetime.now()
+    
+    # Track active borrows to ensure realistic return patterns
+    active_borrows = {}  # {item_id: {user_id, borrow_time, locker_id}}
     
     # Generate logs for the past 30 days
     for day in range(30):
         base_date = now - timedelta(days=day)
         
-        # Generate 5-15 transactions per day
-        num_transactions = random.randint(5, 15)
+        # Generate 3-8 transactions per day
+        num_transactions = random.randint(3, 8)
         
         for _ in range(num_transactions):
             # Random time during the day
@@ -113,19 +115,78 @@ def create_demo_data(db, User, Locker, Item, Log):
             second = random.randint(0, 59)
             
             timestamp = base_date.replace(hour=hour, minute=minute, second=second)
-            action = random.choice(actions)
             user = random.choice(users)
-            item = random.choice(items)
-            locker = random.choice(lockers)
             
-            log = Log(
-                user_id=user.id,
-                item_id=item.id,
-                locker_id=locker.id,
-                action_type=action,
-                timestamp=timestamp
-            )
-            db.session.add(log)
+            # Decide action based on current state
+            available_items = [item for item in items if item.id not in active_borrows]
+            
+            if available_items and random.random() < 0.7:  # 70% chance to borrow if items available
+                # Create a borrow
+                item = random.choice(available_items)
+                locker = random.choice(lockers)
+                
+                log = Log(
+                    user_id=user.id,
+                    item_id=item.id,
+                    locker_id=locker.id,
+                    action_type='borrow',
+                    timestamp=timestamp
+                )
+                db.session.add(log)
+                
+                # Track this borrow
+                active_borrows[item.id] = {
+                    'user_id': user.id,
+                    'borrow_time': timestamp,
+                    'locker_id': locker.id
+                }
+                
+            elif active_borrows and random.random() < 0.8:  # 80% chance to return if items borrowed
+                # Create a return
+                item_id = random.choice(list(active_borrows.keys()))
+                borrow_info = active_borrows[item_id]
+                
+                log = Log(
+                    user_id=borrow_info['user_id'],
+                    item_id=item_id,
+                    locker_id=borrow_info['locker_id'],
+                    action_type='return',
+                    timestamp=timestamp
+                )
+                db.session.add(log)
+                
+                # Remove from active borrows
+                del active_borrows[item_id]
+    
+    # Add some login/logout logs
+    for day in range(30):
+        base_date = now - timedelta(days=day)
+        for user in users:
+            if random.random() < 0.3:  # 30% chance of login per day per user
+                hour = random.randint(8, 18)
+                minute = random.randint(0, 59)
+                second = random.randint(0, 59)
+                
+                login_time = base_date.replace(hour=hour, minute=minute, second=second)
+                
+                # Login log
+                log = Log(
+                    user_id=user.id,
+                    action_type='login',
+                    timestamp=login_time
+                )
+                db.session.add(log)
+                
+                # Logout log (same day, later)
+                logout_hour = min(22, hour + random.randint(1, 4))
+                logout_time = base_date.replace(hour=logout_hour, minute=random.randint(0, 59), second=random.randint(0, 59))
+                
+                log = Log(
+                    user_id=user.id,
+                    action_type='logout',
+                    timestamp=logout_time
+                )
+                db.session.add(log)
     
     # Commit all logs
     db.session.commit()

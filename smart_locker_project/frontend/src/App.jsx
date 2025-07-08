@@ -20,6 +20,7 @@ import Users from "./pages/Users";
 import Items from "./pages/Items";
 import Lockers from "./pages/Lockers";
 import Logs from "./pages/Logs";
+import Emprunts from "./pages/Emprunts";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -102,6 +103,14 @@ function App() {
             element={
               <AdminRoute>
                 <Logs />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/actifs"
+            element={
+              <AdminRoute>
+                <Emprunts />
               </AdminRoute>
             }
           />

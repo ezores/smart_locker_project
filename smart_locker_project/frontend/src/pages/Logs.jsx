@@ -24,6 +24,7 @@ import {
   Save,
   X,
   FileText,
+  ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
 
@@ -50,7 +51,7 @@ const Logs = () => {
       const [logsResponse, usersResponse, itemsResponse, lockersResponse] =
         await Promise.all([
           axios.get("/api/logs"),
-          axios.get("/api/users"),
+          axios.get("/api/admin/users"),
           axios.get("/api/items"),
           axios.get("/api/lockers"),
         ]);
@@ -71,10 +72,11 @@ const Logs = () => {
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
-      log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.action_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesAction = actionFilter === "all" || log.action === actionFilter;
+    const matchesAction =
+      actionFilter === "all" || log.action_type === actionFilter;
     const matchesUser = userFilter === "all" || log.user_id == userFilter;
 
     let matchesDate = true;
@@ -422,7 +424,7 @@ const Logs = () => {
                     }`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getActionBadge(log.action)}
+                      {getActionBadge(log.action_type)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -489,6 +491,21 @@ const Logs = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Back Button */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => (window.location.href = "/")}
+          className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
+            isDarkMode
+              ? "bg-gray-700 text-white hover:bg-gray-600 border-gray-600"
+              : "bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("back_to_main_menu")}
+        </button>
       </div>
     </div>
   );

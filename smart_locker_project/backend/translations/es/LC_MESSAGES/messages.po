@@ -126,4 +126,34 @@ msgid "Action"
 msgstr "Acción"
 
 msgid "Logs"
-msgstr "Registros" 
+msgstr "Registros"
+
+msgid "active_borrows_menu_description"
+msgstr "Ver todos los artículos actualmente prestados"
+
+msgid "active_borrows"
+msgstr "Préstamos Activos"
+
+msgid "active_borrows_description"
+msgstr "Ver y gestionar todos los artículos actualmente prestados"
+
+msgid "search_borrows"
+msgstr "Buscar préstamos..."
+
+msgid "filter_by_user"
+msgstr "Filtrar por Usuario"
+
+msgid "filter_by_item"
+msgstr "Filtrar por Artículo"
+
+msgid "filter_by_date"
+msgstr "Filtrar por Fecha"
+
+msgid "all_users"
+msgstr "Todos los Usuarios"
+
+msgid "all_items"
+msgstr "Todos los Artículos"
+
+msgid "failed_export_borrows"
+msgstr "Error al exportar préstamos" 

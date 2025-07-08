@@ -10,6 +10,7 @@ import {
   Box,
   Activity,
   User,
+  Clock,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -89,6 +90,14 @@ const MainMenu = () => {
             href: "/logs",
             color: "bg-gray-500",
             iconColor: "text-gray-500",
+          },
+          {
+            title: t("active_borrows"),
+            description: t("active_borrows_menu_description"),
+            icon: Clock,
+            href: "/actifs",
+            color: "bg-teal-500",
+            iconColor: "text-teal-500",
           },
         ]
       : []),

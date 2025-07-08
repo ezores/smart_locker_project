@@ -22,6 +22,7 @@ import {
   Save,
   X,
   Box,
+  ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
 
@@ -564,6 +565,21 @@ const Items = () => {
           </div>
         </div>
       )}
+
+      {/* Back Button */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={() => (window.location.href = "/")}
+          className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
+            isDarkMode
+              ? "bg-gray-700 text-white hover:bg-gray-600 border-gray-600"
+              : "bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("back_to_main_menu")}
+        </button>
+      </div>
     </div>
   );
 };

@@ -126,4 +126,34 @@ msgid "Action"
 msgstr "Action"
 
 msgid "Logs"
-msgstr "Logs" 
+msgstr "Logs"
+
+msgid "active_borrows_menu_description"
+msgstr "View all currently borrowed items"
+
+msgid "active_borrows"
+msgstr "Active Borrows"
+
+msgid "active_borrows_description"
+msgstr "View and manage all currently borrowed items"
+
+msgid "search_borrows"
+msgstr "Search borrows..."
+
+msgid "filter_by_user"
+msgstr "Filter by User"
+
+msgid "filter_by_item"
+msgstr "Filter by Item"
+
+msgid "filter_by_date"
+msgstr "Filter by Date"
+
+msgid "all_users"
+msgstr "All Users"
+
+msgid "all_items"
+msgstr "All Items"
+
+msgid "failed_export_borrows"
+msgstr "Failed to export borrows" 

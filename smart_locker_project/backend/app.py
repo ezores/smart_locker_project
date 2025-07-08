@@ -113,6 +113,26 @@ def import_models():
 User, Locker, Item, Log, init_db = import_models()
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def get_duration_since(timestamp):
+    """Calculate duration since a timestamp"""
+    from datetime import datetime
+    now = datetime.now()
+    diff = now - timestamp
+    
+    days = diff.days
+    hours = diff.seconds // 3600
+    
+    if days > 0:
+        return f"{days} days"
+    elif hours > 0:
+        return f"{hours} hours"
+    else:
+        return "Less than 1 hour"
+
+# =============================================================================
 # REQUEST HANDLERS
 # =============================================================================
 
@@ -370,6 +390,47 @@ def api_recent_activity():
         'status': 'completed'
     } for log in logs])
 
+@app.route('/api/admin/active-borrows')
+def api_active_borrows():
+    """Get all active borrows (items that have been borrowed but not returned)"""
+    try:
+        # Get all borrow logs
+        borrow_logs = db.session.query(Log).filter(Log.action_type == 'borrow').all()
+        
+        active_borrows = []
+        for borrow_log in borrow_logs:
+            # Check if there's a return log for this item and user after the borrow timestamp
+            has_return = db.session.query(Log).filter(
+                and_(
+                    Log.action_type == 'return',
+                    Log.item_id == borrow_log.item_id,
+                    Log.user_id == borrow_log.user_id,
+                    Log.timestamp > borrow_log.timestamp
+                )
+            ).first()
+            
+            # If no return log exists after the borrow, this is an active borrow
+            if not has_return:
+                user = User.query.get(borrow_log.user_id)
+                item = Item.query.get(borrow_log.item_id)
+                locker = Locker.query.get(borrow_log.locker_id) if borrow_log.locker_id else None
+                
+                active_borrows.append({
+                    'id': borrow_log.id,
+                    'user_id': borrow_log.user_id,
+                    'user_name': user.username if user else 'Unknown',
+                    'item_id': borrow_log.item_id,
+                    'item_name': item.name if item else 'Unknown',
+                    'locker_id': borrow_log.locker_id,
+                    'locker_name': locker.name if locker else 'Unknown',
+                    'borrowed_at': borrow_log.timestamp.isoformat(),
+                    'description': getattr(borrow_log, 'description', '')
+                })
+        
+        return jsonify(active_borrows)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/admin/reports')
 def api_reports():
     """Generate reports based on date range and type"""
@@ -440,6 +501,179 @@ def api_reports():
         },
         'transactions': transactions
     })
+
+@app.route('/api/admin/borrows/export')
+def api_export_borrows():
+    """Export active borrows in Excel, CSV, or PDF format"""
+    from datetime import datetime
+    import io
+    import csv
+    
+    format_type = request.args.get('format', 'xlsx')
+    
+    # Get active borrows using the same logic as the active-borrows endpoint
+    borrow_logs = db.session.query(Log).filter(Log.action_type == 'borrow').all()
+    
+    active_borrows = []
+    for borrow_log in borrow_logs:
+        # Check if there's a return log for this item and user after the borrow timestamp
+        has_return = db.session.query(Log).filter(
+            and_(
+                Log.action_type == 'return',
+                Log.item_id == borrow_log.item_id,
+                Log.user_id == borrow_log.user_id,
+                Log.timestamp > borrow_log.timestamp
+            )
+        ).first()
+        
+        # If no return log exists after the borrow, this is an active borrow
+        if not has_return:
+            user = User.query.get(borrow_log.user_id)
+            item = Item.query.get(borrow_log.item_id)
+            locker = Locker.query.get(borrow_log.locker_id) if borrow_log.locker_id else None
+            
+            active_borrows.append({
+                'user': user.username if user else 'Unknown',
+                'item': item.name if item else 'Unknown',
+                'locker': locker.name if locker else 'Unknown',
+                'borrowed_at': borrow_log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'duration': get_duration_since(borrow_log.timestamp)
+            })
+    
+    if format_type == 'pdf':
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.lib import colors
+            
+            # Create PDF
+            output = io.BytesIO()
+            doc = SimpleDocTemplate(output, pagesize=letter)
+            elements = []
+            
+            # Title
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=16,
+                spaceAfter=30,
+                alignment=1  # Center alignment
+            )
+            title = Paragraph("Active Borrows Report", title_style)
+            elements.append(title)
+            elements.append(Spacer(1, 20))
+            
+            # Table data
+            table_data = [['User', 'Item', 'Locker', 'Borrowed At', 'Duration']]
+            for borrow in active_borrows:
+                table_data.append([
+                    borrow['user'],
+                    borrow['item'],
+                    borrow['locker'],
+                    borrow['borrowed_at'],
+                    borrow['duration']
+                ])
+            
+            # Create table
+            table = Table(table_data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            
+            elements.append(table)
+            doc.build(elements)
+            output.seek(0)
+            
+            return Response(
+                output.getvalue(),
+                mimetype='application/pdf',
+                headers={"Content-Disposition": f"attachment;filename=active_borrows_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"}
+            )
+        except ImportError:
+            return jsonify({'error': 'PDF generation requires reportlab library'}), 500
+    
+    elif format_type == 'csv':
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['User', 'Item', 'Locker', 'Borrowed At', 'Duration'])
+        
+        for borrow in active_borrows:
+            writer.writerow([
+                borrow['user'],
+                borrow['item'],
+                borrow['locker'],
+                borrow['borrowed_at'],
+                borrow['duration']
+            ])
+        
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={"Content-Disposition": f"attachment;filename=active_borrows_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+        )
+    
+    elif format_type == 'xlsx':
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, Alignment, PatternFill
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Active Borrows"
+            
+            # Headers
+            headers = ['User', 'Item', 'Locker', 'Borrowed At', 'Duration']
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Data
+            for row, borrow in enumerate(active_borrows, 2):
+                ws.cell(row=row, column=1, value=borrow['user'])
+                ws.cell(row=row, column=2, value=borrow['item'])
+                ws.cell(row=row, column=3, value=borrow['locker'])
+                ws.cell(row=row, column=4, value=borrow['borrowed_at'])
+                ws.cell(row=row, column=5, value=borrow['duration'])
+            
+            # Auto-adjust column widths
+            for column in ws.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column_letter].width = adjusted_width
+            
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            return Response(
+                output.getvalue(),
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                headers={"Content-Disposition": f"attachment;filename=active_borrows_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"}
+            )
+        except ImportError:
+            return jsonify({'error': 'Excel export requires openpyxl library'}), 500
+    
+    return jsonify({'error': 'Unsupported format'}), 400
 
 @app.route('/api/admin/export')
 def api_export():
@@ -988,15 +1222,27 @@ def api_export_logs():
 def api_logs():
     """Get all logs"""
     logs = Log.query.order_by(Log.timestamp.desc()).all()
-    return jsonify([{
-        'id': log.id,
-        'action': log.action_type,
-        'user_id': log.user_id,
-        'item_id': log.item_id,
-        'locker_id': log.locker_id,
-        'description': '',  # Log model doesn't have description field
-        'timestamp': log.timestamp.isoformat()
-    } for log in logs])
+    
+    logs_data = []
+    for log in logs:
+        user = User.query.get(log.user_id)
+        item = Item.query.get(log.item_id)
+        locker = Locker.query.get(log.locker_id) if log.locker_id else None
+        
+        logs_data.append({
+            'id': log.id,
+            'action_type': log.action_type,
+            'user_id': log.user_id,
+            'user_name': user.username if user else 'Unknown',
+            'item_id': log.item_id,
+            'item_name': item.name if item else 'Unknown',
+            'locker_id': log.locker_id,
+            'locker_name': locker.name if locker else 'Unknown',
+            'timestamp': log.timestamp.isoformat(),
+            'description': getattr(log, 'description', '')
+        })
+    
+    return jsonify(logs_data)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Smart Locker System')

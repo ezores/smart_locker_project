@@ -126,4 +126,34 @@ msgid "Action"
 msgstr "Action"
 
 msgid "Logs"
-msgstr "Journaux" 
+msgstr "Journaux"
+
+msgid "active_borrows_menu_description"
+msgstr "Voir tous les articles actuellement empruntés"
+
+msgid "active_borrows"
+msgstr "Emprunts Actifs"
+
+msgid "active_borrows_description"
+msgstr "Voir et gérer tous les articles actuellement empruntés"
+
+msgid "search_borrows"
+msgstr "Rechercher des emprunts..."
+
+msgid "filter_by_user"
+msgstr "Filtrer par Utilisateur"
+
+msgid "filter_by_item"
+msgstr "Filtrer par Article"
+
+msgid "filter_by_date"
+msgstr "Filtrer par Date"
+
+msgid "all_users"
+msgstr "Tous les Utilisateurs"
+
+msgid "all_items"
+msgstr "Tous les Articles"
+
+msgid "failed_export_borrows"
+msgstr "Échec de l'exportation des emprunts" 

@@ -111,7 +111,7 @@ def import_models():
     return init_models(db)
 
 # Import database models
-User, Locker, Item, Log, Borrow, init_db = import_models()
+User, Locker, Item, Log, Borrow, init_db, generate_dummy_data = import_models()
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -1428,7 +1428,7 @@ def api_logs():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Smart Locker System')
-    parser.add_argument('--port', type=int, default=5050, help='Port to run the server on (default: 5050)')
+    parser.add_argument('--port', type=int, default=5172, help='Port to run the server on (default: 5172)')
     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
     parser.add_argument('--demo', action='store_true', help='Load comprehensive demo data for testing')
     parser.add_argument('--simple-demo', action='store_true', help='Load minimal demo data for testing')
@@ -1489,8 +1489,6 @@ if __name__ == '__main__':
                     print("Simple demo data loaded successfully!")
                 else:
                     print("Loading comprehensive demo data...")
-                    # Use the comprehensive demo data from models.py
-                    from models import generate_dummy_data
                     generate_dummy_data()
                     print("Comprehensive demo data loaded successfully!")
             except Exception as e:

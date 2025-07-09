@@ -212,4 +212,4 @@ def init_models(db):
         if not User.query.first():
             generate_dummy_data()
     
-    return User, Locker, Item, Log, Borrow, init_db 
+    return User, Locker, Item, Log, Borrow, init_db, generate_dummy_data 

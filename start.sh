@@ -50,7 +50,7 @@ DEMO_MODE=0
 VERBOSE=0
 RESET_DB=0
 SIMPLE_DEMO=0
-PORT=5050
+PORT=5172
 FRONTEND_PORT=5173
 DB_HOST="localhost"
 DB_PORT="5432"
@@ -236,8 +236,9 @@ fi
 print_success "All dependencies found"
 
 # Setup Python virtual environment
-if [ ! -d ".venv" ]; then
-    print_info "Creating Python virtual environment..."
+if [ ! -d ".venv" ] || [ ! -f ".venv/bin/activate" ]; then
+    print_info "(Re)creating Python virtual environment..."
+    rm -rf .venv
     python3 -m venv .venv
 fi
 

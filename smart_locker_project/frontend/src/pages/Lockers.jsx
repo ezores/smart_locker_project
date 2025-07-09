@@ -23,6 +23,7 @@ import {
   Lock,
   Unlock,
   ArrowLeft,
+  Zap,
 } from "lucide-react";
 import axios from "axios";
 
@@ -101,6 +102,16 @@ const Lockers = () => {
     } catch (error) {
       console.error("Error deleting locker:", error);
       alert("Failed to delete locker");
+    }
+  };
+
+  const handleOpenLocker = async (lockerId) => {
+    try {
+      const response = await axios.post(`/api/lockers/${lockerId}/open`);
+      alert(`Locker opening command sent: ${response.data.message}`);
+    } catch (error) {
+      console.error("Error opening locker:", error);
+      alert("Failed to open locker");
     }
   };
 
@@ -378,12 +389,21 @@ const Lockers = () => {
                           <button
                             onClick={() => openEditModal(locker)}
                             className="text-blue-600 hover:text-blue-900"
+                            title="Edit Locker"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
+                            onClick={() => handleOpenLocker(locker.id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Open Locker"
+                          >
+                            <Zap className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteLocker(locker.id)}
                             className="text-red-600 hover:text-red-900"
+                            title="Delete Locker"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

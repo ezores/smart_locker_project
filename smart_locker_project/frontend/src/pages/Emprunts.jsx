@@ -41,26 +41,34 @@ const Emprunts = () => {
   const [itemFilter, setItemFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page, pageSize]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [borrowsResponse, usersResponse, itemsResponse, lockersResponse] =
         await Promise.all([
-          axios.get("/api/admin/active-borrows"),
+          axios.get(
+            `/api/admin/active-borrows?limit=${pageSize}&offset=${
+              (page - 1) * pageSize
+            }`
+          ),
           axios.get("/api/admin/users"),
           axios.get("/api/items"),
           axios.get("/api/lockers"),
         ]);
-      setBorrows(borrowsResponse.data);
+      setBorrows(borrowsResponse.data.results || borrowsResponse.data);
+      setTotalCount(borrowsResponse.data.total_count || 0);
       setUsers(usersResponse.data);
       setItems(itemsResponse.data);
       setLockers(lockersResponse.data);
     } catch (error) {
-      console.error("Error fetching data:", error);
       setBorrows([]);
       setUsers([]);
       setItems([]);
@@ -237,6 +245,40 @@ const Emprunts = () => {
         </div>
       </div>
 
+      {/* Page size selector */}
+      <div className="flex items-center gap-2 mb-6">
+        <span>{t("show")}</span>
+        <select
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setPage(1);
+          }}
+          className="border rounded px-2 py-1"
+        >
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+          <option value={totalCount}>{t("all")}</option>
+        </select>
+        <span>{t("per_page")}</span>
+      </div>
+      {/* Pagination controls */}
+      <div className="flex items-center gap-2 mb-6">
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+          &lt;
+        </button>
+        <span>
+          {t("page")} {page} / {Math.ceil(totalCount / pageSize)}
+        </span>
+        <button
+          disabled={page === Math.ceil(totalCount / pageSize)}
+          onClick={() => setPage(page + 1)}
+        >
+          &gt;
+        </button>
+      </div>
+
       {/* Filters */}
       {showFilters && (
         <div
@@ -326,7 +368,7 @@ const Emprunts = () => {
       {/* Results Count */}
       <div className="mb-4">
         <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-          {t("showing")} {filteredBorrows.length} {t("of")} {borrows.length}{" "}
+          {t("showing")} {filteredBorrows.length} {t("of")} {totalCount}{" "}
           {t("active_borrows")}
         </p>
       </div>

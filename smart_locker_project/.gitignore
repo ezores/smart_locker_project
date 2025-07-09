@@ -6,6 +6,7 @@ env/
 # SQLite database
 /db/
 *.db
+*.db-journal
 
 # Python cache
 __pycache__/
@@ -21,6 +22,8 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
+test_logs/
 
 # React/Node.js
 node_modules/
@@ -88,4 +91,49 @@ celerybeat.pid
 # mypy
 .mypy_cache/
 .dmypy.json
-dmypy.json 
+dmypy.json
+
+# Project-specific files
+*.pid
+backend.pid
+frontend.pid
+instance/
+data/
+test_logs/
+SYSTEM_SUMMARY.md
+README-WORKING.md
+test_system.sh
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Export files
+exports/
+*.csv
+*.xlsx
+*.pdf
+
+# Hardware simulation files
+*.sim
+*.mock
+
+# Database backups
+*.sql
+*.dump
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Local development files
+local/
+dev/
+
+# Additional files to ignore
+backend/main_app.py
+backend/requirements.txt
+start_dev.sh
+start_services.sh 

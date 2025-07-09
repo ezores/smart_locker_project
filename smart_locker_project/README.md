@@ -1,69 +1,122 @@
 # Smart Locker System
 
-A modern, full-stack smart locker management system built with Flask (Python) backend and React (JavaScript) frontend. The system provides secure equipment borrowing and returning functionality with comprehensive user management, logging, and reporting capabilities.
+A comprehensive locker management system with Flask backend and React frontend, featuring JWT authentication, PostgreSQL support, role-based access control, and comprehensive logging.
 
-## 🌟 Features
+## Features Overview
 
-### Core Functionality
+### 🔐 Authentication & Security
 
-- **RFID Card Authentication** - Secure access using RFID cards
-- **User ID Authentication** - Alternative login using numeric user IDs
-- **Equipment Management** - Track and manage equipment inventory
-- **Locker Management** - Monitor locker status and locations
-- **Borrow/Return System** - Streamlined equipment checkout process
-- **Real-time Logging** - Comprehensive activity tracking
+- **JWT (JSON Web Token) Authentication**: Secure token-based authentication with configurable expiration
+- **Role-Based Access Control**: Admin and student roles with different permissions
+- **Password Hashing**: Secure password storage using Werkzeug's password hashing
+- **CORS Support**: Cross-origin resource sharing enabled for frontend integration
 
-### User Management
+### 🗄️ Database & Storage
 
-- **Multi-role Support** - Admin and Student roles
-- **User Authentication** - Secure login with JWT tokens
-- **Profile Management** - User account administration
-- **Permission Control** - Role-based access control
+- **PostgreSQL Support**: Production-ready database with connection pooling
+- **SQLite Fallback**: Development-friendly local database
+- **Database Migrations**: Automatic schema creation and updates
+- **Connection Pooling**: Optimized database connections for high concurrency
 
-### Administrative Features
+### 👥 User Management
 
-- **Dashboard Analytics** - Real-time system statistics
-- **Reporting System** - Export reports in Excel, PDF, and CSV formats
-- **Activity Logs** - Detailed system activity monitoring
-- **Data Management** - CRUD operations for users, items, and lockers
+- **User Registration**: Self-service user registration with validation
+- **Profile Management**: User profiles with department and balance tracking
+- **RFID/QR Support**: Ready for hardware integration with RFID tags and QR codes
+- **User Status Tracking**: Active/inactive user management
 
-### User Experience
+### 🏢 Locker Management
 
-- **Multi-language Support** - English, French, Spanish, Turkish
-- **Dark Mode** - Modern dark/light theme toggle
-- **Responsive Design** - Works on desktop and mobile devices
-- **Modern UI/UX** - Clean, intuitive interface
+- **Locker Assignment**: Automatic locker assignment based on availability
+- **Capacity Management**: Track locker occupancy and capacity limits
+- **Status Tracking**: Available, occupied, maintenance status tracking
+- **Location Management**: Room and location-based locker organization
 
-## 🏗️ Project Structure
+### 📦 Item Management
+
+- **Item Catalog**: Comprehensive item database with categories
+- **Condition Tracking**: Item condition monitoring (good, fair, poor)
+- **Status Management**: Available, borrowed, maintenance status
+- **Category Organization**: Electronics, books, tools, sports equipment
+
+### 🔄 Borrow/Return System
+
+- **Borrowing Process**: Complete item borrowing workflow
+- **Due Date Management**: Configurable due dates with notifications
+- **Return Processing**: Item return with condition assessment
+- **Status Tracking**: Active, returned, overdue status management
+
+### 🔌 Hardware Integration
+
+- **RS485 Locker Control**: Direct hardware control for opening/closing lockers
+- **Mock Mode Support**: Development-friendly simulation without hardware
+- **Real-time Status**: Get locker status via RS485 communication
+- **Connection Testing**: Built-in RS485 connection diagnostics
+- **Command Logging**: All hardware commands logged for audit trail
+
+### �� Admin & Reporting
+
+- **System Statistics**: Real-time dashboard with key metrics
+- **Activity Logging**: Comprehensive audit trail of all actions
+- **Export Functionality**: CSV, Excel, and PDF export for all data
+- **Admin Dashboard**: Web-based admin interface
+- **Multi-format Reports**: Comprehensive system reports in multiple formats
+
+### �� Frontend Features
+
+- **React Application**: Modern, responsive web interface
+- **Real-time Updates**: Live data updates without page refresh
+- **Responsive Design**: Mobile-friendly interface
+- **Dark Mode Support**: User preference for dark/light themes
+- **Internationalization**: Multi-language support (EN, ES, FR, TR)
+
+### 📝 Logging & Monitoring
+
+- **Comprehensive Logging**: All actions logged with timestamps
+- **IP Tracking**: User IP address logging for security
+- **User Agent Logging**: Browser/client information tracking
+- **Error Handling**: Detailed error logging and reporting
+
+## Architecture
+
+### Backend (Flask)
 
 ```
-smart_locker_project/
-├── 📁 backend/                    # Flask backend application
-│   ├── 📁 api/                   # API endpoints
-│   ├── 📁 models/                # Database models
-│   ├── 📁 utils/                 # Utility functions
-│   ├── 📁 config/                # Configuration files
-│   └── 📁 tests/                 # Backend tests
-├── 📁 frontend/                  # React frontend application
-│   ├── 📁 src/
-│   │   ├── 📁 components/        # Reusable UI components
-│   │   ├── 📁 pages/            # Page components
-│   │   ├── 📁 contexts/         # React contexts
-│   │   ├── 📁 hooks/            # Custom React hooks
-│   │   └── 📁 utils/            # Frontend utilities
-│   └── 📁 public/               # Static assets
-├── 📁 docs/                     # Documentation
-├── 📁 scripts/                  # Development scripts
-└── 📁 data/                     # Database and data files
+backend/
+├── app.py              # Main application with all endpoints
+├── requirements.txt    # Python dependencies
+└── logs/              # Application logs
 ```
 
-## 🚀 Quick Start
+### Frontend (React)
+
+```
+frontend/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/         # Page components
+│   ├── contexts/      # React contexts (Auth, Language)
+│   └── main.jsx       # Application entry point
+├── package.json       # Node.js dependencies
+└── vite.config.js     # Vite configuration
+```
+
+### Database Schema
+
+- **Users**: User accounts with roles and profiles
+- **Lockers**: Physical locker locations and status
+- **Items**: Inventory items with categories and conditions
+- **Borrows**: Active borrowing transactions
+- **Returns**: Completed return transactions
+- **Logs**: System activity audit trail
+
+## Quick Start
 
 ### Prerequisites
 
 - Python 3.8+
 - Node.js 16+
-- npm or yarn
+- PostgreSQL (optional, SQLite for development)
 
 ### Installation
 
@@ -74,295 +127,389 @@ smart_locker_project/
    cd smart_locker_project
    ```
 
-2. **Set up the backend**
+2. **Set up Python environment**
 
    ```bash
-   # Create virtual environment
-   python -m venv .venv
+   python3 -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-   # Install dependencies
+   cd backend
    pip install -r requirements.txt
    ```
 
-3. **Set up the frontend**
+3. **Set up Node.js environment**
 
    ```bash
-   # Install dependencies
+   cd frontend
    npm install
    ```
 
-4. **Start the development servers**
+4. **Configure database (optional)**
 
    ```bash
-   # Start both backend and frontend with default settings
-   ./scripts/start_dev.sh
+   # For PostgreSQL (production)
+   export DATABASE_URL="postgresql://user:password@localhost/smart_locker"
 
-   # Start with demo data
-   ./scripts/start_dev.sh --demo
-
-   # Start with custom ports
-   ./scripts/start_dev.sh -p 8080 -f 3000
-
-   # Reset database and load demo data
-   ./scripts/start_dev.sh --reset-db --demo
-
-   # Verbose output for debugging
-   ./scripts/start_dev.sh --verbose
-
-   # Show all available options
-   ./scripts/start_dev.sh --help
+   # For SQLite (development - default)
+   # No configuration needed
    ```
 
-   ### Development Script Options
+### Running the System
 
-   The `start_dev.sh` script provides comprehensive configuration options with proper validation and verification:
+#### Development Mode (Minimal Data)
 
-   ```bash
-   Options:
-     -d, --demo              Load demo data for testing (verified via API)
-     -p, --backend-port PORT Backend port (default: 5050, validated 1024-65535)
-     -f, --frontend-port PORT Frontend port (default: 5173, validated 1024-65535)
-     -H, --host HOST         Backend host to bind to (default: 0.0.0.0)
-     -r, --reset-db          Reset database before starting
-     -s, --skip-deps         Skip dependency installation
-     -v, --verbose           Enable verbose output
-     -l, --log-level LEVEL   Set log level (DEBUG, INFO, WARNING, ERROR)
-     -h, --help              Show this help message
-   ```
-
-   **Features:**
-
-   - ✅ **Port validation** - Ensures ports are valid and available
-   - ✅ **Dependency checking** - Verifies requirements.txt and package.json exist
-   - ✅ **Demo data verification** - Confirms demo data is loaded via API test
-   - ✅ **Process monitoring** - Tracks and manages server processes
-   - ✅ **Clean output** - Professional logging without emojis
-   - ✅ **Error handling** - Graceful failure with helpful error messages
-
-   **Examples:**
-
-   - `./scripts/start_dev.sh --demo` - Start with demo data (verified)
-   - `./scripts/start_dev.sh -p 8080 -f 3000` - Custom ports
-   - `./scripts/start_dev.sh --reset-db --demo` - Reset DB and load demo data
-   - `./scripts/start_dev.sh --verbose` - Verbose output for debugging
-
-   **Or start individually:**
-
-   ```bash
-   # Backend: python backend/app.py --port 5050 --demo
-   # Frontend: cd frontend && npm run dev
-   ```
-
-5. **Access the application**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:5050
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-FLASK_ENV=development
-JWT_SECRET_KEY=your-secret-key-here
-DATABASE_URL=sqlite:///smart_locker.db
+```bash
+./start_dev.sh
 ```
 
-### Database Setup
+- Backend: http://localhost:5051
+- Frontend: http://localhost:3000
+- Minimal demo data for quick testing
 
-The system uses SQLite by default. For production, consider using PostgreSQL or MySQL.
+#### Production Mode (Full Demo Data)
 
-## 👥 User Roles
+```bash
+./start_services.sh
+```
+
+- Full demo data with users, lockers, and items
+- Complete system for demonstration
+
+#### Manual Start
+
+```bash
+# Backend only
+cd backend
+source ../.venv/bin/activate
+python app.py --init-db --port 5051
+
+# Frontend only
+cd frontend
+npm run dev
+```
+
+### Default Credentials
+
+- **Admin**: `admin` / `admin123`
+- **Student**: `student` / `password123`
+
+## API Endpoints
+
+### Authentication
+
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+
+### Users
+
+- `GET /api/users` - List users (admin only)
+- `GET /api/users/<id>` - Get user details
+
+### Lockers
+
+- `GET /api/lockers` - List lockers
+- `GET /api/lockers?status=available` - Filter by status
+
+### Items
+
+- `GET /api/items` - List items
+- `GET /api/items?category=Electronics` - Filter by category
+
+### Borrows
+
+- `GET /api/borrows` - List borrows
+- `POST /api/borrows` - Create borrow
+- `POST /api/borrows/<id>/return` - Return item
 
 ### Admin
 
-- Full system access
-- User management
-- Equipment management
-- Locker management
-- System reports and analytics
-- Activity monitoring
-
-### Student
-
-- Borrow equipment
-- Return equipment
-- View personal history
-- Access to assigned lockers
-
-## 🔐 Authentication Methods
-
-### RFID Card Authentication
-
-- Primary authentication method
-- Secure card-based access
-- Real-time validation
-
-### User ID Authentication
-
-- Alternative authentication method
-- Numeric user ID input
-- Fallback when RFID cards are unavailable
-
-## 📊 API Documentation
-
-### Authentication Endpoints
-
-- `POST /api/auth/login` - User login
-- `GET /api/user/profile` - Get user profile
-
-### Equipment Management
-
-- `GET /api/items` - List all items
-- `POST /api/borrow` - Borrow equipment
-- `POST /api/return` - Return equipment
-
-### Administrative Endpoints
-
 - `GET /api/admin/stats` - System statistics
-- `GET /api/admin/users` - User management
-- `GET /api/admin/logs` - Activity logs
-- `POST /api/admin/export` - Export reports
+- `GET /api/logs` - Activity logs
+- `GET /api/admin/export/logs` - Export logs as CSV
 
-## 🧪 Testing
+### RS485 Hardware Control
 
-### Backend Tests
+- `POST /api/lockers/<id>/open` - Open locker via RS485
+- `POST /api/lockers/<id>/close` - Close locker via RS485
+- `GET /api/lockers/<id>/status` - Get locker status via RS485
+- `GET /api/admin/rs485/test` - Test RS485 connection
+
+### Export Functionality
+
+- `GET /api/admin/export/users?format=csv|excel|pdf` - Export users data
+- `GET /api/admin/export/borrows?format=csv|excel|pdf` - Export borrows data
+- `GET /api/admin/export/system?format=csv|excel|pdf&type=comprehensive` - Export system report
+
+## Testing
+
+### Comprehensive Test Suite
 
 ```bash
-# Run backend tests
-python -m pytest tests/
+./test_system.sh
 ```
 
-### Frontend Tests
+The test suite includes:
+
+- **Backend Health Checks**: API availability and response times
+- **Authentication Tests**: Login, token validation, role-based access
+- **CRUD Operations**: Create, read, update, delete operations
+- **Authorization Tests**: Admin vs student access controls
+- **Database Integrity**: Schema validation and data consistency
+- **Performance Tests**: Response time and load testing
+- **Error Handling**: Invalid inputs and edge cases
+- **Logging Tests**: Audit trail verification
+- **Frontend Tests**: React application health checks
+
+### Test Categories
+
+1. **Unit Tests**: Individual component testing
+2. **Integration Tests**: API endpoint testing
+3. **Authorization Tests**: Role-based access control
+4. **Performance Tests**: Response time and load testing
+5. **Error Handling**: Invalid inputs and edge cases
+6. **Database Tests**: Schema and data integrity
+7. **Logging Tests**: Audit trail verification
+
+## Configuration
+
+### Environment Variables
 
 ```bash
-# Run frontend tests
-npm test
+# Database configuration
+DATABASE_URL=postgresql://user:password@localhost/smart_locker
+
+# JWT configuration
+JWT_SECRET_KEY=your-secret-key-here
+
+# Flask configuration
+FLASK_ENV=development
+FLASK_DEBUG=true
 ```
 
-## 📝 Development
+### Database Configuration
 
-### Code Style
+- **SQLite**: Default for development, no configuration needed
+- **PostgreSQL**: Set `DATABASE_URL` environment variable
+- **Connection Pooling**: Automatic for PostgreSQL, optimized for SQLite
 
-- Backend: Follow PEP 8 Python style guide
-- Frontend: Use ESLint and Prettier
-- Components: Use functional components with hooks
-- API: RESTful design principles
+### Logging Configuration
 
-### Adding New Features
+- **File Logging**: `logs/app.log`
+- **Console Logging**: Real-time console output
+- **Log Levels**: INFO, WARNING, ERROR, DEBUG
+- **Log Format**: Timestamp, level, message, context
 
-1. Create feature branch
-2. Implement backend API endpoints
-3. Create frontend components
-4. Add translations for all supported languages
-5. Write tests
-6. Update documentation
-
-## 🌍 Internationalization
-
-The system supports multiple languages:
-
-- English (en)
-- French (fr)
-- Spanish (es)
-- Turkish (tr)
-
-To add a new language:
-
-1. Add translations to `src/contexts/LanguageContext.jsx`
-2. Update language selector component
-3. Test all UI elements
-
-## 🎨 Theming
-
-### Dark Mode Support
-
-- Automatic theme detection
-- Manual theme toggle
-- Consistent styling across all components
-- Proper contrast ratios
-
-### Customization
-
-- Primary colors in `tailwind.config.js`
-- Component styling in individual files
-- Global styles in `src/index.css`
-
-## 📈 Monitoring and Logging
-
-### Activity Logging
-
-- User login/logout events
-- Equipment borrow/return transactions
-- Administrative actions
-- System errors and warnings
-
-### Export Capabilities
-
-- Excel reports (.xlsx)
-- PDF reports (.pdf)
-- CSV data export (.csv)
-- Custom date range filtering
-
-## 🔒 Security Features
-
-- JWT token authentication
-- Password hashing with bcrypt
-- Role-based access control
-- Input validation and sanitization
-- SQL injection prevention
-- XSS protection
-
-## 🚀 Deployment
+## Deployment
 
 ### Production Setup
 
-1. Set up production database
-2. Configure environment variables
-3. Set up reverse proxy (nginx)
-4. Configure SSL certificates
-5. Set up monitoring and logging
+1. **Database**: Use PostgreSQL for production
+2. **Environment**: Set production environment variables
+3. **Logging**: Configure log rotation and monitoring
+4. **Security**: Use strong JWT secrets and HTTPS
+5. **Monitoring**: Set up application monitoring
 
-### Docker Deployment
+### Docker Deployment (Optional)
 
-```bash
-# Build and run with Docker
-docker-compose up -d
+```dockerfile
+# Backend Dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY backend/requirements.txt .
+RUN pip install -r requirements.txt
+COPY backend/ .
+CMD ["python", "app.py", "--port", "5051"]
 ```
 
-## 🤝 Contributing
+## Troubleshooting
+
+### Common Issues
+
+#### Database Locked (SQLite)
+
+```bash
+# Kill existing processes
+pkill -f "python.*app.py"
+# Remove database file
+rm -f backend/smart_locker.db
+# Restart with fresh database
+python app.py --init-db
+```
+
+#### Port Already in Use
+
+```bash
+# Find process using port
+lsof -i :5051
+# Kill process
+kill -9 <PID>
+```
+
+#### Frontend Build Issues
+
+```bash
+# Clear node modules
+rm -rf frontend/node_modules
+npm install
+```
+
+#### JWT Token Issues
+
+```bash
+# Check token expiration
+# Verify JWT_SECRET_KEY is set
+# Restart backend to refresh tokens
+```
+
+### Debug Mode
+
+```bash
+# Backend with debug logging
+python app.py --port 5051 --debug
+
+# Frontend with debug mode
+npm run dev -- --debug
+```
+
+## Script Usage
+
+### Overview
+
+| Script              | Purpose                                                                                                                 | Usage Example                                | Stops With        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------- |
+| `start_dev.sh`      | Development: starts backend & frontend, hot reload, auto-heals Python issues, loads demo data, checks all dependencies. | `./start_dev.sh --demo --verbose --reset-db` | Ctrl+C            |
+| `start_services.sh` | Production: starts backend only, optimized for deployment, suppresses non-essential npm output, no hot reload.          | `./start_services.sh --demo --reset-db`      | Ctrl+C or systemd |
+
+**Key Differences:**
+
+- `start_dev.sh` is for local development and testing. It runs both backend and frontend, supports hot reload, and is robust against common Python/Node issues.
+- `start_services.sh` is for production or deployment (e.g., Raspberry Pi). It runs only the backend, is optimized for performance, and is designed to be used with systemd or similar service managers.
+
+**Stopping Services:**
+
+- In development, simply press `Ctrl+C` in the terminal to stop both backend and frontend.
+- In production, use `systemctl stop smart-locker-backend` if running as a service, or `Ctrl+C` if running manually.
+
+**No need for separate stop scripts.**
+
+## Development
+
+### Adding New Features
+
+1. **Backend**: Add endpoints to `app.py`
+2. **Frontend**: Create components in `frontend/src/`
+3. **Database**: Update models in `app.py`
+4. **Testing**: Add tests to `test_system.sh`
+
+### Code Structure
+
+- **Single app.py**: All backend functionality in one file
+- **Minimal Mode**: Quick testing with `--minimal` flag
+- **Full Mode**: Complete system with demo data
+- **Modular Frontend**: React components and contexts
+
+### Testing Strategy
+
+- **Unit Tests**: Individual function testing
+- **Integration Tests**: API endpoint testing
+- **End-to-End Tests**: Complete workflow testing
+- **Performance Tests**: Load and stress testing
+
+## Security Features
+
+### Authentication
+
+- JWT tokens with configurable expiration
+- Secure password hashing with Werkzeug
+- Role-based access control (admin/student)
+- Token refresh and validation
+
+### Authorization
+
+- Admin-only endpoints for sensitive operations
+- User-specific data access controls
+- Audit logging for all actions
+- IP address and user agent tracking
+
+### Data Protection
+
+- Input validation and sanitization
+- SQL injection prevention with SQLAlchemy
+- CORS configuration for frontend security
+- Secure session management
+
+## Performance Optimization
+
+### Database
+
+- Connection pooling for PostgreSQL
+- Indexed queries for fast lookups
+- Pagination for large datasets
+- Efficient relationship loading
+
+### API
+
+- Response caching where appropriate
+- Optimized database queries
+- Minimal data transfer
+- Error handling and logging
+
+### Frontend
+
+- React optimization with hooks
+- Lazy loading for components
+- Efficient state management
+- Responsive design for mobile
+
+## Monitoring and Logging
+
+### Application Logs
+
+- All API requests logged
+- Error tracking and reporting
+- Performance metrics
+- User activity audit trail
+
+### System Health
+
+- Database connection monitoring
+- API response time tracking
+- Error rate monitoring
+- Resource usage tracking
+
+## Future Enhancements
+
+### Planned Features
+
+- **Hardware Integration**: RFID reader and locker control
+- **Mobile App**: React Native mobile application
+- **Real-time Notifications**: WebSocket-based alerts
+- **Advanced Reporting**: Analytics and insights
+- **Multi-tenant Support**: Multiple organization support
+
+### Technical Improvements
+
+- **Microservices**: Service-oriented architecture
+- **Containerization**: Docker and Kubernetes support
+- **CI/CD Pipeline**: Automated testing and deployment
+- **Monitoring**: Prometheus and Grafana integration
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Add tests for new functionality
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## Support
 
 For support and questions:
 
-- Create an issue in the repository
-- Check the documentation
-- Review the code comments
-
-## 🔄 Version History
-
-### v1.0.0 (Current)
-
-- Initial release
-- Core functionality implemented
-- Multi-language support
-- Dark mode support
-- Comprehensive logging
-- Export capabilities
-
----
-
-**Built with ❤️ using Flask and React**
+- Check the troubleshooting section
+- Review the test logs in `test_logs/`
+- Check application logs in `logs/app.log`
+- Open an issue with detailed error information

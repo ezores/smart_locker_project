@@ -45,14 +45,15 @@ from sqlalchemy import exists, and_  # type: ignore[import]
 # APPLICATION CONFIGURATION
 # =============================================================================
 
-# Set up base directory and database paths
+# Set up base directory and database configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, 'db')
-DB_PATH = os.path.join(DB_DIR, 'locker.db')
 
-# Create database directory if it doesn't exist
-if not os.path.exists(DB_DIR):
-    os.makedirs(DB_DIR)
+# PostgreSQL Database Configuration
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', '5432')
+DB_NAME = os.environ.get('DB_NAME', 'smart_locker')
+DB_USER = os.environ.get('DB_USER', 'postgres')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'postgres')
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -63,7 +64,7 @@ CORS(app)
 # Flask application configuration
 app.config['SECRET_KEY'] = 'supersecretkey'  # Change in production
 app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-in-production'  # Change in production
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
@@ -110,7 +111,7 @@ def import_models():
     return init_models(db)
 
 # Import database models
-User, Locker, Item, Log, init_db = import_models()
+User, Locker, Item, Log, Borrow, init_db = import_models()
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -1382,6 +1383,23 @@ def api_export_logs():
     else:
         return jsonify({'error': 'Unsupported format'}), 400
 
+@app.route('/api/health')
+def api_health():
+    """Health check endpoint"""
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        db_status = 'healthy'
+    except Exception as e:
+        db_status = f'unhealthy: {str(e)}'
+    
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'database': db_status,
+        'version': '1.0.0'
+    })
+
 @app.route('/api/logs')
 def api_logs():
     """Get all logs"""
@@ -1412,18 +1430,69 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Smart Locker System')
     parser.add_argument('--port', type=int, default=5050, help='Port to run the server on (default: 5050)')
     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind to (default: 0.0.0.0)')
-    parser.add_argument('--demo', action='store_true', help='Load demo data for testing')
+    parser.add_argument('--demo', action='store_true', help='Load comprehensive demo data for testing')
+    parser.add_argument('--simple-demo', action='store_true', help='Load minimal demo data for testing')
+    parser.add_argument('--reset-db', action='store_true', help='Reset database and load demo data')
+    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
     args = parser.parse_args()
     
     with app.app_context():
         init_db()
         
         # Load demo data if requested
-        if args.demo:
+        if args.demo or args.simple_demo or args.reset_db:
             try:
-                from demo_data import create_demo_data
-                create_demo_data(db, User, Locker, Item, Log)
-                print("Demo data loaded successfully!")
+                if args.reset_db:
+                    print("Resetting database and loading demo data...")
+                    # Clear all data
+                    db.session.query(Borrow).delete()
+                    db.session.query(Log).delete()
+                    db.session.query(Item).delete()
+                    db.session.query(Locker).delete()
+                    db.session.query(User).delete()
+                    db.session.commit()
+                
+                if args.simple_demo:
+                    print("Loading simple demo data...")
+                    # Create minimal demo data
+                    admin = User(
+                        username='admin',
+                        password_hash=generate_password_hash('admin123'),
+                        role='admin',
+                        email='admin@ets.com',
+                        first_name='Admin',
+                        last_name='User'
+                    )
+                    student = User(
+                        username='student',
+                        password_hash=generate_password_hash('student123'),
+                        role='student',
+                        email='student@ets.com',
+                        first_name='Student',
+                        last_name='User',
+                        student_id='2024001'
+                    )
+                    db.session.add(admin)
+                    db.session.add(student)
+                    
+                    locker1 = Locker(name='Locker A1', location='Building A', capacity=10)
+                    locker2 = Locker(name='Locker B1', location='Building B', capacity=8)
+                    db.session.add(locker1)
+                    db.session.add(locker2)
+                    
+                    item1 = Item(name='Laptop', description='MacBook Pro', category='electronics', condition='excellent', serial_number='MBP001', locker=locker1)
+                    item2 = Item(name='Tablet', description='iPad Pro', category='electronics', condition='good', serial_number='IPP001', locker=locker2)
+                    db.session.add(item1)
+                    db.session.add(item2)
+                    
+                    db.session.commit()
+                    print("Simple demo data loaded successfully!")
+                else:
+                    print("Loading comprehensive demo data...")
+                    # Use the comprehensive demo data from models.py
+                    from models import generate_dummy_data
+                    generate_dummy_data()
+                    print("Comprehensive demo data loaded successfully!")
             except Exception as e:
                 print(f"Error loading demo data: {e}")
     

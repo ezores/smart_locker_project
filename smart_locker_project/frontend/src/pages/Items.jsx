@@ -41,6 +41,8 @@ const Items = () => {
     locker_id: "",
     description: "",
   });
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchData();
@@ -125,9 +127,31 @@ const Items = () => {
     return matchesSearch && matchesLocker;
   });
 
+  const totalPages =
+    pageSize === "all" ? 1 : Math.ceil(filteredItems.length / pageSize);
+  const paginatedItems =
+    pageSize === "all"
+      ? filteredItems
+      : filteredItems.slice(
+          (currentPage - 1) * pageSize,
+          currentPage * pageSize
+        );
+
+  const getVisiblePages = () => {
+    if (totalPages <= 6) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + 5);
+    if (end - start < 5) {
+      start = Math.max(1, end - 5);
+    }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
+
   const getLockerName = (lockerId) => {
     const locker = lockers.find((l) => l.id === lockerId);
-    return locker ? locker.name || locker.number : t("unknown") || "Unknown";
+    return locker ? locker.name || locker.number : t("unknown");
   };
 
   if (loading) {
@@ -189,6 +213,31 @@ const Items = () => {
               </option>
             ))}
           </select>
+
+          {/* Page Size Selector */}
+          <div className="flex items-center space-x-2">
+            <span>{t("show")}</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(
+                  e.target.value === "all" ? "all" : parseInt(e.target.value)
+                );
+                setCurrentPage(1);
+              }}
+              className={`px-2 py-1 border rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value="all">{t("all")}</option>
+            </select>
+            <span>{t("per_page")}</span>
+          </div>
         </div>
 
         {/* Add Item Button */}
@@ -203,7 +252,7 @@ const Items = () => {
 
       {/* Items Table */}
       <div className={`card ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
-        {filteredItems.length === 0 ? (
+        {paginatedItems.length === 0 ? (
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3
@@ -211,14 +260,12 @@ const Items = () => {
                 isDarkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              {t("no_items_found") || "No items found"}
+              {t("no_items_found")}
             </h3>
             <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
               {searchTerm || lockerFilter !== "all"
-                ? t("try_adjusting_search") ||
-                  "Try adjusting your search or filter criteria"
-                : t("get_started_adding_item") ||
-                  "Get started by adding your first item"}
+                ? t("try_adjusting_search")
+                : t("get_started_adding_item")}
             </p>
           </div>
         ) : (
@@ -231,21 +278,21 @@ const Items = () => {
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("item") || "Item"}
+                    {t("item")}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("locker") || "Locker"}
+                    {t("locker")}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("actions") || "Actions"}
+                    {t("actions")}
                   </th>
                 </tr>
               </thead>
@@ -254,7 +301,7 @@ const Items = () => {
                   isDarkMode ? "divide-gray-700" : "divide-gray-200"
                 }`}
               >
-                {filteredItems.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr
                     key={item.id}
                     className={`${
@@ -305,14 +352,14 @@ const Items = () => {
                         <button
                           onClick={() => openEditModal(item)}
                           className="text-blue-600 hover:text-blue-900"
-                          title={t("edit_item") || "Edit Item"}
+                          title={t("edit_item")}
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteItem(item.id)}
                           className="text-red-600 hover:text-red-900"
-                          title={t("delete_item") || "Delete Item"}
+                          title={t("delete_item")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -325,6 +372,42 @@ const Items = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {pageSize !== "all" && totalPages > 1 && (
+        <div className="flex justify-center items-center mt-6 space-x-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded border bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            &lt;
+          </button>
+          {getVisiblePages().map((pageNum) => (
+            <button
+              key={pageNum}
+              onClick={() => setCurrentPage(pageNum)}
+              className={`px-3 py-1 rounded border ${
+                currentPage === pageNum
+                  ? "bg-primary-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {pageNum}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded border bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            &gt;
+          </button>
+          <span className="ml-2 text-sm text-gray-500">
+            {t("of")} {totalPages}
+          </span>
+        </div>
+      )}
 
       {/* Add Item Modal */}
       {showAddModal && (
@@ -340,7 +423,7 @@ const Items = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                {t("add_new_item") || "Add New Item"}
+                {t("add_new_item")}
               </h3>
               <button
                 onClick={closeModal}
@@ -360,7 +443,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  {t("item_name") || "Item Name"}
+                  {t("item_name")}
                 </label>
                 <input
                   type="text"
@@ -382,7 +465,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  {t("locker") || "Locker"}
+                  {t("locker")}
                 </label>
                 <select
                   value={formData.locker_id}
@@ -395,12 +478,10 @@ const Items = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  <option value="">
-                    {t("select_locker") || "Select a locker"}
-                  </option>
+                  <option value="">{t("select_locker")}</option>
                   {lockers.map((locker) => (
                     <option key={locker.id} value={locker.id}>
-                      {locker.name}
+                      {locker.name || locker.number}
                     </option>
                   ))}
                 </select>
@@ -411,7 +492,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Description (Optional)
+                  {t("description_optional")}
                 </label>
                 <textarea
                   value={formData.description}
@@ -436,13 +517,13 @@ const Items = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  {t("cancel") || "Cancel"}
+                  {t("cancel")}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  {t("add_item") || "Add Item"}
+                  {t("add_item")}
                 </button>
               </div>
             </form>
@@ -464,7 +545,7 @@ const Items = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                {t("edit_item") || "Edit Item"}
+                {t("edit_item")}
               </h3>
               <button
                 onClick={closeModal}
@@ -484,7 +565,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  {t("item_name") || "Item Name"}
+                  {t("item_name")}
                 </label>
                 <input
                   type="text"
@@ -506,7 +587,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  {t("locker") || "Locker"}
+                  {t("locker")}
                 </label>
                 <select
                   value={formData.locker_id}
@@ -519,12 +600,10 @@ const Items = () => {
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  <option value="">
-                    {t("select_locker") || "Select a locker"}
-                  </option>
+                  <option value="">{t("select_locker")}</option>
                   {lockers.map((locker) => (
                     <option key={locker.id} value={locker.id}>
-                      {locker.name}
+                      {locker.name || locker.number}
                     </option>
                   ))}
                 </select>
@@ -535,7 +614,7 @@ const Items = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Description (Optional)
+                  {t("description_optional")}
                 </label>
                 <textarea
                   value={formData.description}
@@ -560,13 +639,13 @@ const Items = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  {t("cancel") || "Cancel"}
+                  {t("cancel")}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  {t("save_changes") || "Save Changes"}
+                  {t("save_changes")}
                 </button>
               </div>
             </form>

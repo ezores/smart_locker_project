@@ -110,7 +110,7 @@ def import_models():
     return init_models(db)
 
 # Import database models
-User, Locker, Item, Log, init_db = import_models()
+User, Locker, Item, Log, Borrow, Return, Payment, Notification, SystemSetting, UserSession, init_db = import_models()
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -1422,7 +1422,7 @@ if __name__ == '__main__':
         if args.demo:
             try:
                 from demo_data import create_demo_data
-                create_demo_data(db, User, Locker, Item, Log)
+                create_demo_data(db, User, Locker, Item, Log, Borrow, Return, Payment, Notification, SystemSetting)
                 print("Demo data loaded successfully!")
             except Exception as e:
                 print(f"Error loading demo data: {e}")

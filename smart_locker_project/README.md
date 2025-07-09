@@ -95,10 +95,61 @@ smart_locker_project/
 4. **Start the development servers**
 
    ```bash
-   # Start both backend and frontend
+   # Start both backend and frontend with default settings
    ./scripts/start_dev.sh
 
-   # Or start individually:
+   # Start with demo data
+   ./scripts/start_dev.sh --demo
+
+   # Start with custom ports
+   ./scripts/start_dev.sh -p 8080 -f 3000
+
+   # Reset database and load demo data
+   ./scripts/start_dev.sh --reset-db --demo
+
+   # Verbose output for debugging
+   ./scripts/start_dev.sh --verbose
+
+   # Show all available options
+   ./scripts/start_dev.sh --help
+   ```
+
+   ### Development Script Options
+
+   The `start_dev.sh` script provides comprehensive configuration options with proper validation and verification:
+
+   ```bash
+   Options:
+     -d, --demo              Load demo data for testing (verified via API)
+     -p, --backend-port PORT Backend port (default: 5050, validated 1024-65535)
+     -f, --frontend-port PORT Frontend port (default: 5173, validated 1024-65535)
+     -H, --host HOST         Backend host to bind to (default: 0.0.0.0)
+     -r, --reset-db          Reset database before starting
+     -s, --skip-deps         Skip dependency installation
+     -v, --verbose           Enable verbose output
+     -l, --log-level LEVEL   Set log level (DEBUG, INFO, WARNING, ERROR)
+     -h, --help              Show this help message
+   ```
+
+   **Features:**
+
+   - ✅ **Port validation** - Ensures ports are valid and available
+   - ✅ **Dependency checking** - Verifies requirements.txt and package.json exist
+   - ✅ **Demo data verification** - Confirms demo data is loaded via API test
+   - ✅ **Process monitoring** - Tracks and manages server processes
+   - ✅ **Clean output** - Professional logging without emojis
+   - ✅ **Error handling** - Graceful failure with helpful error messages
+
+   **Examples:**
+
+   - `./scripts/start_dev.sh --demo` - Start with demo data (verified)
+   - `./scripts/start_dev.sh -p 8080 -f 3000` - Custom ports
+   - `./scripts/start_dev.sh --reset-db --demo` - Reset DB and load demo data
+   - `./scripts/start_dev.sh --verbose` - Verbose output for debugging
+
+   **Or start individually:**
+
+   ```bash
    # Backend: python backend/app.py --port 5050 --demo
    # Frontend: cd frontend && npm run dev
    ```

@@ -496,7 +496,7 @@ const Users = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Username
+                  {t("username")}
                 </label>
                 <input
                   type="text"
@@ -552,7 +552,7 @@ const Users = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Role
+                  {t("role")}
                 </label>
                 <select
                   value={formData.role}

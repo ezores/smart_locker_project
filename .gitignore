@@ -98,3 +98,5 @@ coverage.xml
 # Local configuration
 config.local.py
 settings.local.py
+frontend.pid
+backend.pid

@@ -33,7 +33,8 @@ const translations = {
     enter_username: "Enter your username",
     enter_password: "Enter your password",
     fill_all_fields: "Please fill in all fields",
-    demo_credentials: "Demo credentials: admin/admin123 or student/password123",
+    demo_credentials:
+      "Demo credentials: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "Don't have an account?",
     sign_in: "Sign in",
 
@@ -329,7 +330,7 @@ const translations = {
     enter_password: "Entrez votre mot de passe",
     fill_all_fields: "Veuillez remplir tous les champs",
     demo_credentials:
-      "Identifiants de démonstration: admin/admin123 ou étudiant/password123",
+      "Identifiants de démonstration: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "Vous n'avez pas de compte ?",
     sign_in: "Se connecter",
     welcome: "Bienvenue",
@@ -621,7 +622,7 @@ const translations = {
     enter_password: "Ingresa tu contraseña",
     fill_all_fields: "Por favor completa todos los campos",
     demo_credentials:
-      "Credenciales de demostración: admin/admin123 o estudiante/password123",
+      "Credenciales de demostración: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "¿No tienes una cuenta?",
     sign_in: "Iniciar sesión",
     welcome: "Bienvenido",
@@ -910,7 +911,7 @@ const translations = {
     enter_password: "Şifrenizi girin",
     fill_all_fields: "Lütfen tüm alanları doldurun",
     demo_credentials:
-      "Demo kimlik bilgileri: admin/admin123 veya öğrenci/password123",
+      "Demo kimlik bilgileri: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "Hesabınız yok mu?",
     sign_in: "Giriş yap",
     welcome: "Hoş Geldiniz",

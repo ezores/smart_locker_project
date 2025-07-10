@@ -65,6 +65,8 @@ The script will automatically:
 
 - Admin: `admin` / `admin123`
 - Student: `student1` / `student123`
+- Manager: `manager` / `manager123`
+- Supervisor: `supervisor` / `supervisor123`
 
 ## Development
 

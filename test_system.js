@@ -62,14 +62,29 @@ async function testBackendHealth() {
 async function testBackendLogin() {
   try {
     const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
-      username: "testadmin",
-      password: "test123",
+      username: "student1",
+      password: "student123",
     });
     const hasToken = response.status === 200 && response.data.token;
     addResult("Backend Login", hasToken);
     return response.data.token;
   } catch (error) {
     addResult("Backend Login", false, error);
+    return null;
+  }
+}
+
+async function testAdminLogin() {
+  try {
+    const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+      username: "admin",
+      password: "admin123",
+    });
+    const hasToken = response.status === 200 && response.data.token;
+    addResult("Admin Login", hasToken);
+    return response.data.token;
+  } catch (error) {
+    addResult("Admin Login", false, error);
     return null;
   }
 }
@@ -98,7 +113,7 @@ async function testLockersAPI(token) {
   }
 }
 
-async function testOpenLockerAPI(token) {
+async function testOpenLockerAPI(studentToken, adminToken) {
   try {
     // Create a test locker first
     const createData = {
@@ -113,7 +128,7 @@ async function testOpenLockerAPI(token) {
       `${BACKEND_URL}/api/admin/lockers`,
       createData,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${adminToken}` },
       }
     );
 
@@ -127,7 +142,7 @@ async function testOpenLockerAPI(token) {
       `${BACKEND_URL}/api/lockers/${lockerId}/open`,
       {},
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${adminToken}` },
       }
     );
 
@@ -145,7 +160,7 @@ async function testOpenLockerAPI(token) {
 
     // Clean up - delete the test locker
     await axios.delete(`${BACKEND_URL}/api/admin/lockers/${lockerId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${adminToken}` },
     });
 
     return success;
@@ -155,7 +170,7 @@ async function testOpenLockerAPI(token) {
   }
 }
 
-async function testAdminLockersAPI(token) {
+async function testAdminLockersAPI(adminToken) {
   try {
     // Test creating a locker with RS485 fields
     const createData = {
@@ -170,7 +185,7 @@ async function testAdminLockersAPI(token) {
       `${BACKEND_URL}/api/admin/lockers`,
       createData,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${adminToken}` },
       }
     );
 
@@ -191,7 +206,7 @@ async function testAdminLockersAPI(token) {
         `${BACKEND_URL}/api/admin/lockers/${lockerId}`,
         updateData,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${adminToken}` },
         }
       );
 
@@ -202,7 +217,7 @@ async function testAdminLockersAPI(token) {
       const deleteResponse = await axios.delete(
         `${BACKEND_URL}/api/admin/lockers/${lockerId}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${adminToken}` },
         }
       );
 
@@ -217,11 +232,11 @@ async function testAdminLockersAPI(token) {
   }
 }
 
-async function testRS485FrameGeneration(token) {
+async function testRS485FrameGeneration(adminToken) {
   try {
     // Test the RS485 frame generation by calling the backend
     const response = await axios.get(`${BACKEND_URL}/api/admin/rs485/test`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${adminToken}` },
     });
     const success = response.status === 200;
     addResult("RS485 Test Endpoint", success);
@@ -275,16 +290,22 @@ async function runAllTests() {
     return;
   }
 
-  const token = await testBackendLogin();
-  if (!token) {
-    log("❌ Cannot authenticate. Stopping tests.", "ERROR");
+  const studentToken = await testBackendLogin();
+  if (!studentToken) {
+    log("❌ Cannot authenticate as student. Stopping tests.", "ERROR");
     return;
   }
 
-  await testLockersAPI(token);
-  await testOpenLockerAPI(token);
-  await testAdminLockersAPI(token);
-  await testRS485FrameGeneration(token);
+  const adminToken = await testAdminLogin();
+  if (!adminToken) {
+    log("❌ Cannot authenticate as admin. Stopping tests.", "ERROR");
+    return;
+  }
+
+  await testLockersAPI(studentToken);
+  await testOpenLockerAPI(studentToken, adminToken);
+  await testAdminLockersAPI(adminToken);
+  await testRS485FrameGeneration(adminToken);
 
   // Test frontend functionality
   log("Testing Frontend Functionality...", "SECTION");

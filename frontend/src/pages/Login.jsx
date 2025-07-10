@@ -11,6 +11,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
 
@@ -46,6 +47,7 @@ const Login = () => {
     }
 
     const result = await login(username, password);
+    setResult(result);
 
     if (result.success) {
       navigate("/");
@@ -113,7 +115,12 @@ const Login = () => {
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    {error}
+                    <div className="font-medium">{error}</div>
+                    {result?.details && (
+                      <div className="text-sm mt-1 text-red-600">
+                        {result.details}
+                      </div>
+                    )}
                   </div>
                 )}
 

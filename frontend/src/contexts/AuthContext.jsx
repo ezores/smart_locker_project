@@ -58,9 +58,11 @@ export const AuthProvider = ({ children }) => {
       return {
         success: false,
         error:
-          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.response?.data?.details ||
           error.message ||
-          "Login failed - check if backend is running on port 8080",
+          "Login failed",
+        details: error.response?.data?.details || null,
       };
     }
   };

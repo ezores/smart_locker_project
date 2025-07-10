@@ -6,24 +6,25 @@
  * @description Payment management component with Stripe integration
  */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
-import { useAuth } from "../contexts/AuthContext";
+import { getPayments } from "../utils/api";
 import {
+  Search,
+  Download,
+  Plus,
+  FileText,
+  Wallet,
+  PlusCircle,
   CreditCard,
   DollarSign,
   Calendar,
-  ArrowLeft,
-  Plus,
-  Download,
-  FileText,
-  Search,
-  Filter,
-  Wallet,
-  PlusCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-import axios from "axios";
 
 const Payments = () => {
   const { t } = useLanguage();
@@ -46,58 +47,24 @@ const Payments = () => {
     try {
       if (user.role === "admin") {
         // Admin sees all payments
-        // TODO: Replace with actual API endpoint
-        // const response = await axios.get("/api/admin/payments");
-        // setPayments(response.data);
-
-        // Mock data for admin
-        setPayments([
-          {
-            id: 1,
-            amount: 25.0,
-            currency: "USD",
-            status: "completed",
-            description: "Monthly locker rental",
-            date: "2024-12-01T10:30:00Z",
-            payment_method: "card",
-            user_id: 1,
-            user_name: "john.doe",
-          },
-          {
-            id: 2,
-            amount: 15.5,
-            currency: "USD",
-            status: "pending",
-            description: "Late return fee",
-            date: "2024-12-02T14:20:00Z",
-            payment_method: "card",
-            user_id: 2,
-            user_name: "jane.smith",
-          },
-        ]);
+        const response = await getPayments();
+        setPayments(response.payments || []);
       } else {
         // Student sees only their own payments
-        // TODO: Replace with actual API endpoint
-        // const response = await axios.get("/api/payments/my-payments");
-        // setPayments(response.data);
+        const response = await getPayments();
+        // Filter payments for current user
+        const userPayments =
+          response.payments?.filter((p) => p.user_id === user.id) || [];
+        setPayments(userPayments);
 
-        // Mock data for student
-        setPayments([
-          {
-            id: 1,
-            amount: 10.0,
-            currency: "USD",
-            status: "completed",
-            description: "Locker deposit",
-            date: "2024-12-01T10:30:00Z",
-            payment_method: "card",
-            user_id: user.id,
-            user_name: user.username,
-          },
-        ]);
-
-        // Mock balance for student
-        setBalance(25.5);
+        // Calculate balance from payments
+        const balance = userPayments.reduce((total, payment) => {
+          if (payment.status === "completed") {
+            return total + payment.amount;
+          }
+          return total;
+        }, 0);
+        setBalance(balance);
       }
     } catch (error) {
       console.error("Error fetching payments:", error);

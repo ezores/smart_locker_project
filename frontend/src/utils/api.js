@@ -153,4 +153,10 @@ export const getBorrows = async () => {
   return response.data;
 };
 
+// Payments API functions
+export const getPayments = async () => {
+  const response = await api.get("/payments");
+  return response.data;
+};
+
 export default api;

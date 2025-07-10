@@ -113,17 +113,23 @@ def create_demo_data(db, User, Locker, Item, Log, Borrow, Return, Payment, Notif
             )
             db.session.add(return_record)
     db.session.commit()
-    # Create 10x more payments
+    # Create more payments (increased from 10-20 to 30-50 per user)
     for user in User.query.all()[1:]: # Use User.query.all() to get all users
-        for _ in range(random.randint(10, 20)):
+        for _ in range(random.randint(30, 50)):
             payment = Payment(
                 user_id=user.id,
-                amount=random.uniform(5, 200),
-                payment_type=random.choice(['deposit', 'withdrawal', 'fee', 'refund', 'late_fee', 'equipment_fee']),
-                payment_method=random.choice(['cash', 'card', 'online', 'transfer', 'check']),
-                description=random.choice(['Account deposit', 'Late fee payment', 'Equipment rental fee', 'Refund for early return', 'Security deposit', 'Maintenance fee', 'Replacement fee']),
+                amount=random.uniform(5, 500),
+                payment_type=random.choice(['deposit', 'withdrawal', 'fee', 'refund', 'late_fee', 'equipment_fee', 'security_deposit', 'maintenance_fee', 'replacement_fee', 'insurance_fee']),
+                payment_method=random.choice(['cash', 'card', 'online', 'transfer', 'check', 'paypal', 'stripe']),
+                description=random.choice([
+                    'Account deposit', 'Late fee payment', 'Equipment rental fee', 'Refund for early return', 
+                    'Security deposit', 'Maintenance fee', 'Replacement fee', 'Insurance coverage', 
+                    'Extended rental fee', 'Damage deposit', 'Processing fee', 'Administrative fee',
+                    'Equipment upgrade fee', 'Training session fee', 'Workshop participation fee',
+                    'Special equipment access fee', 'Weekend rental surcharge', 'Holiday rental fee'
+                ]),
                 status='completed',
-                processed_at=datetime.now() - timedelta(days=random.randint(1, 90)) # Use datetime.now()
+                processed_at=datetime.now() - timedelta(days=random.randint(1, 365)) # Extended to 1 year
             )
             db.session.add(payment)
     db.session.commit()

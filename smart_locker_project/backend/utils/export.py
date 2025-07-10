@@ -11,8 +11,7 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils.dataframe import dataframe_to_rows
-import pandas as pd
+# import pandas as pd  # Temporarily commented out due to numpy/pandas compatibility issue
 
 logger = logging.getLogger(__name__)
 

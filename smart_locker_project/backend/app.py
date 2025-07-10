@@ -66,7 +66,26 @@ db = SQLAlchemy(app)
 jwt = JWTManager(app)
 CORS(app)
 
-# Models
+# Initialize Babel
+babel = Babel(app)
+
+# Babel configuration
+app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'fr', 'es', 'tr']
+
+def get_locale():
+    """Get the locale for the current request"""
+    # Try to get locale from session
+    if 'language' in session:
+        return session['language']
+    # Try to get locale from request
+    return request.accept_languages.best_match(app.config['BABEL_SUPPORTED_LOCALES'])
+
+# Import and initialize models from models.py
+from models import init_models
+User, Locker, Item, Log, Borrow, init_db_func, generate_dummy_data = init_models(db)
+
+# Keep only the User model definition here since it's used by existing code
 class User(db.Model):
     __tablename__ = 'users'
     
@@ -105,159 +124,11 @@ class User(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
-class Locker(db.Model):
-    __tablename__ = 'lockers'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), unique=True, nullable=False)
-    number = db.Column(db.String(10), unique=True, nullable=False)
-    location = db.Column(db.String(200))
-    description = db.Column(db.Text)
-    status = db.Column(db.String(20), default='available')
-    capacity = db.Column(db.Integer, default=1)
-    current_occupancy = db.Column(db.Integer, default=0)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'number': self.number,
-            'location': self.location,
-            'description': self.description,
-            'status': self.status,
-            'capacity': self.capacity,
-            'current_occupancy': self.current_occupancy,
-            'is_active': self.is_active,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-
-class Item(db.Model):
-    __tablename__ = 'items'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    category = db.Column(db.String(50))
-    condition = db.Column(db.String(20), default='good')
-    status = db.Column(db.String(20), default='available')
-    locker_id = db.Column(db.Integer, db.ForeignKey('lockers.id'), nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    locker = db.relationship('Locker', backref='items')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'category': self.category,
-            'condition': self.condition,
-            'status': self.status,
-            'locker_id': self.locker_id,
-            'locker_name': self.locker.name if self.locker else None,
-            'is_active': self.is_active,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-
-class Borrow(db.Model):
-    __tablename__ = 'borrows'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    locker_id = db.Column(db.Integer, db.ForeignKey('lockers.id'), nullable=False)
-    borrowed_at = db.Column(db.DateTime, default=datetime.utcnow)
-    due_date = db.Column(db.DateTime)
-    returned_at = db.Column(db.DateTime)
-    status = db.Column(db.String(20), default='active')
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship('User', backref='borrows')
-    item = db.relationship('Item', backref='borrows')
-    locker = db.relationship('Locker', backref='borrows')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'item_id': self.item_id,
-            'locker_id': self.locker_id,
-            'borrowed_at': self.borrowed_at.isoformat() if self.borrowed_at else None,
-            'due_date': self.due_date.isoformat() if self.due_date else None,
-            'returned_at': self.returned_at.isoformat() if self.returned_at else None,
-            'status': self.status,
-            'notes': self.notes,
-            'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else None,
-            'item_name': self.item.name if self.item else None,
-            'locker_name': self.locker.name if self.locker else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-
-class Log(db.Model):
-    __tablename__ = 'logs'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
-    locker_id = db.Column(db.Integer, db.ForeignKey('lockers.id'))
-    borrow_id = db.Column(db.Integer, db.ForeignKey('borrows.id'))
-    return_id = db.Column(db.Integer, db.ForeignKey('returns.id'))
-    action_type = db.Column(db.String(50), nullable=False)
-    action_details = db.Column(db.Text)
-    ip_address = db.Column(db.String(45))
-    user_agent = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship('User', backref='logs')
-    item = db.relationship('Item', backref='logs')
-    locker = db.relationship('Locker', backref='logs')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'item_id': self.item_id,
-            'locker_id': self.locker_id,
-            'action_type': self.action_type,
-            'action_details': self.action_details,
-            'ip_address': self.ip_address,
-            'user_agent': self.user_agent,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
-            'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else None,
-            'item_name': self.item.name if self.item else None,
-            'locker_name': self.locker.name if self.locker else None
-        }
-
-class Return(db.Model):
-    __tablename__ = 'returns'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    borrow_id = db.Column(db.Integer, db.ForeignKey('borrows.id'), nullable=False)
-    returned_at = db.Column(db.DateTime, default=datetime.utcnow)
-    condition = db.Column(db.String(20))
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    borrow = db.relationship('Borrow', backref='returns')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'borrow_id': self.borrow_id,
-            'returned_at': self.returned_at.isoformat() if self.returned_at else None,
-            'condition': self.condition,
-            'notes': self.notes,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
+# Remove all other model definitions (Locker, Item, Borrow, Log, Return) from app.py
+# They will be imported from models.py when needed
 
 # Helper functions
-def log_action(action_type, user_id=None, item_id=None, locker_id=None, details=None):
+def log_action(action_type, user_id=None, item_id=None, locker_id=None, details=None, ip_address=None, user_agent=None):
     """Log an action to the database"""
     try:
         log = Log(
@@ -265,9 +136,9 @@ def log_action(action_type, user_id=None, item_id=None, locker_id=None, details=
             item_id=item_id,
             locker_id=locker_id,
             action_type=action_type,
-            action_details=details,
-            ip_address=request.remote_addr if request else None,
-            user_agent=request.headers.get('User-Agent') if request else None
+            notes=details,
+            ip_address=ip_address,
+            user_agent=user_agent
         )
         db.session.add(log)
         db.session.commit()
@@ -304,8 +175,40 @@ def set_language(language):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        try:
+            username = request.form.get('username')
+            password = request.form.get('password')
+            
+            if not username or not password:
+                return jsonify({"error": "Username and password required"}), 400
+            
+            user = User.query.filter_by(username=username).first()
+            
+            if user and user.check_password(password):
+                access_token = create_access_token(identity=user.id)
+                
+                # Log the login
+                log_action('login', user.id, details=f"User {username} logged in")
+                
+                return jsonify({
+                    "access_token": access_token,
+                    "user": user.to_dict()
+                })
+            else:
+                return jsonify({"error": "Invalid credentials"}), 401
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            return jsonify({"error": "Internal server error"}), 500
+    # Optionally handle GET requests here
+    return jsonify({"message": "Login endpoint"})
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """API login endpoint for frontend"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
         
         if not username or not password:
             return jsonify({"error": "Username and password required"}), 400
@@ -319,14 +222,13 @@ def login():
             log_action('login', user.id, details=f"User {username} logged in")
             
             return jsonify({
-                "access_token": access_token,
+                "token": access_token,  # Frontend expects 'token' not 'access_token'
                 "user": user.to_dict()
             })
         else:
             return jsonify({"error": "Invalid credentials"}), 401
-            
     except Exception as e:
-        logger.error(f"Login error: {e}")
+        logger.error(f"API login error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/auth/register', methods=['POST'])
@@ -629,7 +531,7 @@ def export_logs():
                 log.item.name if log.item else '',
                 log.locker.name if log.locker else '',
                 log.action_type,
-                log.action_details,
+                log.notes,
                 log.ip_address,
                 log.timestamp
             ])
@@ -853,64 +755,109 @@ def export_system_report():
         logger.error(f"Export system report error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    try:
+        # Test database connection
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "database": "connected"
+        }), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            "status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }), 500
+
 def init_db(minimal=False):
     """Initialize the database with default data"""
     with app.app_context():
         db.create_all()
         
-        # Create default admin user if it doesn't exist
-        if not User.query.filter_by(username='admin').first():
-            admin = User(
-                username='admin',
-                email='admin@smartlocker.com',
-                first_name='Admin',
-                last_name='User',
-                role='admin',
-                department='IT'
-            )
-            admin.set_password('admin123')
-            db.session.add(admin)
+        if not minimal:
+            # Generate comprehensive demo data
+            generate_dummy_data()
+            logger.info("Database initialized with comprehensive demo data (from models.py)")
+        else:
+            # Minimal admin only - use real tables (empty for now)
+            if not User.query.filter_by(username='admin').first():
+                admin = User(
+                    username='admin',
+                    email='admin@smartlocker.com',
+                    first_name='Admin',
+                    last_name='User',
+                    role='admin',
+                    department='IT'
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                logger.info("Database initialized with minimal admin user (real tables, empty for now)")
+
+@app.route('/api/admin/active-borrows', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_active_borrows():
+    """Get active borrows for admin dashboard"""
+    try:
+        limit = request.args.get('limit', 25, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Get active borrows with pagination
+        borrows = Borrow.query.filter_by(status='active').offset(offset).limit(limit).all()
+        
+        return jsonify({
+            "borrows": [borrow.to_dict() for borrow in borrows],
+            "total": Borrow.query.filter_by(status='active').count(),
+            "limit": limit,
+            "offset": offset
+        })
+    except Exception as e:
+        logger.error(f"Get active borrows error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/admin/users', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_admin_users():
+    """Get all users for admin dashboard"""
+    try:
+        limit = request.args.get('limit', 25, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Get all users with pagination
+        users = User.query.offset(offset).limit(limit).all()
+        
+        return jsonify({
+            "users": [user.to_dict() for user in users],
+            "total": User.query.count(),
+            "limit": limit,
+            "offset": offset
+        })
+    except Exception as e:
+        logger.error(f"Get admin users error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/user/profile', methods=['GET'])
+@jwt_required()
+def get_user_profile():
+    """Get current user profile"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
             
-            # Create test student
-            student = User(
-                username='student',
-                email='student@smartlocker.com',
-                first_name='Student',
-                last_name='User',
-                role='student',
-                department='CS'
-            )
-            student.set_password('password123')
-            db.session.add(student)
-            
-            if not minimal:
-                # Create test lockers
-                for i in range(1, 6):
-                    locker = Locker(
-                        name=f'Locker {i}',
-                        number=f'L{i:03d}',
-                        location=f'Room {i}',
-                        status='available',
-                        capacity=5,
-                        current_occupancy=0
-                    )
-                    db.session.add(locker)
-                
-                # Create test items
-                categories = ['Electronics', 'Books', 'Tools', 'Sports']
-                for i in range(1, 11):
-                    item = Item(
-                        name=f'Item {i}',
-                        description=f'Test item {i}',
-                        category=categories[i % len(categories)],
-                        condition='good',
-                        status='available',
-                        locker_id=(i % 5) + 1
-                    )
-                    db.session.add(item)
-            
-            db.session.commit()
-            logger.info("Database initialized with default data")
+        return jsonify(user.to_dict())
+    except Exception as e:
+        logger.error(f"Get user profile error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
     import argparse
@@ -920,18 +867,33 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='0.0.0.0', help='Host to run on')
     parser.add_argument('--init-db', action='store_true', help='Initialize database')
     parser.add_argument('--minimal', action='store_true', help='Run in minimal mode (no demo data)')
+    parser.add_argument('--demo', action='store_true', help='Load demo data (not minimal)')
+    parser.add_argument('--reset-db', action='store_true', help='Drop and recreate all tables')
+    parser.add_argument('--verbose', action='store_true', help='Enable verbose (DEBUG) logging')
     
     args = parser.parse_args()
+    
+    # Set logging level
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+        for handler in logger.handlers:
+            handler.setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.DEBUG)
     
     # Create logs directory if it doesn't exist
     os.makedirs('logs', exist_ok=True)
     
-    if args.init_db:
+    # Handle --reset-db or --init-db
+    if args.reset_db or args.init_db:
         print("Initializing database...")
-        init_db(minimal=args.minimal)
+        # If minimal is set, or demo is not set, use minimal
+        minimal = args.minimal or not args.demo
+        init_db(minimal=minimal)
         print("Database initialization complete!")
     
     print(f"Starting Smart Locker System on {args.host}:{args.port}")
     if args.minimal:
         print("Running in minimal mode")
+    if args.demo:
+        print("Loading comprehensive demo data")
     app.run(host=args.host, port=args.port, debug=True) 

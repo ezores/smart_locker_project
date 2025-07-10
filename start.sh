@@ -1,5 +1,96 @@
 #!/bin/bash
 
+# Robust Smart Locker System Startup Script
+
+# Configurable ports
+BACKEND_PORT=5172
+FRONTEND_PORT=5173
+
+# Helper functions
+print_error() {
+  echo "[ERROR] $1" >&2
+}
+print_info() {
+  echo "[INFO] $1"
+}
+print_success() {
+  echo "[SUCCESS] $1"
+}
+
+# 1. OS Detection
+OS_TYPE=$(uname)
+if [[ "$OS_TYPE" != "Darwin" && "$OS_TYPE" != "Linux" ]]; then
+  print_error "Unsupported OS: $OS_TYPE. This script is tested on macOS and Linux."
+  exit 1
+fi
+
+# 2. Check for python3, pip, node, npm
+for cmd in python3 pip node npm; do
+  if ! command -v $cmd >/dev/null 2>&1; then
+    print_error "$cmd is not installed. Please install it before continuing."
+    exit 1
+  fi
+done
+
+# 3. Check if backend port is in use
+if lsof -i :$BACKEND_PORT >/dev/null 2>&1; then
+  PID=$(lsof -ti :$BACKEND_PORT)
+  print_error "Backend port $BACKEND_PORT is in use by process $PID."
+  read -p "Do you want to kill this process? [y/N]: " KILL_ANSWER
+  if [[ "$KILL_ANSWER" =~ ^[Yy]$ ]]; then
+    kill -9 $PID
+    print_success "Killed process $PID using port $BACKEND_PORT."
+  else
+    print_error "Cannot continue while port $BACKEND_PORT is in use. Exiting."
+    exit 1
+  fi
+fi
+
+# 4. Check if frontend port is in use
+if lsof -i :$FRONTEND_PORT >/dev/null 2>&1; then
+  PID=$(lsof -ti :$FRONTEND_PORT)
+  print_error "Frontend port $FRONTEND_PORT is in use by process $PID."
+  read -p "Do you want to kill this process? [y/N]: " KILL_ANSWER
+  if [[ "$KILL_ANSWER" =~ ^[Yy]$ ]]; then
+    kill -9 $PID
+    print_success "Killed process $PID using port $FRONTEND_PORT."
+  else
+    print_error "Cannot continue while port $FRONTEND_PORT is in use. Exiting."
+    exit 1
+  fi
+fi
+
+# 5. Check for .venv and create if missing
+if [ ! -d ".venv" ] || [ ! -f ".venv/bin/activate" ]; then
+  print_info "(Re)creating Python virtual environment..."
+  rm -rf .venv
+  python3 -m venv .venv
+fi
+
+# 6. Activate virtual environment
+print_info "Activating Python virtual environment..."
+source .venv/bin/activate
+
+# 7. Check for required Python packages
+REQUIRED_PY_PACKAGES=(flask flask_sqlalchemy flask_jwt_extended flask_cors werkzeug bcrypt pyserial psycopg2-binary sqlalchemy flask-babel pytest requests pyjwt flask-cors flask-login pandas openpyxl reportlab)
+for pkg in "${REQUIRED_PY_PACKAGES[@]}"; do
+  pip show $pkg >/dev/null 2>&1 || MISSING_PY=1
+done
+if [[ $MISSING_PY ]]; then
+  print_info "Installing Python requirements..."
+  pip install --upgrade pip
+  pip install -r smart_locker_project/requirements.txt
+fi
+
+# 8. Check for required Node packages
+if [ ! -d "smart_locker_project/frontend/node_modules" ]; then
+  print_info "Installing frontend dependencies..."
+  cd smart_locker_project/frontend && npm install && cd ../../..
+fi
+
+# 9. Continue with normal startup (existing logic)
+#!/bin/bash
+
 # Smart Locker System - Comprehensive Startup Script
 # This script handles development, production, and testing environments
 # with PostgreSQL database and comprehensive demo data

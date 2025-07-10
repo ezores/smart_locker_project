@@ -146,7 +146,7 @@ def create_demo_data(db, User, Locker, Item, Log, Borrow, Return, Payment, Notif
             user_id=user.id,
             action_type=random.choice(['login', 'logout', 'borrow', 'return', 'payment', 'profile_update', 'password_change', 'search', 'view_item', 'view_locker', 'export_data']),
             timestamp=datetime.now() - timedelta(days=random.randint(1, 90), hours=random.randint(0, 23)), # Use datetime.now()
-            action_details='Auto-generated log entry.'
+            notes='Auto-generated log entry.'
         )
         db.session.add(log)
     db.session.commit()

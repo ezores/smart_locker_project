@@ -141,4 +141,4 @@ test_logs/
 *.swo
 
 # Ignore exported data
-/data/
+/data/.venv/

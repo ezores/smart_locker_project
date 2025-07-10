@@ -525,8 +525,12 @@ def open_locker_endpoint(locker_id):
         # Check if locker exists
         locker = Locker.query.get_or_404(locker_id)
         
-        # Open locker using RS485
-        result = open_locker(locker_id)
+        # Open locker using RS485 with locker's configuration
+        result = open_locker(
+            locker_id, 
+            address=locker.rs485_address, 
+            locker_number=locker.rs485_locker_number
+        )
         
         # Log the action
         log_action('open_locker', get_jwt_identity(), locker_id=locker_id, 
@@ -552,8 +556,12 @@ def close_locker_endpoint(locker_id):
         # Check if locker exists
         locker = Locker.query.get_or_404(locker_id)
         
-        # Close locker using RS485
-        result = close_locker(locker_id)
+        # Close locker using RS485 with locker's configuration
+        result = close_locker(
+            locker_id, 
+            address=locker.rs485_address, 
+            locker_number=locker.rs485_locker_number
+        )
         
         # Log the action
         log_action('close_locker', get_jwt_identity(), locker_id=locker_id, 
@@ -608,6 +616,120 @@ def test_rs485_endpoint():
         
     except Exception as e:
         logger.error(f"RS485 test error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+# Admin Locker Management Routes
+@app.route('/api/admin/lockers', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_locker():
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        location = data.get('location', '')
+        status = data.get('status', 'available')
+        rs485_address = data.get('rs485_address', 0)
+        rs485_locker_number = data.get('rs485_locker_number', 1)
+        
+        if not name:
+            return jsonify({"error": "Locker name is required"}), 400
+        
+        # Validate RS485 fields
+        if not (0 <= rs485_address <= 31):
+            return jsonify({"error": "RS485 address must be between 0 and 31"}), 400
+        if not (1 <= rs485_locker_number <= 24):
+            return jsonify({"error": "Locker number must be between 1 and 24"}), 400
+        
+        # Generate unique number if not provided
+        number = data.get('number')
+        if not number:
+            number = f"L{len(Locker.query.all()) + 1:03d}"
+        
+        locker = Locker(
+            name=name,
+            number=number,
+            location=location,
+            status=status,
+            rs485_address=rs485_address,
+            rs485_locker_number=rs485_locker_number
+        )
+        
+        db.session.add(locker)
+        db.session.commit()
+        
+        log_action('create_locker', None, None, locker.id, f"Created locker {name}")
+        
+        return jsonify({"message": "Locker created successfully", "locker": locker.to_dict()}), 201
+        
+    except Exception as e:
+        logger.error(f"Create locker error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/admin/lockers/<int:locker_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_locker(locker_id):
+    try:
+        locker = Locker.query.get_or_404(locker_id)
+        data = request.get_json()
+        
+        # Update basic fields
+        if 'name' in data:
+            locker.name = data['name']
+        if 'location' in data:
+            locker.location = data['location']
+        if 'status' in data:
+            locker.status = data['status']
+        
+        # Update RS485 fields
+        if 'rs485_address' in data:
+            rs485_address = data['rs485_address']
+            if not (0 <= rs485_address <= 31):
+                return jsonify({"error": "RS485 address must be between 0 and 31"}), 400
+            locker.rs485_address = rs485_address
+        
+        if 'rs485_locker_number' in data:
+            rs485_locker_number = data['rs485_locker_number']
+            if not (1 <= rs485_locker_number <= 24):
+                return jsonify({"error": "Locker number must be between 1 and 24"}), 400
+            locker.rs485_locker_number = rs485_locker_number
+        
+        db.session.commit()
+        
+        log_action('update_locker', None, None, locker.id, f"Updated locker {locker.name}")
+        
+        return jsonify({"message": "Locker updated successfully", "locker": locker.to_dict()})
+        
+    except Exception as e:
+        logger.error(f"Update locker error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/admin/lockers/<int:locker_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_locker(locker_id):
+    try:
+        locker = Locker.query.get_or_404(locker_id)
+        
+        # Check if locker has items
+        if locker.items:
+            return jsonify({"error": "Cannot delete locker with items"}), 400
+        
+        # Check if locker has active borrows
+        active_borrows = Borrow.query.filter_by(locker_id=locker_id, status='borrowed').count()
+        if active_borrows > 0:
+            return jsonify({"error": "Cannot delete locker with active borrows"}), 400
+        
+        locker_name = locker.name
+        db.session.delete(locker)
+        db.session.commit()
+        
+        log_action('delete_locker', None, None, locker_id, f"Deleted locker {locker_name}")
+        
+        return jsonify({"message": "Locker deleted successfully"})
+        
+    except Exception as e:
+        logger.error(f"Delete locker error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 # Export Endpoints

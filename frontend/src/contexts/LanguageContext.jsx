@@ -249,6 +249,13 @@ const translations = {
     all_status: "All Status",
     no_lockers_found: "No lockers found",
     get_started_adding_locker: "Get started by adding your first locker",
+    rs485_configuration: "RS485 Configuration",
+    rs485_address: "RS485 Address",
+    rs485_address_help: "Address card (0-31 dipswitch)",
+    rs485_locker_number: "Locker Number",
+    rs485_locker_number_help: "Number of locker (1-24)",
+    rs485_protocol_info:
+      "Protocol: 5A5A 00 [ADDRESS] 00 04 00 01 [LOCKER_NUMBER] [CHECKSUM]",
 
     // Logs
     logs_title: "System Logs",
@@ -528,6 +535,13 @@ const translations = {
     maintenance: "Maintenance",
     no_lockers_found: "Aucun casier trouvé",
     get_started_adding_locker: "Commencez par ajouter votre premier casier",
+    rs485_configuration: "Configuration RS485",
+    rs485_address: "Adresse RS485",
+    rs485_address_help: "Adresse carte (0-31 dipswitch)",
+    rs485_locker_number: "Numéro de Casier",
+    rs485_locker_number_help: "Numéro de casier (1-24)",
+    rs485_protocol_info:
+      "Protocole: 5A5A 00 [ADRESSE] 00 04 00 01 [NUMERO_CASIER] [CHECKSUM]",
 
     // Logs
     logs_title: "Journaux Système",
@@ -812,6 +826,13 @@ const translations = {
     maintenance: "Mantenimiento",
     no_lockers_found: "No se encontraron casilleros",
     get_started_adding_locker: "Comienza agregando tu primer casillero",
+    rs485_configuration: "Configuración RS485",
+    rs485_address: "Dirección RS485",
+    rs485_address_help: "Dirección de tarjeta (0-31 dipswitch)",
+    rs485_locker_number: "Número de Casillero",
+    rs485_locker_number_help: "Número de casillero (1-24)",
+    rs485_protocol_info:
+      "Protocolo: 5A5A 00 [DIRECCION] 00 04 00 01 [NUMERO_CASILLERO] [CHECKSUM]",
 
     // Logs
     logs_title: "Registros del Sistema",
@@ -1087,6 +1108,13 @@ const translations = {
     maintenance: "Bakım",
     no_lockers_found: "Dolap bulunamadı",
     get_started_adding_locker: "İlk dolabınızı ekleyerek başlayın",
+    rs485_configuration: "RS485 Yapılandırması",
+    rs485_address: "RS485 Adresi",
+    rs485_address_help: "Kart adresi (0-31 dipswitch)",
+    rs485_locker_number: "Dolap Numarası",
+    rs485_locker_number_help: "Dolap numarası (1-24)",
+    rs485_protocol_info:
+      "Protokol: 5A5A 00 [ADRES] 00 04 00 01 [DOLAP_NUMARASI] [CHECKSUM]",
 
     // Logs
     logs_title: "Sistem Kayıtları",

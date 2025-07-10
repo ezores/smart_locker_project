@@ -55,45 +55,93 @@ class RS485Controller:
             logger.error(f"RS485 communication error: {e}")
             return False
     
-    def open_locker(self, locker_id: int) -> Dict[str, Any]:
-        """Open a specific locker"""
-        command = f"OPEN:{locker_id:03d}\n"
-        success = self._send_command(command)
-        
-        result = {
-            "success": success,
-            "locker_id": locker_id,
-            "action": "open",
-            "timestamp": time.time(),
-            "message": "Locker opened successfully" if success else "Failed to open locker"
-        }
-        
-        if success:
-            logger.info(f"Locker {locker_id} opened successfully")
-        else:
-            logger.error(f"Failed to open locker {locker_id}")
-        
-        return result
+    def open_locker(self, locker_id: int, address: Optional[int] = None, locker_number: Optional[int] = None) -> Dict[str, Any]:
+        """Open a specific locker using RS485 protocol"""
+        try:
+            # Generate RS485 frame
+            if address is not None and locker_number is not None:
+                frame = generate_rs485_frame(address, locker_number)
+            else:
+                # Fallback to simple mapping if no address/numbers provided
+                address = (locker_id - 1) % 32
+                locker_number = ((locker_id - 1) % 24) + 1
+                frame = generate_rs485_frame(address, locker_number)
+            
+            # Send the frame
+            success = self._send_command(frame)
+            
+            result = {
+                "success": success,
+                "locker_id": locker_id,
+                "action": "open",
+                "rs485_address": address,
+                "rs485_locker_number": locker_number,
+                "frame": frame,
+                "timestamp": time.time(),
+                "message": "Locker opened successfully" if success else "Failed to open locker"
+            }
+            
+            if success:
+                logger.info(f"Locker {locker_id} opened successfully with frame: {frame}")
+            else:
+                logger.error(f"Failed to open locker {locker_id}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error opening locker {locker_id}: {e}")
+            return {
+                "success": False,
+                "locker_id": locker_id,
+                "action": "open",
+                "error": str(e),
+                "timestamp": time.time(),
+                "message": f"Error opening locker: {e}"
+            }
     
-    def close_locker(self, locker_id: int) -> Dict[str, Any]:
-        """Close a specific locker"""
-        command = f"CLOSE:{locker_id:03d}\n"
-        success = self._send_command(command)
-        
-        result = {
-            "success": success,
-            "locker_id": locker_id,
-            "action": "close",
-            "timestamp": time.time(),
-            "message": "Locker closed successfully" if success else "Failed to close locker"
-        }
-        
-        if success:
-            logger.info(f"Locker {locker_id} closed successfully")
-        else:
-            logger.error(f"Failed to close locker {locker_id}")
-        
-        return result
+    def close_locker(self, locker_id: int, address: Optional[int] = None, locker_number: Optional[int] = None) -> Dict[str, Any]:
+        """Close a specific locker using RS485 protocol"""
+        try:
+            # Generate RS485 frame
+            if address is not None and locker_number is not None:
+                frame = generate_rs485_frame(address, locker_number)
+            else:
+                # Fallback to simple mapping if no address/numbers provided
+                address = (locker_id - 1) % 32
+                locker_number = ((locker_id - 1) % 24) + 1
+                frame = generate_rs485_frame(address, locker_number)
+            
+            # Send the frame
+            success = self._send_command(frame)
+            
+            result = {
+                "success": success,
+                "locker_id": locker_id,
+                "action": "close",
+                "rs485_address": address,
+                "rs485_locker_number": locker_number,
+                "frame": frame,
+                "timestamp": time.time(),
+                "message": "Locker closed successfully" if success else "Failed to close locker"
+            }
+            
+            if success:
+                logger.info(f"Locker {locker_id} closed successfully with frame: {frame}")
+            else:
+                logger.error(f"Failed to close locker {locker_id}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error closing locker {locker_id}: {e}")
+            return {
+                "success": False,
+                "locker_id": locker_id,
+                "action": "close",
+                "error": str(e),
+                "timestamp": time.time(),
+                "message": f"Error closing locker: {e}"
+            }
     
     def get_locker_status(self, locker_id: int) -> Dict[str, Any]:
         """Get status of a specific locker"""
@@ -141,13 +189,13 @@ class RS485Controller:
 # Global RS485 controller instance
 rs485_controller = RS485Controller()
 
-def open_locker(locker_id: int) -> Dict[str, Any]:
+def open_locker(locker_id: int, address: Optional[int] = None, locker_number: Optional[int] = None) -> Dict[str, Any]:
     """Open a locker using RS485"""
-    return rs485_controller.open_locker(locker_id)
+    return rs485_controller.open_locker(locker_id, address, locker_number)
 
-def close_locker(locker_id: int) -> Dict[str, Any]:
+def close_locker(locker_id: int, address: Optional[int] = None, locker_number: Optional[int] = None) -> Dict[str, Any]:
     """Close a locker using RS485"""
-    return rs485_controller.close_locker(locker_id)
+    return rs485_controller.close_locker(locker_id, address, locker_number)
 
 def get_locker_status(locker_id: int) -> Dict[str, Any]:
     """Get locker status using RS485"""
@@ -155,4 +203,84 @@ def get_locker_status(locker_id: int) -> Dict[str, Any]:
 
 def test_rs485_connection() -> Dict[str, Any]:
     """Test RS485 connection"""
-    return rs485_controller.test_connection() 
+    return rs485_controller.test_connection()
+
+def generate_rs485_frame(address: int, locker_number: int) -> str:
+    """
+    Generate RS485 protocol frame for locker control
+    
+    Protocol: 5A5A 00 [ADDRESS] 00 04 00 01 [LOCKER_NUMBER] [CHECKSUM]
+    
+    Args:
+        address: Address card (0-31 dipswitch)
+        locker_number: Number of locker (1-24)
+    
+    Returns:
+        Hex string representing the complete frame
+    """
+    # Protocol structure:
+    # Start frame: 5A5A (fixed)
+    # Reserved: 00 (fixed)
+    # Address card: [ADDRESS] (0-31)
+    # Reserved: 00 (fixed)
+    # Reserved: 04 (fixed)
+    # Reserved: 00 (fixed)
+    # Reserved: 01 (fixed)
+    # Number of locker: [LOCKER_NUMBER] (1-24)
+    # Checksum: XOR of all previous octets
+    
+    # Validate inputs
+    if not (0 <= address <= 31):
+        raise ValueError("Address must be between 0 and 31")
+    if not (1 <= locker_number <= 24):
+        raise ValueError("Locker number must be between 1 and 24")
+    
+    # Build frame octets
+    frame_octets = [
+        0x5A,  # Start frame high byte
+        0x5A,  # Start frame low byte
+        0x00,  # Reserved
+        address,  # Address card (0-31)
+        0x00,  # Reserved
+        0x04,  # Reserved
+        0x00,  # Reserved
+        0x01,  # Reserved
+        locker_number  # Number of locker (1-24)
+    ]
+    
+    # Calculate checksum (XOR of all octets)
+    checksum = 0
+    for octet in frame_octets:
+        checksum ^= octet
+    
+    # Add checksum to frame
+    frame_octets.append(checksum)
+    
+    # Convert to hex string (no spaces)
+    frame_hex = ''.join([f"{octet:02X}" for octet in frame_octets])
+    
+    logger.info(f"Generated RS485 frame: {frame_hex} (Address: {address}, Locker: {locker_number})")
+    
+    return frame_hex
+
+def generate_locker_command_frame(locker_id: int, action: str = "open") -> str:
+    """
+    Generate RS485 command frame for a specific locker
+    
+    Args:
+        locker_id: Database locker ID
+        action: Action to perform ("open" or "close")
+    
+    Returns:
+        Hex string representing the command frame
+    """
+    # For now, we'll use a simple mapping
+    # In a real implementation, you'd get the RS485 address and locker number from the database
+    address = (locker_id - 1) % 32  # Simple mapping to 0-31 range
+    locker_number = ((locker_id - 1) % 24) + 1  # Simple mapping to 1-24 range
+    
+    frame = generate_rs485_frame(address, locker_number)
+    
+    logger.info(f"Generated {action} command for locker {locker_id}: {frame}")
+    
+    return frame 

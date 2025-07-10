@@ -58,6 +58,11 @@ def init_models(db):
         is_active = db.Column(db.Boolean, default=True)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         
+        # RS485 Protocol Configuration
+        # Protocol: 5A5A 00 [ADDRESS] 00 04 00 01 [LOCKER_NUMBER] [CHECKSUM]
+        rs485_address = db.Column(db.Integer, default=0)  # Address card (0-31 dipswitch)
+        rs485_locker_number = db.Column(db.Integer, default=1)  # Number of locker (1-24)
+        
         # Relationships
         items = db.relationship('Item', backref='locker', lazy=True)
         borrows = db.relationship('Borrow', backref='locker', lazy=True)
@@ -74,6 +79,8 @@ def init_models(db):
                 'capacity': self.capacity,
                 'current_occupancy': self.current_occupancy,
                 'is_active': self.is_active,
+                'rs485_address': self.rs485_address,
+                'rs485_locker_number': self.rs485_locker_number,
                 'created_at': self.created_at.isoformat() if self.created_at else None
             }
 

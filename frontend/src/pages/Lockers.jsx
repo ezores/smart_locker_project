@@ -26,6 +26,8 @@ import {
   Zap,
 } from "lucide-react";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Lockers = () => {
   const { t } = useLanguage();
@@ -41,6 +43,8 @@ const Lockers = () => {
     name: "",
     location: "",
     status: "available",
+    rs485_address: 0,
+    rs485_locker_number: 1,
   });
   // Pagination state
   const [pageSize, setPageSize] = useState(25);
@@ -115,19 +119,39 @@ const Lockers = () => {
     }
   };
 
+  const handleRealOpenLocker = async (lockerId) => {
+    try {
+      const response = await axios.post(`/api/lockers/${lockerId}/open`);
+      toast.success(
+        `Locker opening command sent: ${response.data.message || "Success"}`
+      );
+    } catch (error) {
+      console.error("Error opening locker:", error);
+      toast.error("Failed to open locker");
+    }
+  };
+
   const openEditModal = (locker) => {
     setEditingLocker(locker);
     setFormData({
       name: locker.name || "",
       location: locker.location || "",
       status: locker.status || "available",
+      rs485_address: locker.rs485_address || 0,
+      rs485_locker_number: locker.rs485_locker_number || 1,
     });
   };
 
   const closeModal = () => {
     setShowAddModal(false);
     setEditingLocker(null);
-    setFormData({ name: "", location: "", status: "available" });
+    setFormData({
+      name: "",
+      location: "",
+      status: "available",
+      rs485_address: 0,
+      rs485_locker_number: 1,
+    });
   };
 
   const filteredLockers = lockers.filter((locker) => {
@@ -212,6 +236,7 @@ const Lockers = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="mb-8">
         <h1
           className={`text-3xl font-bold mb-2 ${
@@ -396,9 +421,17 @@ const Lockers = () => {
                           <button
                             onClick={() => handleOpenLocker(locker.id)}
                             className="text-green-600 hover:text-green-900"
-                            title="Open Locker"
+                            title="Open Locker (Alert)"
                           >
                             <Zap className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRealOpenLocker(locker.id)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Open Locker (Real)"
+                          >
+                            <Zap className="h-4 w-4" />
+                            <span className="ml-1 text-xs">Real</span>
                           </button>
                           <button
                             onClick={() => handleDeleteLocker(locker.id)}
@@ -681,6 +714,94 @@ const Lockers = () => {
                     {t("maintenance") || "Maintenance"}
                   </option>
                 </select>
+              </div>
+
+              {/* RS485 Configuration Section */}
+              <div className="border-t pt-4 mt-4">
+                <h4
+                  className={`text-sm font-medium mb-3 ${
+                    isDarkMode ? "text-white" : "text-gray-700"
+                  }`}
+                >
+                  {t("rs485_configuration")}
+                </h4>
+                <p
+                  className={`text-xs mb-4 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  {t("rs485_protocol_info")}
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {t("rs485_address")}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="31"
+                      value={formData.rs485_address}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          rs485_address: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    />
+                    <p
+                      className={`text-xs mt-1 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {t("rs485_address_help")}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {t("rs485_locker_number")}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="24"
+                      value={formData.rs485_locker_number}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          rs485_locker_number: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    />
+                    <p
+                      className={`text-xs mt-1 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {t("rs485_locker_number_help")}
+                    </p>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button

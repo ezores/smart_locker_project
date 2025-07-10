@@ -219,16 +219,19 @@ def api_login():
         
         user = User.query.filter_by(username=username).first()
         
-        if user and user.check_password(password):
-            access_token = create_access_token(identity=user.id)
-            # Log the login
-            log_action('login', user.id, details=f"User {username} logged in")
-            return jsonify({
-                "token": access_token,  # Frontend expects 'token' not 'access_token'
-                "user": user.to_dict()
-            })
-        else:
-            return jsonify({"error": "Invalid credentials"}), 401
+        if not user:
+            return jsonify({"error": "User not found", "details": "No account exists with this username"}), 401
+        
+        if not user.check_password(password):
+            return jsonify({"error": "Invalid password", "details": "The password you entered is incorrect"}), 401
+        
+        access_token = create_access_token(identity=user.id)
+        # Log the login
+        log_action('login', user.id, details=f"User {username} logged in")
+        return jsonify({
+            "token": access_token,  # Frontend expects 'token' not 'access_token'
+            "user": user.to_dict()
+        })
     except Exception as e:
         logger.error(f"API login error: {e}")
         return jsonify({"error": "Internal server error"}), 500

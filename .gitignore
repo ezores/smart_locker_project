@@ -100,3 +100,13 @@ config.local.py
 settings.local.py
 frontend.pid
 backend.pid
+
+# Test files
+test_fixes.js
+
+# Package files (should be in frontend directory)
+package.json
+package-lock.json
+
+# Compiled translation files
+*.mo

@@ -24,6 +24,8 @@ import {
   Calendar,
   Eye,
   EyeOff,
+  ArrowLeft,
+  X,
 } from "lucide-react";
 
 const Payments = () => {

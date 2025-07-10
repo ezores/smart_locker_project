@@ -242,6 +242,7 @@ def register():
         email = data.get('email')
         first_name = data.get('first_name')
         last_name = data.get('last_name')
+        student_id = data.get('student_id')
         role = data.get('role', 'student')
         
         if not username or not password:
@@ -250,11 +251,16 @@ def register():
         if User.query.filter_by(username=username).first():
             return jsonify({"error": "Username already exists"}), 400
         
+        # Check if student_id already exists
+        if student_id and User.query.filter_by(student_id=student_id).first():
+            return jsonify({"error": "Student ID already exists"}), 400
+        
         user = User(
             username=username,
             email=email,
             first_name=first_name,
             last_name=last_name,
+            student_id=student_id,
             role=role
         )
         user.set_password(password)
@@ -262,7 +268,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        log_action('register', user.id, details=f"New user {username} registered")
+        log_action('register', user.id, details=f"New user {username} registered with student ID {student_id}")
         
         return jsonify({"message": "User registered successfully", "user": user.to_dict()}), 201
         

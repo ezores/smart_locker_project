@@ -22,12 +22,16 @@ import {
   AlertCircle,
   CreditCard,
   QrCode,
+  Globe,
+  ChevronDown,
 } from "lucide-react";
 
 const Register = () => {
-  const { t } = useLanguage();
+  const { t, currentLanguage, changeLanguage, availableLanguages } =
+    useLanguage();
   const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -178,9 +182,59 @@ const Register = () => {
     return "text-green-500";
   };
 
+  const languageFlags = {
+    en: "🇺🇸",
+    fr: "🇫🇷",
+    es: "🇪🇸",
+    tr: "🇹🇷",
+  };
+
+  const languageNames = {
+    en: "English",
+    fr: "Français",
+    es: "Español",
+    tr: "Türkçe",
+  };
+
   return (
     <div className="min-h-screen transition-colors duration-200 bg-gray-900 text-white">
       <main className="pt-20 pb-8">
+        {/* Language Selector */}
+        <div className="absolute top-4 right-4">
+          <div className="relative">
+            <button
+              onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors shadow-sm text-gray-300 hover:text-white bg-gray-800"
+            >
+              <Globe className="h-4 w-4" />
+              <span>{languageFlags[currentLanguage]}</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+
+            {isLanguageOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg border py-1 z-50 bg-gray-800 border-gray-600">
+                {availableLanguages.map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => {
+                      changeLanguage(lang);
+                      setIsLanguageOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 ${
+                      currentLanguage === lang
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    }`}
+                  >
+                    <span>{languageFlags[lang]}</span>
+                    <span>{languageNames[lang]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md w-full space-y-8">
             <div>

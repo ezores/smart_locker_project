@@ -38,6 +38,7 @@ def init_models(db):
                 'email': self.email,
                 'first_name': self.first_name,
                 'last_name': self.last_name,
+                'student_id': self.student_id,
                 'role': self.role,
                 'department': self.department,
                 'balance': self.balance,

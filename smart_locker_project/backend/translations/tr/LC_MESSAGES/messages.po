@@ -224,6 +224,9 @@ msgstr "Tüm sistem etkinliğini görüntüle"
 msgid "add_edit_users"
 msgstr "Kullanıcı ekle, düzenle veya kaldır"
 
+msgid "manage_users"
+msgstr "Kullanıcıları Yönet"
+
 msgid "export_csv"
 msgstr "CSV Dışa Aktar"
 

@@ -23,6 +23,7 @@ import {
   Lock,
   Unlock,
   ArrowLeft,
+  Zap,
 } from "lucide-react";
 import axios from "axios";
 
@@ -41,6 +42,9 @@ const Lockers = () => {
     location: "",
     status: "available",
   });
+  // Pagination state
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchData();
@@ -101,10 +105,20 @@ const Lockers = () => {
     }
   };
 
+  const handleOpenLocker = async (lockerId) => {
+    try {
+      const response = await axios.post(`/api/lockers/${lockerId}/open`);
+      alert(`Locker opening command sent: ${response.data.message}`);
+    } catch (error) {
+      console.error("Error opening locker:", error);
+      alert("Failed to open locker");
+    }
+  };
+
   const openEditModal = (locker) => {
     setEditingLocker(locker);
     setFormData({
-      name: locker.name,
+      name: locker.name || "",
       location: locker.location || "",
       status: locker.status || "available",
     });
@@ -125,6 +139,33 @@ const Lockers = () => {
       statusFilter === "all" || locker.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination logic
+  const totalPages =
+    pageSize === "all" ? 1 : Math.ceil(filteredLockers.length / pageSize);
+  const paginatedLockers =
+    pageSize === "all"
+      ? filteredLockers
+      : filteredLockers.slice(
+          (currentPage - 1) * pageSize,
+          currentPage * pageSize
+        );
+
+  // Calculate which pages to show (max 6 pages)
+  const getVisiblePages = () => {
+    if (totalPages <= 6) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + 5);
+
+    if (end - start < 5) {
+      start = Math.max(1, end - 5);
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
 
   const getItemsInLocker = (lockerId) => {
     return items.filter((item) => item.locker_id === lockerId);
@@ -202,24 +243,31 @@ const Lockers = () => {
               }`}
             />
           </div>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-              isDarkMode
-                ? "bg-gray-700 border-gray-600 text-white"
-                : "bg-white border-gray-300 text-gray-900"
-            }`}
-          >
-            <option value="all">{t("all_status")}</option>
-            <option value="available">{t("available")}</option>
-            <option value="occupied">{t("occupied")}</option>
-            <option value="maintenance">{t("maintenance")}</option>
-          </select>
+          {/* Page Size Selector */}
+          <div className="flex items-center space-x-2">
+            <span>{t("show")}</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(
+                  e.target.value === "all" ? "all" : parseInt(e.target.value)
+                );
+                setCurrentPage(1);
+              }}
+              className={`px-2 py-1 border rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value="all">{t("all")}</option>
+            </select>
+            <span>{t("per_page")}</span>
+          </div>
         </div>
-
         {/* Add Locker Button */}
         <button
           onClick={() => setShowAddModal(true)}
@@ -232,9 +280,9 @@ const Lockers = () => {
 
       {/* Lockers Table */}
       <div className={`card ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
-        {filteredLockers.length === 0 ? (
+        {paginatedLockers.length === 0 ? (
           <div className="text-center py-12">
-            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3
               className={`text-lg font-medium mb-2 ${
                 isDarkMode ? "text-white" : "text-gray-900"
@@ -243,9 +291,7 @@ const Lockers = () => {
               {t("no_lockers_found")}
             </h3>
             <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-              {searchTerm || statusFilter !== "all"
-                ? t("try_adjusting_search")
-                : t("get_started_adding_locker")}
+              {t("get_started_adding_locker")}
             </p>
           </div>
         ) : (
@@ -258,35 +304,28 @@ const Lockers = () => {
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("locker") || "Locker"}
+                    {t("locker_name")}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("location") || "Location"}
+                    {t("location")}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("status") || "Status"}
+                    {t("status")}
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
-                    {t("items") || "Items"}
-                  </th>
-                  <th
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      isDarkMode ? "text-gray-300" : "text-gray-500"
-                    }`}
-                  >
-                    {t("actions") || "Actions"}
+                    {t("actions")}
                   </th>
                 </tr>
               </thead>
@@ -295,7 +334,7 @@ const Lockers = () => {
                   isDarkMode ? "divide-gray-700" : "divide-gray-200"
                 }`}
               >
-                {filteredLockers.map((locker) => {
+                {paginatedLockers.map((locker) => {
                   const itemsInLocker = getItemsInLocker(locker.id);
                   return (
                     <tr
@@ -345,29 +384,26 @@ const Lockers = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(locker.status)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Package className="h-4 w-4 text-gray-400 mr-2" />
-                          <span
-                            className={`text-sm ${
-                              isDarkMode ? "text-gray-300" : "text-gray-900"
-                            }`}
-                          >
-                            {itemsInLocker.length} {t("items") || "items"}
-                          </span>
-                        </div>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => openEditModal(locker)}
                             className="text-blue-600 hover:text-blue-900"
+                            title="Edit Locker"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
+                            onClick={() => handleOpenLocker(locker.id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Open Locker"
+                          >
+                            <Zap className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteLocker(locker.id)}
                             className="text-red-600 hover:text-red-900"
+                            title="Delete Locker"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -381,6 +417,42 @@ const Lockers = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {pageSize !== "all" && totalPages > 1 && (
+        <div className="flex justify-center items-center mt-6 space-x-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded border bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            &lt;
+          </button>
+          {getVisiblePages().map((pageNum) => (
+            <button
+              key={pageNum}
+              onClick={() => setCurrentPage(pageNum)}
+              className={`px-3 py-1 rounded border ${
+                currentPage === pageNum
+                  ? "bg-primary-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {pageNum}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded border bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            &gt;
+          </button>
+          <span className="ml-2 text-sm text-gray-500">
+            {t("of")} {totalPages}
+          </span>
+        </div>
+      )}
 
       {/* Add Locker Modal */}
       {showAddModal && (
@@ -396,7 +468,7 @@ const Lockers = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                {t("add_new_locker") || "Add New Locker"}
+                {t("add_locker")}
               </h3>
               <button
                 onClick={closeModal}
@@ -416,7 +488,7 @@ const Lockers = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Locker Name
+                  {t("locker_name")}
                 </label>
                 <input
                   type="text"
@@ -494,13 +566,13 @@ const Lockers = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  {t("cancel") || "Cancel"}
+                  {t("cancel")}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  {t("add_locker") || "Add Locker"}
+                  {t("add_locker")}
                 </button>
               </div>
             </form>
@@ -522,7 +594,7 @@ const Lockers = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                {t("edit_locker") || "Edit Locker"}
+                {t("edit_locker")}
               </h3>
               <button
                 onClick={closeModal}
@@ -542,7 +614,7 @@ const Lockers = () => {
                     isDarkMode ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  Locker Name
+                  {t("locker_name")}
                 </label>
                 <input
                   type="text"
@@ -620,13 +692,13 @@ const Lockers = () => {
                       : "border-gray-300 text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  {t("cancel") || "Cancel"}
+                  {t("cancel")}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
-                  {t("save_changes") || "Save Changes"}
+                  {t("save_changes")}
                 </button>
               </div>
             </form>

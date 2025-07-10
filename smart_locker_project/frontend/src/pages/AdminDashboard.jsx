@@ -285,7 +285,7 @@ const AdminDashboard = () => {
                           isDarkMode ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {activity.item || t("unknown") || "Unknown"}
+                        {activity.item || t("unknown")}
                       </p>
                     </div>
                     <div className="text-right">
@@ -304,8 +304,8 @@ const AdminDashboard = () => {
                         }`}
                       >
                         {activity.status === "completed"
-                          ? t("completed") || "completed"
-                          : t("pending") || "pending"}
+                          ? t("completed")
+                          : t("pending")}
                       </span>
                     </div>
                   </div>
@@ -374,15 +374,14 @@ const AdminDashboard = () => {
                           isDarkMode ? "text-white" : "text-gray-900"
                         }`}
                       >
-                        {t("active_borrows") || "Active Borrows"}
+                        {t("active_borrows")}
                       </p>
                       <p
                         className={`text-sm ${
                           isDarkMode ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {t("view_current_borrows") ||
-                          "View currently borrowed items"}
+                        {t("view_current_borrows")}
                       </p>
                     </div>
                   </div>
@@ -405,14 +404,14 @@ const AdminDashboard = () => {
                           isDarkMode ? "text-white" : "text-gray-900"
                         }`}
                       >
-                        {t("system_logs") || "System Logs"}
+                        {t("system_logs")}
                       </p>
                       <p
                         className={`text-sm ${
                           isDarkMode ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {t("view_activity_logs") || "View all system activity"}
+                        {t("view_activity_logs")}
                       </p>
                     </div>
                   </div>
@@ -435,14 +434,14 @@ const AdminDashboard = () => {
                           isDarkMode ? "text-white" : "text-gray-900"
                         }`}
                       >
-                        {t("manage_users") || "Manage Users"}
+                        {t("manage_users")}
                       </p>
                       <p
                         className={`text-sm ${
                           isDarkMode ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {t("add_edit_users") || "Add, edit, or remove users"}
+                        {t("add_edit_users")}
                       </p>
                     </div>
                   </div>

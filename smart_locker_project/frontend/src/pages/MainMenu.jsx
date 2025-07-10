@@ -169,7 +169,7 @@ const MainMenu = () => {
                 {/* Hover effect indicator */}
                 <div className="mt-4 flex items-center text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-sm font-medium">
-                    {t("get_started") || "Get started"}
+                    {t("get_started")}
                   </span>
                   <ArrowLeft className="h-4 w-4 ml-1 transform rotate-180" />
                 </div>

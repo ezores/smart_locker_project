@@ -453,58 +453,6 @@ const Payments = () => {
         )}
       </div>
 
-      {/* Stripe Integration Notice - Only for Admin */}
-      {user.role === "admin" && (
-        <div
-          className={`mt-8 p-6 rounded-lg ${
-            isDarkMode ? "bg-gray-700" : "bg-blue-50"
-          }`}
-        >
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <CreditCard className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-3">
-              <h3
-                className={`text-lg font-medium ${
-                  isDarkMode ? "text-white" : "text-blue-900"
-                }`}
-              >
-                {t("stripe_integration") || "Stripe Integration"}
-              </h3>
-              <div
-                className={`mt-2 text-sm ${
-                  isDarkMode ? "text-gray-300" : "text-blue-700"
-                }`}
-              >
-                <p>
-                  {t("stripe_notice") ||
-                    "This payment system is designed to integrate with Stripe for secure payment processing. The integration includes:"}
-                </p>
-                <ul className="mt-2 list-disc list-inside space-y-1">
-                  <li>
-                    {t("stripe_feature_1") ||
-                      "Secure payment processing with Stripe Checkout"}
-                  </li>
-                  <li>
-                    {t("stripe_feature_2") ||
-                      "Automatic payment confirmation and webhook handling"}
-                  </li>
-                  <li>
-                    {t("stripe_feature_3") ||
-                      "Payment history and receipt generation"}
-                  </li>
-                  <li>
-                    {t("stripe_feature_4") ||
-                      "Subscription management for recurring payments"}
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Add Money Modal for Students */}
       {showAddMoneyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

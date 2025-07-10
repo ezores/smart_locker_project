@@ -224,6 +224,9 @@ msgstr "Voir toute l'activité système"
 msgid "add_edit_users"
 msgstr "Ajouter, modifier ou supprimer des utilisateurs"
 
+msgid "manage_users"
+msgstr "Gérer les utilisateurs"
+
 msgid "export_csv"
 msgstr "Exporter CSV"
 

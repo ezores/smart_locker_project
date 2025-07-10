@@ -1,12 +1,15 @@
-# Byte-compiled / optimized / DLL files
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -19,6 +22,7 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -27,118 +31,70 @@ MANIFEST
 # Virtual environments
 .venv/
 venv/
-env/
 ENV/
+env/
+.venv/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# PyInstaller
-*.manifest
-*.spec
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Unit test / coverage reports
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Logs
+logs/
+*.log
+
+# Testing
+.coverage
+.pytest_cache/
 htmlcov/
 .tox/
-.nox/
-.coverage
-.coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache/
 
-# Translations
-*.mo
-*.pot
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
 
-# Django stuff:
-*.log
-local_settings.py
+# Backup files
+*.bak
+*.backup
+*~
 
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-.target/
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# poetry
-poetry.lock
-
-# mypy
-.mypy_cache/
-.dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# VS Code
-.vscode/
-
-# Node
-node_modules/
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Database
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3
-smart_locker_project/backend/db/
-
-# Frontend build
-smart_locker_project/frontend/dist/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Exported data
-*.csv
-*.xlsx
-*.pdf
-
-# Test output
-test_logs/
-
-# Misc
-*.swp
-*.swo
-
-# Ignore exported data
-/data/.venv/
+# Local configuration
+config.local.py
+settings.local.py

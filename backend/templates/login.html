@@ -1,0 +1,28 @@
+{% extends "base.html" %} {% block title %}{{ _('Login') }}{% endblock %} {%
+block content %}
+<h1>{{ _('Smart Locker System') }}</h1>
+
+{% with messages = get_flashed_messages() %} {% if messages %} {% for message in
+messages %}
+<div class="alert">{{ message }}</div>
+{% endfor %} {% endif %} {% endwith %}
+
+<form method="post">
+  <input
+    type="text"
+    name="username"
+    placeholder="{{ _('Username') }}"
+    required
+    autofocus
+    class="input-large"
+  /><br />
+  <input
+    type="password"
+    name="password"
+    placeholder="{{ _('Password') }}"
+    required
+    class="input-large"
+  /><br />
+  <button type="submit" class="btn-large">{{ _('Login') }}</button>
+</form>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %} {% block title %}{{ _('Admin Dashboard') }}{% endblock
+%} {% block content %}
+<h1>{{ _('Admin Dashboard') }}</h1>
+<a href="/users" class="btn-large">{{ _('Manage Users') }}</a>
+<a href="/items" class="btn-large">{{ _('Manage Items') }}</a>
+<a href="/lockers" class="btn-large">{{ _('Manage Lockers') }}</a>
+<a href="/logs" class="btn-large">{{ _('View Logs') }}</a>
+<a href="/logs/export.csv" class="btn-large">{{ _('Export Logs') }}</a>
+<a href="/inventory/export.csv" class="btn-large"
+  >{{ _('Export Inventory') }}</a
+>
+<a href="/" class="btn-large">{{ _('Back') }}</a>
+{% endblock %}

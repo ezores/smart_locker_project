@@ -1,0 +1,14 @@
+{% extends "base.html" %} {% block title %}{{ _('Manage Items') }}{% endblock %}
+{% block content %}
+<h1>{{ _('Manage Items') }}</h1>
+<table class="table-large">
+  <tr>
+    <th>{{ _('Name') }}</th>
+    <th>{{ _('Locker') }}</th>
+    <th>{{ _('Actions') }}</th>
+  </tr>
+  <!-- Item rows go here -->
+</table>
+<button class="btn-large">{{ _('Add Item') }}</button>
+<a href="/admin" class="btn-large">{{ _('Back') }}</a>
+{% endblock %}

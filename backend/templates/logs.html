@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}{{ _('Logs') }}{% endblock %} {%
+block content %}
+<h1>{{ _('Logs') }}</h1>
+<table class="table-large">
+  <tr>
+    <th>{{ _('User') }}</th>
+    <th>{{ _('Item') }}</th>
+    <th>{{ _('Locker') }}</th>
+    <th>{{ _('Timestamp') }}</th>
+    <th>{{ _('Action') }}</th>
+  </tr>
+  <!-- Log rows go here -->
+</table>
+<a href="/admin" class="btn-large">{{ _('Back') }}</a>
+{% endblock %}

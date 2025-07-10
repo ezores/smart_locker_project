@@ -1,0 +1,348 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Smart Locker System\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Smart Locker System"
+msgstr "Système de Casiers Intelligents"
+
+msgid "Login"
+msgstr "Connexion"
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Invalid username or password"
+msgstr "Nom d'utilisateur ou mot de passe invalide"
+
+msgid "Main Menu"
+msgstr "Menu Principal"
+
+msgid "Borrow Item"
+msgstr "Emprunter un Article"
+
+msgid "Return Item"
+msgstr "Retourner un Article"
+
+msgid "Admin Dashboard"
+msgstr "Tableau de Bord Admin"
+
+msgid "Logout"
+msgstr "Déconnexion"
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "Scan RFID or enter code"
+msgstr "Scanner RFID ou entrer le code"
+
+msgid "Select Item"
+msgstr "Sélectionner un Article"
+
+msgid "Borrow"
+msgstr "Emprunter"
+
+msgid "Return"
+msgstr "Retourner"
+
+msgid "Manage Users"
+msgstr "Gérer les Utilisateurs"
+
+msgid "Manage Items"
+msgstr "Gérer les Articles"
+
+msgid "Manage Lockers"
+msgstr "Gérer les Casiers"
+
+msgid "View Logs"
+msgstr "Voir les Journaux"
+
+msgid "Export Logs"
+msgstr "Exporter les Journaux"
+
+msgid "Export Inventory"
+msgstr "Exporter l'Inventaire"
+
+msgid "Add User"
+msgstr "Ajouter un Utilisateur"
+
+msgid "Add Item"
+msgstr "Ajouter un Article"
+
+msgid "Add Locker"
+msgstr "Ajouter un Casier"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "English"
+msgstr "Anglais"
+
+msgid "French"
+msgstr "Français"
+
+msgid "Spanish"
+msgstr "Espagnol"
+
+msgid "Turkish"
+msgstr "Turc"
+
+msgid "Role"
+msgstr "Rôle"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Locker"
+msgstr "Casier"
+
+msgid "Items"
+msgstr "Articles"
+
+msgid "User"
+msgstr "Utilisateur"
+
+msgid "Item"
+msgstr "Article"
+
+msgid "Timestamp"
+msgstr "Horodatage"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Logs"
+msgstr "Journaux"
+
+msgid "active_borrows_menu_description"
+msgstr "Voir tous les articles actuellement empruntés"
+
+msgid "active_borrows"
+msgstr "Emprunts Actifs"
+
+msgid "active_borrows_description"
+msgstr "Voir et gérer tous les articles actuellement empruntés"
+
+msgid "search_borrows"
+msgstr "Rechercher des emprunts..."
+
+msgid "filter_by_user"
+msgstr "Filtrer par Utilisateur"
+
+msgid "filter_by_item"
+msgstr "Filtrer par Article"
+
+msgid "filter_by_date"
+msgstr "Filtrer par Date"
+
+msgid "all_users"
+msgstr "Tous les Utilisateurs"
+
+msgid "all_items"
+msgstr "Tous les Articles"
+
+msgid "failed_export_borrows"
+msgstr "Échec de l'exportation des emprunts"
+
+msgid "payments"
+msgstr "Paiements"
+
+msgid "payments_description"
+msgstr "Gérer les paiements et les informations de facturation"
+
+msgid "payments_menu_description"
+msgstr "Gérer les paiements et la facturation"
+
+msgid "search_payments"
+msgstr "Rechercher des paiements..."
+
+msgid "all_statuses"
+msgstr "Tous les statuts"
+
+msgid "completed"
+msgstr "Terminé"
+
+msgid "pending"
+msgstr "En attente"
+
+msgid "failed"
+msgstr "Échoué"
+
+msgid "new_payment"
+msgstr "Nouveau paiement"
+
+msgid "no_payments_found"
+msgstr "Aucun paiement trouvé"
+
+msgid "no_payments_yet"
+msgstr "Aucun paiement n'a encore été effectué"
+
+msgid "failed_export_payments"
+msgstr "Échec de l'exportation des paiements"
+
+msgid "stripe_integration"
+msgstr "Intégration Stripe"
+
+msgid "stripe_notice"
+msgstr "Ce système de paiement est conçu pour s'intégrer avec Stripe pour le traitement sécurisé des paiements. L'intégration comprend :"
+
+msgid "stripe_feature_1"
+msgstr "Traitement sécurisé des paiements avec Stripe Checkout"
+
+msgid "stripe_feature_2"
+msgstr "Confirmation automatique des paiements et gestion des webhooks"
+
+msgid "stripe_feature_3"
+msgstr "Historique des paiements et génération de reçus"
+
+msgid "stripe_feature_4"
+msgstr "Gestion des abonnements pour les paiements récurrents"
+
+msgid "view_current_borrows"
+msgstr "Voir les articles actuellement empruntés"
+
+msgid "system_logs"
+msgstr "Journaux système"
+
+msgid "view_activity_logs"
+msgstr "Voir toute l'activité système"
+
+msgid "add_edit_users"
+msgstr "Ajouter, modifier ou supprimer des utilisateurs"
+
+msgid "manage_users"
+msgstr "Gérer les utilisateurs"
+
+msgid "export_csv"
+msgstr "Exporter CSV"
+
+msgid "my_balance"
+msgstr "Mon Solde"
+
+msgid "balance_description"
+msgstr "Gérer votre solde de compte et l'historique des paiements"
+
+msgid "current_balance"
+msgstr "Solde Actuel"
+
+msgid "add_money"
+msgstr "Ajouter de l'Argent"
+
+msgid "failed_add_money"
+msgstr "Échec de l'ajout d'argent"
+
+msgid "amount"
+msgstr "Montant"
+
+msgid "cancel"
+msgstr "Annuler"
+
+msgid "save_changes"
+msgstr "Enregistrer les Modifications"
+
+msgid "add_new_item"
+msgstr "Ajouter un Nouvel Article"
+
+msgid "item_name"
+msgstr "Nom de l'Article"
+
+msgid "select_locker"
+msgstr "Sélectionner un casier"
+
+msgid "description_optional"
+msgstr "Description (Optionnel)"
+
+msgid "edit_item"
+msgstr "Modifier l'Article"
+
+msgid "unknown"
+msgstr "Inconnu"
+
+msgid "add_new_locker"
+msgstr "Ajouter un Nouveau Casier"
+
+msgid "locker_name"
+msgstr "Nom du Casier"
+
+msgid "not_specified"
+msgstr "Non spécifié"
+
+msgid "action"
+msgstr "Action"
+
+msgid "details"
+msgstr "Détails"
+
+msgid "get_started"
+msgstr "Commencer"
+
+msgid "view_current_borrows"
+msgstr "Voir les articles actuellement empruntés"
+
+msgid "no_items_found"
+msgstr "Aucun article trouvé"
+
+msgid "try_adjusting_search"
+msgstr "Essayez d'ajuster vos critères de recherche ou de filtrage"
+
+msgid "get_started_adding_item"
+msgstr "Commencez par ajouter votre premier article"
+
+msgid "borrowed_at"
+msgstr "Emprunté Le"
+
+msgid "payments_menu_description"
+msgstr "Gérer les paiements et les informations de facturation"
+
+msgid "view_activity_logs"
+msgstr "Voir les journaux d'activité et les événements système"
+
+msgid "add_edit_users"
+msgstr "Ajouter et modifier les comptes utilisateurs"
+
+msgid "completed"
+msgstr "Terminé"
+
+msgid "add_item"
+msgstr "Ajouter un Article"
+
+msgid "edit_locker"
+msgstr "Modifier le Casier"
+
+msgid "new_payment"
+msgstr "Nouveau Paiement"
+
+msgid "download_excel"
+msgstr "Télécharger Excel"
+
+msgid "save_changes"
+msgstr "Enregistrer les Modifications"
+
+msgid "locker_name"
+msgstr "Nom du Casier"
+
+msgid "failed"
+msgstr "Échoué"
+
+msgid "all_statuses"
+msgstr "Tous les Statuts"
+
+msgid "edit_item"
+msgstr "Modifier l'Article"
+
+msgid "delete_item"
+msgstr "Supprimer l'Article" 

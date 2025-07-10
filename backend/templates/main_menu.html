@@ -1,0 +1,8 @@
+{% extends "base.html" %} {% block title %}{{ _('Main Menu') }}{% endblock %} {%
+block content %}
+<h1>{{ _('Main Menu') }}</h1>
+<a href="/borrow" class="btn-large">{{ _('Borrow Item') }}</a>
+<a href="/return" class="btn-large">{{ _('Return Item') }}</a>
+<a href="/admin" class="btn-large">{{ _('Admin Dashboard') }}</a>
+<a href="/logout" class="btn-large">{{ _('Logout') }}</a>
+{% endblock %}

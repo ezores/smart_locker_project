@@ -1,378 +1,261 @@
 # Smart Locker System
 
-A modern, full-stack smart locker management system built with Flask (Python) backend and React (JavaScript) frontend. The system provides secure equipment borrowing and returning functionality with comprehensive user management, logging, and reporting capabilities.
+A modern locker management system with Flask backend and React frontend, featuring RFID authentication, real-time monitoring, and comprehensive reporting.
 
-## 🌟 Features
+## Features
 
-### Core Functionality
+- **Secure Authentication**: RFID card-based access with user management
+- **Real-time Monitoring**: Live locker status and usage tracking
+- **Multi-language Support**: English, French, Spanish, and Turkish
+- **Admin Dashboard**: Comprehensive analytics and user management
+- **Reporting System**: Export capabilities for usage reports
+- **Modern UI**: Responsive React frontend with dark mode support
 
-- **RFID Card Authentication** - Secure access using RFID cards
-- **User ID Authentication** - Alternative login using numeric user IDs
-- **Equipment Management** - Track and manage equipment inventory
-- **Locker Management** - Monitor locker status and locations
-- **Borrow/Return System** - Streamlined equipment checkout process
-- **Real-time Logging** - Comprehensive activity tracking
-
-### User Management
-
-- **Multi-role Support** - Admin and Student roles
-- **User Authentication** - Secure login with JWT tokens
-- **Profile Management** - User account administration
-- **Permission Control** - Role-based access control
-
-### Administrative Features
-
-- **Dashboard Analytics** - Real-time system statistics
-- **Reporting System** - Export reports in Excel, PDF, and CSV formats
-- **Activity Logs** - Detailed system activity monitoring
-- **Data Management** - CRUD operations for users, items, and lockers
-
-### User Experience
-
-- **Multi-language Support** - English, French, Spanish, Turkish
-- **Dark Mode** - Modern dark/light theme toggle
-- **Responsive Design** - Works on desktop and mobile devices
-- **Modern UI/UX** - Clean, intuitive interface
-
-## 🏗️ Project Structure
-
-```
-smart_locker_project/
-├── 📁 backend/                    # Flask backend application
-│   ├── 📁 api/                   # API endpoints
-│   ├── 📁 models/                # Database models
-│   ├── 📁 utils/                 # Utility functions
-│   ├── 📁 config/                # Configuration files
-│   └── 📁 tests/                 # Backend tests
-├── 📁 frontend/                  # React frontend application
-│   ├── 📁 src/
-│   │   ├── 📁 components/        # Reusable UI components
-│   │   ├── 📁 pages/            # Page components
-│   │   ├── 📁 contexts/         # React contexts
-│   │   ├── 📁 hooks/            # Custom React hooks
-│   │   └── 📁 utils/            # Frontend utilities
-│   └── 📁 public/               # Static assets
-├── 📁 docs/                     # Documentation
-├── 📁 scripts/                  # Development scripts
-└── 📁 data/                     # Database and data files
-```
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.8+
-- Node.js 16+
-- npm or yarn
-- PostgreSQL (for production)
+- **macOS/Linux** (Windows support coming soon)
+- **Python 3.8+**
+- **Node.js 16+**
+- **Homebrew** (macOS) or **apt** (Linux)
 
-### 1. Setup PostgreSQL
+### Installation
 
-First, install and configure PostgreSQL:
+1. **Clone the repository**:
 
-```bash
-./setup_postgresql.sh
-```
+   ```bash
+   git clone https://github.com/yourusername/smart-locker-system.git
+   cd smart-locker-system
+   ```
 
-This script will:
+2. **Set up database credentials** (optional):
 
-- Install PostgreSQL (macOS: Homebrew, Linux: apt)
-- Start the PostgreSQL service
-- Create the database and configure users
-- Test the connection
+   ```bash
+   # Create a .env file for custom credentials
+   echo "DB_NAME=my_locker_db" > .env
+   echo "DB_USER=my_locker_user" >> .env
+   echo "DB_PASS=my_secure_password" >> .env
+   ```
 
-### 2. Start the System
+3. **Run the automated setup**:
+   ```bash
+   chmod +x start.sh
+   ./start.sh
+   ```
 
-#### Development Mode with Demo Data
+The script will automatically:
 
-```bash
-./start.sh --dev --demo --verbose
-```
+- Install PostgreSQL if not present
+- Create database and user
+- Install Python and Node.js dependencies
+- Start backend (port 5172) and frontend (port 5173)
 
-#### Production Mode
+### Default Credentials
 
-```bash
-./start.sh --prod
-```
+**Database**:
 
-#### Testing Mode with Simple Demo
+- Host: `localhost`
+- Port: `5432`
+- Database: `smart_locker_db`
+- User: `smart_locker_user`
+- Password: `smartlockerpass123`
 
-```bash
-./start.sh --test --simple-demo
-```
+**Application**:
 
-#### Reset Database and Load Demo Data
+- Admin: `admin` / `admin123`
+- Student: `student1` / `student123`
 
-```bash
-./start.sh --dev --reset-db --verbose
-```
+## Development
 
-## Startup Script Options
-
-### Environment Options
-
-- `--dev`: Development mode (default)
-- `--prod`: Production mode
-- `--test`: Testing mode
-
-### Demo Options
-
-- `--demo`: Load comprehensive demo data (10 users, 8 lockers, 25 items, 100 logs)
-- `--simple-demo`: Load minimal demo data (2 users, 2 lockers, 2 items)
-- `--reset-db`: Reset database and load demo data
-
-### Configuration Options
-
-- `--verbose`: Enable verbose output
-- `--port PORT`: Backend port (default: 5172)
-- `--frontend-port PORT`: Frontend port (default: 5173)
-
-### Database Options
-
-- `--db-host HOST`: Database host (default: localhost)
-- `--db-port PORT`: Database port (default: 5432)
-- `--db-name NAME`: Database name (default: smart_locker)
-- `--db-user USER`: Database user (default: postgres)
-- `--db-password PASS`: Database password (default: postgres)
-
-## 🔧 Configuration
-
-### Environment Variables
-
-The system uses the following environment variables for database configuration:
+### Running Tests
 
 ```bash
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=smart_locker
-export DB_USER=postgres
-export DB_PASSWORD=postgres
+./start.sh --test
 ```
 
-### Database Setup
+This will run comprehensive backend API tests and frontend tests.
 
-The system uses PostgreSQL for better scalability, performance, and enterprise features. The database includes enhanced models with additional fields.
+### Manual Setup
 
-## Database Schema
+If you prefer manual setup:
 
-### Enhanced Models
-
-The system now includes enhanced database models with additional fields:
-
-#### Users
-
-- `id`, `username`, `password_hash`, `rfid_tag`, `qr_code`, `role`
-- `email`, `first_name`, `last_name`, `student_id`, `created_at`, `is_active`
-
-#### Lockers
-
-- `id`, `name`, `location`, `capacity`, `status` (active/maintenance/inactive)
-
-#### Items
-
-- `id`, `name`, `description`, `category`, `condition`, `serial_number`
-- `purchase_date`, `warranty_expiry`, `locker_id`, `is_available`, `created_at`
-
-#### Logs
-
-- `id`, `user_id`, `item_id`, `locker_id`, `timestamp`, `action_type`
-- `notes`, `due_date`, `returned_at`
-
-#### Borrows (New)
-
-- `id`, `user_id`, `item_id`, `borrowed_at`, `due_date`, `returned_at`
-- `status` (borrowed/returned/overdue), `notes`
-
-## Demo Data
-
-### Comprehensive Demo Data
-
-When using `--demo`, the system creates:
-
-- **10 Users**: 2 admins, 8 students
-- **8 Lockers**: Different locations and capacities
-- **25 Items**: Electronics, books, tools, audio/video equipment
-- **100 Log Entries**: Various actions with timestamps
-- **Active Borrows**: 30% of items are currently borrowed
-
-### Simple Demo Data
-
-When using `--simple-demo`, the system creates:
-
-- **2 Users**: 1 admin, 1 student
-- **2 Lockers**: Basic configuration
-- **2 Items**: Laptop and tablet
-
-## Demo Credentials
-
-### Admin Users
-
-- Username: `admin`, Password: `admin123`
-- Username: `manager`, Password: `manager123`
-
-### Student Users
-
-- Username: `student1` through `student10`, Password: `student123`
-
-## 👥 User Roles
-
-### Admin
-
-- Full system access
-- User management
-- Equipment management
-- Locker management
-- System reports and analytics
-- Activity monitoring
-
-### Student
-
-- Borrow equipment
-- Return equipment
-- View personal history
-- Access to assigned lockers
-
-## 🔐 Authentication Methods
-
-### RFID Card Authentication
-
-- Primary authentication method
-- Secure card-based access
-- Real-time validation
-
-### User ID Authentication
-
-- Alternative authentication method
-- Numeric user ID input
-- Fallback when RFID cards are unavailable
-
-## 📊 API Documentation
-
-### Health Check
-
-- `GET /api/health`: System health status and database connection
-
-### Authentication Endpoints
-
-- `POST /api/auth/login` - User login
-- `GET /api/user/profile` - Get user profile
-
-### Equipment Management
-
-- `GET /api/items` - List all items
-- `GET /api/lockers` - List all lockers
-- `POST /api/borrow` - Borrow equipment
-- `POST /api/return` - Return equipment
-
-### Administrative Endpoints
-
-- `GET /api/admin/stats` - System statistics
-- `GET /api/admin/recent-activity` - Recent activity
-- `GET /api/admin/active-borrows` - Currently borrowed items
-- `GET /api/admin/reports` - Generate reports
-- `GET /api/admin/export` - Export data in various formats
-- `GET /api/admin/users` - User management
-- `GET /api/admin/logs` - Activity logs
-
-## 🧪 Testing
-
-### Backend Tests
-
-```bash
-# Run backend tests
-python -m pytest tests/
-```
-
-### Frontend Tests
-
-```bash
-# Run frontend tests
-npm test
-```
-
-## 📝 Development
-
-### Code Style
-
-- Backend: Follow PEP 8 Python style guide
-- Frontend: Use ESLint and Prettier
-- Components: Use functional components with hooks
-
-## 🔧 Troubleshooting
-
-### PostgreSQL Connection Issues
-
-1. Ensure PostgreSQL is running:
+1. **Install PostgreSQL**:
 
    ```bash
    # macOS
-   brew services list | grep postgresql
+   brew install postgresql
+   brew services start postgresql
 
    # Linux
-   sudo systemctl status postgresql
+   sudo apt-get install postgresql postgresql-contrib
+   sudo service postgresql start
    ```
 
-2. Check database connection:
+2. **Create database**:
 
    ```bash
-   PGPASSWORD=postgres psql -h localhost -U postgres -d smart_locker
+   psql -U postgres -c "CREATE DATABASE smart_locker_db;"
+   psql -U postgres -c "CREATE USER smart_locker_user WITH PASSWORD 'smartlockerpass123';"
+   psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE smart_locker_db TO smart_locker_user;"
    ```
 
-3. Reset database if needed:
+3. **Set up Python environment**:
+
    ```bash
-   ./start.sh --dev --reset-db --verbose
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
    ```
 
-### Port Conflicts
+4. **Set up Node.js environment**:
 
-If ports are already in use, specify different ports:
+   ```bash
+   cd frontend
+   npm install
+   cd ..
+   ```
+
+5. **Start services**:
+
+   ```bash
+   # Backend
+   source .venv/bin/activate
+   cd backend
+   python app.py --port 5172 --demo --reset-db --verbose
+
+   # Frontend (new terminal)
+   cd frontend
+   npm run dev
+   ```
+
+## Environment Variables
+
+You can customize the database configuration using environment variables:
 
 ```bash
-./start.sh --dev --demo --port 5173 --frontend-port 5174
+export DB_NAME="my_custom_db"
+export DB_USER="my_custom_user"
+export DB_PASS="my_secure_password"
+export DB_PORT="5432"
+export DB_HOST="localhost"
 ```
 
-### Verbose Debugging
+## API Documentation
 
-Enable verbose mode for detailed logging:
+### Authentication
+
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+
+### Admin Endpoints
+
+- `GET /api/admin/active-borrows` - Get active borrows
+- `GET /api/admin/users` - Get all users
+- `GET /api/admin/stats` - Get system statistics
+
+### Locker Management
+
+- `GET /api/lockers` - Get all lockers
+- `POST /api/lockers/borrow` - Borrow an item
+- `POST /api/lockers/return` - Return an item
+
+## Project Structure
+
+```
+smart_locker_project/
+├── backend/                 # Flask API server
+│   ├── api/                # API routes
+│   ├── models.py           # Database models
+│   ├── demo_data.py        # Demo data generation
+│   ├── app.py              # Main Flask application
+│   └── tests/              # Backend tests
+├── frontend/               # React application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   └── contexts/       # React contexts
+│   └── package.json
+├── data/                   # Data files
+├── docs/                   # Documentation
+├── scripts/                # Utility scripts
+└── start.sh               # Automated setup script
+```
+
+## Security Considerations
+
+### Database Security
+
+- Default credentials are for development only
+- Use strong passwords in production
+- Consider using environment variables for production
+- Enable SSL connections for production databases
+
+### Application Security
+
+- JWT tokens for authentication
+- Input validation on all endpoints
+- CORS configuration for frontend
+- Rate limiting on sensitive endpoints
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Run the test suite: `./start.sh --test`
+6. Submit a pull request
+
+## Troubleshooting
+
+### Common Issues
+
+**PostgreSQL Connection Failed**:
 
 ```bash
-./start.sh --dev --demo --verbose
+# Check if PostgreSQL is running
+brew services list | grep postgresql
+# Start if needed
+brew services start postgresql
 ```
 
-## 🚀 Production Deployment
+**Port Already in Use**:
 
-For production deployment:
+```bash
+# Find process using port
+lsof -i :5172
+# Kill process
+kill -9 <PID>
+```
 
-1. Use a dedicated PostgreSQL server
-2. Set secure database credentials
-3. Configure environment variables
-4. Use production mode:
+**Python Dependencies**:
 
-   ```bash
-   ./start.sh --prod --db-host your-db-server --db-user your-user --db-password your-password
-   ```
+```bash
+# Recreate virtual environment
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-5. Consider using a process manager like PM2 or systemd
-6. Set up proper logging and monitoring
-7. Configure SSL/TLS for secure connections
+**Node.js Dependencies**:
 
-## 📚 Migration Notes
+```bash
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+```
 
-### Removed SQLite Files
+## License
 
-- `smart_locker_project/backend/db/locker.db`
-- `instance/smart_locker.db-journal`
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### New Dependencies
+## Support
 
-- `psycopg2-binary==2.9.9`: PostgreSQL adapter
-- `SQLAlchemy==2.0.23`: Enhanced ORM features
+For issues and questions:
 
-### Backward Compatibility
-
-The system maintains all existing functionality while adding:
-
-- Enhanced data models
-- Better scalability
-- Improved performance
-- Enterprise-grade database features
+1. Check the troubleshooting section
+2. Review the API documentation
+3. Open an issue on GitHub
+4. Contact the development team

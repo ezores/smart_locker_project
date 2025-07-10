@@ -1,0 +1,16 @@
+{% extends "base.html" %} {% block title %}{{ _('Manage Users') }}{% endblock %}
+{% block content %}
+<h1>{{ _('Manage Users') }}</h1>
+<table class="table-large">
+  <tr>
+    <th>{{ _('Username') }}</th>
+    <th>{{ _('Role') }}</th>
+    <th>RFID</th>
+    <th>QR</th>
+    <th>{{ _('Actions') }}</th>
+  </tr>
+  <!-- User rows go here -->
+</table>
+<button class="btn-large">{{ _('Add User') }}</button>
+<a href="/admin" class="btn-large">{{ _('Back') }}</a>
+{% endblock %}

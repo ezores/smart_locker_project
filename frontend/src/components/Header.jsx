@@ -211,20 +211,19 @@ const Header = () => {
                   >
                     {user.role === "admin" ? "Administrator" : "User"}
                   </div>
-                  <button
-                    onClick={handleLogout}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors ${
-                      isDarkMode
-                        ? "text-gray-300 hover:bg-gray-700 hover:text-white"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>{t("logout")}</span>
-                  </button>
                 </div>
               )}
             </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-red-500 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20`}
+              title={t("logout")}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:block">{t("logout")}</span>
+            </button>
 
             {/* Hamburger menu button */}
             <button

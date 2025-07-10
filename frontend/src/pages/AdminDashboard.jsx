@@ -22,8 +22,9 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowLeft,
+  Settings,
 } from "lucide-react";
-import axios from "axios";
+import { getStats, getRecentActivity } from "../utils/api";
 import Reports from "../components/Reports";
 
 const AdminDashboard = () => {
@@ -45,21 +46,17 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsResponse, activityResponse] = await Promise.all([
-        axios.get("/api/admin/stats"),
-        axios.get("/api/admin/recent-activity"),
+      const [statsData, activityData] = await Promise.all([
+        getStats(),
+        getRecentActivity(),
       ]);
-      // Map API response to expected format
-      const apiStats = statsResponse.data;
       setStats({
-        totalUsers: apiStats.total_users || 0,
-        totalItems: apiStats.total_items || 0,
-        totalLockers: apiStats.total_lockers || 0,
-        activeBorrows: apiStats.active_borrows || 0,
+        totalUsers: statsData.total_users || 0,
+        totalItems: statsData.total_items || 0,
+        totalLockers: statsData.total_lockers || 0,
+        activeBorrows: statsData.active_borrows || 0,
       });
-      setRecentActivity(
-        Array.isArray(activityResponse.data) ? activityResponse.data : []
-      );
+      setRecentActivity(activityData || []);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       setStats({
@@ -77,9 +74,15 @@ const AdminDashboard = () => {
   const getActivityIcon = (type) => {
     switch (type) {
       case "borrow":
+      case "check_out":
         return <Package className="h-4 w-4 text-blue-600" />;
       case "return":
+      case "check_in":
         return <Activity className="h-4 w-4 text-green-600" />;
+      case "login":
+        return <User className="h-4 w-4 text-purple-600" />;
+      case "maintenance":
+        return <Settings className="h-4 w-4 text-orange-600" />;
       default:
         return <Activity className="h-4 w-4 text-gray-600" />;
     }
@@ -278,21 +281,21 @@ const AdminDashboard = () => {
                       isDarkMode ? "bg-gray-700" : "bg-gray-50"
                     }`}
                   >
-                    {getActivityIcon(activity.type)}
+                    {getActivityIcon(activity.action_type)}
                     <div className="flex-1 min-w-0">
                       <p
                         className={`text-sm font-medium ${
                           isDarkMode ? "text-white" : "text-gray-900"
                         }`}
                       >
-                        {activity.user}
+                        {activity.user_name}
                       </p>
                       <p
                         className={`text-sm ${
                           isDarkMode ? "text-gray-300" : "text-gray-500"
                         }`}
                       >
-                        {activity.item || t("unknown")}
+                        {activity.description || t("unknown")}
                       </p>
                     </div>
                     <div className="text-right">
@@ -305,14 +308,13 @@ const AdminDashboard = () => {
                       </p>
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          activity.status === "completed"
+                          activity.action_type === "return" ||
+                          activity.action_type === "check_in"
                             ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
+                            : "bg-blue-100 text-blue-800"
                         }`}
                       >
-                        {activity.status === "completed"
-                          ? t("completed")
-                          : t("pending")}
+                        {activity.action_type}
                       </span>
                     </div>
                   </div>

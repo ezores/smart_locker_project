@@ -14,7 +14,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { getStats } from "../utils/api";
 
 const MainMenu = () => {
   const { user } = useAuth();
@@ -28,8 +28,25 @@ const MainMenu = () => {
   });
 
   useEffect(() => {
-    if (user.role === "admin") {
-      axios.get("/api/admin/stats").then((res) => setStats(res.data));
+    if (user && user.role === "admin") {
+      getStats()
+        .then((data) => {
+          setStats({
+            totalUsers: data.total_users || 0,
+            totalItems: data.total_items || 0,
+            totalLockers: data.total_lockers || 0,
+            activeBorrows: data.active_borrows || 0,
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching stats:", error);
+          setStats({
+            totalUsers: 0,
+            totalItems: 0,
+            totalLockers: 0,
+            activeBorrows: 0,
+          });
+        });
     }
   }, [user]);
 
@@ -50,7 +67,7 @@ const MainMenu = () => {
       color: "bg-green-500",
       iconColor: "text-green-500",
     },
-    ...(user.role === "admin"
+    ...(user && user.role === "admin"
       ? [
           {
             title: t("admin_panel"),
@@ -126,7 +143,7 @@ const MainMenu = () => {
             isDarkMode ? "text-white" : "text-gray-900"
           }`}
         >
-          {t("welcome")}, {user.username}!
+          {t("welcome")}, {user?.username || "User"}!
         </h1>
         <p
           className={`text-xl ${
@@ -180,7 +197,7 @@ const MainMenu = () => {
       </div>
 
       {/* Quick Stats for Admin */}
-      {user.role === "admin" && (
+      {user && user.role === "admin" && (
         <div className="mt-12">
           <h2
             className={`text-2xl font-bold mb-6 ${

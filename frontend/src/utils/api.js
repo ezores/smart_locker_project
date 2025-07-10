@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5172/api";
+const API_BASE_URL = "/api";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -49,6 +49,11 @@ export const logout = async () => {
 
 export const register = async (userData) => {
   const response = await api.post("/auth/register", userData);
+  return response.data;
+};
+
+export const checkUsernameAvailability = async (username) => {
+  const response = await api.get(`/auth/check-username/${username}`);
   return response.data;
 };
 
@@ -114,6 +119,11 @@ export const getStats = async () => {
 
 export const getActiveBorrows = async () => {
   const response = await api.get("/admin/active-borrows");
+  return response.data;
+};
+
+export const getRecentActivity = async () => {
+  const response = await api.get("/admin/recent-activity");
   return response.data;
 };
 

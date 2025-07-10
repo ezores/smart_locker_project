@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
@@ -217,7 +217,7 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-4">
             <p
               className={`text-sm ${
                 isDarkMode ? "text-gray-400" : "text-gray-600"
@@ -225,6 +225,22 @@ const Login = () => {
             >
               {t("demo_credentials")}
             </p>
+
+            <div className="border-t pt-4">
+              <p
+                className={`text-sm ${
+                  isDarkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {t("dont_have_account") || "Don't have an account?"}{" "}
+                <Link
+                  to="/register"
+                  className="font-medium text-primary-600 hover:text-primary-500"
+                >
+                  {t("register") || "Register"}
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

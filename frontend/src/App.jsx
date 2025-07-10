@@ -12,6 +12,7 @@ import { useLanguage } from "./contexts/LanguageContext";
 import { useDarkMode } from "./contexts/DarkModeContext";
 import Header from "./components/Header";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import MainMenu from "./pages/MainMenu";
 import Borrow from "./pages/Borrow";
 import Return from "./pages/Return";
@@ -42,6 +43,10 @@ function App() {
           <Route
             path="/login"
             element={!user ? <Login /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/register"
+            element={!user ? <Register /> : <Navigate to="/" />}
           />
           <Route
             path="/"

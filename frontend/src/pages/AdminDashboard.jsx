@@ -6,7 +6,8 @@
  * @description Admin dashboard with statistics, recent activity, and reporting functionality
  */
 
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {
@@ -17,9 +18,7 @@ import {
   TrendingUp,
   Clock,
   User,
-  Calendar,
   BarChart3,
-  ChevronDown,
   ChevronRight,
   ArrowLeft,
   Settings,

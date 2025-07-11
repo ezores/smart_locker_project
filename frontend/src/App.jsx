@@ -6,9 +6,9 @@
  * @description Main application component with routing and dark mode support
  */
 
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
-import { useLanguage } from "./contexts/LanguageContext";
 import { useDarkMode } from "./contexts/DarkModeContext";
 import Header from "./components/Header";
 import Login from "./pages/Login";
@@ -29,7 +29,6 @@ import AdminRoute from "./components/AdminRoute";
 
 function App() {
   const { user } = useAuth();
-  const { currentLanguage } = useLanguage();
   const { isDarkMode } = useDarkMode();
 
   return (

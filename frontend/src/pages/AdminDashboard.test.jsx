@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import AdminDashboard from "./AdminDashboard";
 import { LanguageProvider } from "../contexts/LanguageContext";
@@ -5,6 +6,17 @@ import { DarkModeProvider } from "../contexts/DarkModeContext";
 import axios from "axios";
 
 jest.mock("axios");
+jest.mock("../utils/api", () => ({
+  getStats: jest.fn(() =>
+    Promise.resolve({
+      total_users: 5,
+      total_items: 10,
+      total_lockers: 3,
+      active_borrows: 2,
+    })
+  ),
+  getRecentActivity: jest.fn(() => Promise.resolve([])),
+}));
 
 describe("AdminDashboard", () => {
   it("renders dashboard and displays stats", async () => {

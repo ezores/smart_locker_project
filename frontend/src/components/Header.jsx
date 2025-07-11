@@ -6,7 +6,8 @@
  * @description Main header with navigation, language selector, dark mode toggle, and user menu
  */
 
-import React, { useState } from "react";
+import React from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";

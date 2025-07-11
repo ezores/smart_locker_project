@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
@@ -8,7 +8,6 @@ import {
   MapPin,
   CheckCircle,
   AlertCircle,
-  User,
   ArrowLeft,
 } from "lucide-react";
 import axios from "axios";

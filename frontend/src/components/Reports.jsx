@@ -6,16 +6,14 @@
  * @description Admin reporting component with date range selection and export functionality
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {
-  Calendar,
   Download,
   FileText,
   BarChart3,
   TrendingUp,
-  Filter,
   RefreshCw,
 } from "lucide-react";
 import axios from "axios";

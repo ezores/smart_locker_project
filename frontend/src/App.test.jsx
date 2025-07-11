@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -10,7 +11,14 @@ jest.mock("./utils/api", () => ({
   login: jest.fn(),
   logout: jest.fn(),
   getUsers: jest.fn(),
-  getStats: jest.fn(),
+  getStats: jest.fn(() =>
+    Promise.resolve({
+      total_users: 1,
+      total_items: 1,
+      total_lockers: 1,
+      active_borrows: 0,
+    })
+  ),
   getActiveBorrows: jest.fn(),
   getLockers: jest.fn(),
   getItems: jest.fn(),

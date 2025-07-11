@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.js"],
   moduleNameMapper: {
@@ -20,9 +20,16 @@ export default {
   ],
   coverageReporters: ["text", "lcov", "html"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
-  transformIgnorePatterns: ["node_modules/(?!(react-calendar)/)"],
+  transformIgnorePatterns: [
+    "node_modules/(?!(react-calendar|get-user-locale|memoize|mimic-function|@wojtekmaj/date-utils)/)",
+  ],
   moduleFileExtensions: ["js", "jsx", "json"],
   testEnvironmentOptions: {
     url: "http://localhost",
+  },
+  globals: {
+    "ts-jest": {
+      useESM: true,
+    },
   },
 };

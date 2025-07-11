@@ -289,13 +289,6 @@ const Reservations = () => {
             {user?.role === "admin" && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleExport("csv")}
-                  disabled={exportLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                >
-                  {exportLoading ? "Exporting..." : "Export CSV"}
-                </button>
-                <button
                   onClick={() => handleExport("excel")}
                   disabled={exportLoading}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
@@ -303,9 +296,16 @@ const Reservations = () => {
                   {exportLoading ? "Exporting..." : "Export Excel"}
                 </button>
                 <button
+                  onClick={() => handleExport("csv")}
+                  disabled={exportLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {exportLoading ? "Exporting..." : "Export CSV"}
+                </button>
+                <button
                   onClick={() => handleExport("pdf")}
                   disabled={exportLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
                 >
                   {exportLoading ? "Exporting..." : "Export PDF"}
                 </button>

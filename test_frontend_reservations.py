@@ -7,11 +7,13 @@ Tests the datetime handling and form submission that the frontend uses
 import requests
 import json
 import time
-from datetime import datetime, timedelta
 import sys
+import os
+from datetime import datetime, timedelta
 
 # Configuration
-BASE_URL = "http://localhost:5172"
+BASE_URL = "http://localhost:5050"
+API_BASE = f"{BASE_URL}/api"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 

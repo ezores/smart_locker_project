@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 import sys
 
 # Configuration
-BASE_URL = "http://localhost:5172"
+BASE_URL = "http://localhost:5050"
+API_BASE = f"{BASE_URL}/api"
 ADMIN_USERNAME = "admin"
 import os
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'SecureAdminPass2024!')

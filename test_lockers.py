@@ -5,10 +5,12 @@ import json
 import sys
 import os
 
+# Configuration
+base_url = "http://localhost:5050"
+api_base = f"{base_url}/api"
+
 def test_backend():
     """Test if the backend is running and has lockers and reservations"""
-    
-    base_url = "http://localhost:5172"
     
     # Test 1: Health check
     print("Testing backend health...")

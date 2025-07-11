@@ -100,7 +100,7 @@ async function healthCheck() {
     const { default: fetch } = await import("node-fetch");
 
     // Check backend health
-    const backendResponse = await fetch("http://localhost:5172/api/health");
+    const backendResponse = await fetch("http://localhost:5050/api/health");
     if (!backendResponse.ok) {
       throw new Error("Backend is not responding");
     }

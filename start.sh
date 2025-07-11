@@ -10,7 +10,7 @@ set -e
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
-BACKEND_PORT=5172
+BACKEND_PORT=5050
 FRONTEND_PORT=5173
 DATABASE_NAME="smart_locker_db"
 DATABASE_USER="smart_locker_user"

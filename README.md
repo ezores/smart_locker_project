@@ -16,34 +16,25 @@ A comprehensive smart locker management system with RFID access, reservation sys
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ezores/smart_locker_project.git
    cd smart_locker_project
    ```
 
-2. **Start the system with demo data**
+2. **Run the unified startup script:**
 
    ```bash
-   ./start.sh --demo --verbose --reset-db
+   ./start.sh --demo --reset-db --verbose
    ```
 
-3. **Access the application**
+3. **Access the application:**
+
+   - Backend API: http://localhost:5050
+   - Health Check: http://localhost:5050/api/health
    - Frontend: http://localhost:5173
-   - Backend API: http://localhost:5172
-   - Health Check: http://localhost:5172/api/health
 
-### Demo Credentials
-
-When running with `--demo` flag, the following users are available:
-
-**Admin Users:**
-
-- Username: `admin` | Password: `admin123`
-- Username: `manager` | Password: `manager123`
-- Username: `supervisor` | Password: `supervisor123`
-
-**Student Users:**
-
-- Username: `student1` through `student50` | Password: `student123`
+4. **Demo credentials:**
+   - Username: `admin`
+   - Password: `admin123`
 
 ### Startup Options
 
@@ -67,16 +58,16 @@ Test the API endpoints:
 
 ```bash
 # Health check
-curl http://localhost:5172/api/health
+curl http://localhost:5050/api/health
 
 # Login
-curl -X POST http://localhost:5172/api/auth/login \
+curl -X POST http://localhost:5050/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
 # Get lockers (with token from login)
 curl -H "Authorization: Bearer <TOKEN>" \
-  http://localhost:5172/api/lockers
+  http://localhost:5050/api/lockers
 ```
 
 ## Features

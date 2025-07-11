@@ -5,6 +5,7 @@
  * Tests backend API, frontend functionality, and RS485 integration
  */
 
+const puppeteer = require("puppeteer");
 const axios = require("axios");
 const { exec } = require("child_process");
 const { promisify } = require("util");
@@ -12,7 +13,7 @@ const { promisify } = require("util");
 const execAsync = promisify(exec);
 
 // Configuration
-const BACKEND_URL = "http://localhost:5172";
+const BACKEND_URL = "http://localhost:5050";
 const FRONTEND_URL = "http://localhost:5173";
 
 // Test results

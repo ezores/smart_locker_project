@@ -6,8 +6,10 @@
  */
 
 const axios = require("axios");
+const { exec } = require("child_process");
 
-const BACKEND_URL = "http://localhost:5172";
+// Configuration
+const BACKEND_URL = "http://localhost:5050";
 const FRONTEND_URL = "http://localhost:5173";
 
 async function checkSystemStatus() {

@@ -5,10 +5,14 @@ Test script for the Smart Locker Reservation System
 
 import requests
 import json
+import time
+import sys
+import os
 from datetime import datetime, timedelta
 
 # Configuration
-BASE_URL = "http://localhost:5172"
+BASE_URL = "http://localhost:5050"
+API_BASE = f"{BASE_URL}/api"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 STUDENT_USERNAME = "student1"

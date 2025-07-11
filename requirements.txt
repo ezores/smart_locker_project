@@ -1,33 +1,15 @@
-Flask
-Flask-Babel
-Flask-Cors
-Flask-JWT-Extended
-Flask-SQLAlchemy
-psycopg2-binary
-python-dotenv
-
-# Internationalization
+# Smart Locker System Python requirements
+Flask==3.1.1
 Flask-Babel==4.0.0
-
-# Development and testing
+Flask-Cors==4.0.0
+Flask-JWT-Extended==4.6.0
+Flask-SQLAlchemy==3.1.1
+psycopg2-binary==2.9.9
+python-dotenv==1.1.1
 pytest==7.4.0
 requests==2.31.0
-
-# Authentication and security
 PyJWT==2.8.0
-Flask-CORS==4.0.0
 Flask-Login==0.6.3
-Flask-JWT-Extended==4.6.0
-
-# Data processing and export
 pandas==2.0.3
-openpyxl==3.1.5
-reportlab==4.4.2
-
-# Hardware dependencies (Linux/Raspberry Pi only)
-# evdev
-# pyusb
-
-# Export dependencies
 openpyxl==3.1.5
 reportlab==4.4.2 

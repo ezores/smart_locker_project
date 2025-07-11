@@ -871,11 +871,26 @@ const Reservations = () => {
                     }`}
                   >
                     <option value="">{t("reservations.selectLocker")}</option>
-                    {lockers
-                      .filter((locker) => locker.status === "active")
+                    {/* Show all active lockers plus the current one (even if reserved) */}
+                    {[
+                      ...lockers.filter(
+                        (locker) =>
+                          locker.status === "active" ||
+                          String(locker.id) === String(formData.locker_id)
+                      ),
+                    ]
+                      // Remove duplicates by locker id
+                      .filter(
+                        (locker, idx, arr) =>
+                          arr.findIndex((l) => l.id === locker.id) === idx
+                      )
                       .map((locker) => (
                         <option key={locker.id} value={locker.id}>
                           {locker.name} - {locker.number}
+                          {locker.status === "reserved" &&
+                          String(locker.id) === String(formData.locker_id)
+                            ? " (currently assigned)"
+                            : ""}
                         </option>
                       ))}
                   </select>

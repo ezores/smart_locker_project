@@ -557,36 +557,8 @@ def init_models(db):
         print(f"Created {len(users)} users, {len(lockers)} lockers, {len(items)} items, and 500 log entries with active borrows")
 
     def init_db(minimal=False):
-        db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            admin = User(
-                username='admin',
-                email='admin@smartlocker.com',
-                first_name='Admin',
-                last_name='User',
-                role='admin',
-                department='IT'
-            )
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("Created admin user")
-        
-        if minimal:
-            # Create 40 empty lockers using the closure Locker class
-            for i in range(1, 41):
-                locker = Locker(
-                    name=f"Locker {i}",
-                    number=f"L{i}",
-                    location="Main Hall",
-                    description=f"Locker number {i}",
-                    status='active',
-                    is_active=True
-                )
-                db.session.add(locker)
-            db.session.commit()
-            print(f"Created 40 empty lockers for minimal mode")
-        else:
-            generate_dummy_data()
+        # This function should be called within an application context
+        # The actual database operations are handled in app.py with proper context
+        pass
     
     return User, Locker, Item, Log, Borrow, Payment, Reservation, init_db, generate_dummy_data 

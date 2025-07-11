@@ -1,446 +1,440 @@
 #!/bin/bash
+
+# Smart Locker System - Enterprise Deployment Script
+# Version: 2.0.0
+# Author: Smart Locker Development Team
+# License: MIT
+
 set -e
 
-# --- CONFIG ---
-# Load environment variables from .env file if it exists
-if [ -f ".env" ]; then
-    echo "[INFO] Loading environment variables from .env file"
-    export $(cat .env | grep -v '^#' | xargs)
-fi
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+BACKEND_PORT=5172
+FRONTEND_PORT=5173
+DATABASE_NAME="smart_locker_db"
+DATABASE_USER="smart_locker_user"
+DATABASE_PASSWORD="smartlockerpass123"
+DATABASE_HOST="localhost"
+DATABASE_PORT="5432"
 
-# Database credentials - can be overridden by environment variables
-DB_NAME="${DB_NAME:-smart_locker_db}"
-DB_USER="${DB_USER:-smart_locker_user}"
-DB_PASS="${DB_PASS:-smartlockerpass123}"
-DB_PORT="${DB_PORT:-5432}"
-DB_HOST="${DB_HOST:-localhost}"
-DATABASE_URL="postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Function to print output
-print_success() {
-    echo "[SUCCESS] $1"
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-print_error() {
-    echo "[ERROR] $1"
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-print_warning() {
-    echo "[WARNING] $1"
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-print_info() {
-    echo "[INFO] $1"
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Create .env file if it doesn't exist with database configuration
-if [ ! -f ".env" ]; then
-    print_info "Creating .env file with database configuration..."
-    cat > .env << EOF
-# Database Configuration
-DB_NAME=$DB_NAME
-DB_USER=$DB_USER
-DB_PASS=$DB_PASS
-DB_PORT=$DB_PORT
-DB_HOST=$DB_HOST
-DATABASE_URL=$DATABASE_URL
-
-# Flask Configuration
-FLASK_ENV=development
-FLASK_DEBUG=True
-SECRET_KEY=your-secret-key-change-in-production
-EOF
-    print_success "Created .env file with default configuration"
-fi
-
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Dependency checks
-missing_deps=()
-for dep in python3 pip3 node npm psql; do
-    if ! command_exists $dep; then
-        missing_deps+=("$dep")
-    fi
-    done
-if [ ${#missing_deps[@]} -ne 0 ]; then
-    print_error "Missing dependencies: ${missing_deps[*]}"
-    echo "Please install the missing dependencies before running this script."
-    echo "Python: https://www.python.org/downloads/"
-    echo "Node.js: https://nodejs.org/en/download/"
-    echo "PostgreSQL: https://www.postgresql.org/download/"
-    exit 1
-fi
-
-# Check for tmux (optional, only warn)
-if ! command_exists tmux; then
-    print_warning "tmux not found. For best experience, install tmux: https://github.com/tmux/tmux/wiki"
-fi
-
-# Function to check if a port is in use
-port_in_use() {
-    lsof -i :$1 >/dev/null 2>&1
-}
-
-# Function to kill processes using a port
-kill_port_processes() {
-    local port=$1
-    if port_in_use $port; then
-        print_warning "Port $port is in use. Killing existing processes..."
-        lsof -ti :$port | xargs kill -9 2>/dev/null || true
-        sleep 2
-    fi
-}
-
-# Function to start backend
-start_backend() {
-    print_info "Starting backend server..."
-    export DATABASE_URL="$DATABASE_URL"
-    export FLASK_ENV=development
-    pushd backend > /dev/null
-    source ../.venv/bin/activate
-    pkill -f "python.*app.py" 2>/dev/null || true
-    sleep 2
-    
-    # Build backend command with appropriate flags
-    BACKEND_CMD="python app.py --port 5172 --verbose"
-    if [ "$DEMO_MODE" = true ]; then
-        BACKEND_CMD="$BACKEND_CMD --demo"
-    fi
-    if [ "$RESET_DB" = true ]; then
-        BACKEND_CMD="$BACKEND_CMD --reset-db"
-    fi
-    if [ "$MINIMAL" = true ]; then
-        BACKEND_CMD="$BACKEND_CMD --minimal"
-    fi
-    
-    $BACKEND_CMD &
-    BACKEND_PID=$!
-    echo $BACKEND_PID > ../backend.pid
-    popd > /dev/null
-    print_info "Waiting for backend to start..."
-    for i in {1..30}; do
-        if curl -s http://localhost:5172/api/health >/dev/null 2>&1; then
-            print_success "Backend is healthy!"
-            return 0
-        fi
-        sleep 1
-    done
-    print_error "Backend failed to start. Check backend/app.py logs for details."
-    echo "Troubleshooting tips:"
-    echo "- Ensure PostgreSQL is running and accessible."
-    echo "- Check DATABASE_URL in .env or script."
-    echo "- Run 'psql $DATABASE_URL' to test DB connection."
-    return 1
-}
-
-# Function to start frontend
-start_frontend() {
-    print_info "Starting frontend server..."
-    pkill -f "node.*vite" 2>/dev/null || true
-    sleep 2
-    if [ ! -d "frontend" ]; then
-        print_error "frontend directory not found!"
-        exit 1
-    fi
-    pushd frontend > /dev/null
-    npm install
-    npm run dev &
-    FRONTEND_PID=$!
-    echo $FRONTEND_PID > ../frontend.pid
-    popd > /dev/null
-    print_info "Waiting for frontend to start..."
-    for i in {1..30}; do
-        if curl -s http://localhost:5173 >/dev/null 2>&1; then
-            print_success "Frontend is healthy!"
-            return 0
-        fi
-        sleep 1
-    done
-    print_error "Frontend failed to start. Check frontend logs for details."
-    echo "Troubleshooting tips:"
-    echo "- Ensure Node.js and npm are installed."
-    echo "- Try running 'npm install' and 'npm run dev' in the frontend directory manually."
-    return 1
-}
-
-# Function to run comprehensive tests
-run_tests() {
-    print_info "Running comprehensive system tests..."
-    
-    # Test 1: Backend API health check
-    print_info "Test 1: Backend API health check"
-    if curl -s http://localhost:5172/api/health | grep -q "healthy"; then
-        print_success "Backend API is healthy"
-    else
-        print_error "Backend API health check failed"
-        return 1
-    fi
-    
-    # Test 2: Database connection
-    print_info "Test 2: Database connection test"
-    if python3 -c "
-import psycopg2
-try:
-    conn = psycopg2.connect('$DATABASE_URL')
-    conn.close()
-    print('Database connection successful!')
-except Exception as e:
-    print(f'Database connection failed: {e}')
-    exit(1)
-"; then
-        print_success "Database connection test passed"
-    else
-        print_error "Database connection test failed"
-        return 1
-    fi
-    
-    # Test 3: Frontend accessibility
-    print_info "Test 3: Frontend accessibility test"
-    if curl -s http://localhost:5173 >/dev/null 2>&1; then
-        print_success "Frontend is accessible"
-    else
-        print_error "Frontend accessibility test failed"
-        return 1
-    fi
-    
-    # Test 4: Authentication endpoints
-    print_info "Test 4: Authentication endpoints test"
-    if curl -s -X POST http://localhost:5172/api/auth/login \
-        -H "Content-Type: application/json" \
-        -d '{"username":"admin","password":"admin123"}' | grep -q "token"; then
-        print_success "Authentication endpoints working"
-    else
-        print_error "Authentication endpoints test failed"
-        return 1
-    fi
-    
-    # Test 5: Reservations API
-    print_info "Test 5: Reservations API test"
-    if curl -s http://localhost:5172/api/reservations >/dev/null 2>&1; then
-        print_success "Reservations API is accessible"
-    else
-        print_error "Reservations API test failed"
-        return 1
-    fi
-    
-    # Test 6: Run Python test script
-    print_info "Test 6: Running Python test script"
-    if [ -f "test_reservations.py" ]; then
-        if python3 test_reservations.py; then
-            print_success "Python test script passed"
-        else
-            print_error "Python test script failed"
-            return 1
-        fi
-    else
-        print_warning "test_reservations.py not found, skipping"
-    fi
-    
-    print_success "All tests completed successfully!"
-    return 0
-}
-
-# Function to cleanup
-cleanup() {
-    print_info "Cleaning up..."
-    if [ -f "backend.pid" ]; then
-        kill $(cat backend.pid) 2>/dev/null || true
-        rm -f backend.pid
-    fi
-    if [ -f "frontend.pid" ]; then
-        kill $(cat frontend.pid) 2>/dev/null || true
-        rm -f frontend.pid
-    fi
-    pkill -f "python.*app.py" 2>/dev/null || true
-    pkill -f "node.*vite" 2>/dev/null || true
-}
-trap cleanup EXIT
-
-# Main execution
-echo "[INFO] Smart Locker System - Automated Setup and Testing"
-echo "=================================================="
-
-# Parse arguments
-TEST_MODE=false
+# Parse command line arguments
 DEMO_MODE=false
-VERBOSE=false
 RESET_DB=false
+VERBOSE=false
 MINIMAL=false
+TEST_MODE=false
+HELP=false
+
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --test)
-            TEST_MODE=true
-            shift
-            ;;
         --demo)
             DEMO_MODE=true
-            shift
-            ;;
-        --verbose)
-            VERBOSE=true
             shift
             ;;
         --reset-db)
             RESET_DB=true
             shift
             ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
         --minimal)
             MINIMAL=true
             shift
             ;;
+        --test)
+            TEST_MODE=true
+            shift
+            ;;
+        --help|-h)
+            HELP=true
+            shift
+            ;;
         *)
-            print_error "Unknown option: $1"
+            log_error "Unknown option: $1"
+            echo "Use --help for usage information"
             exit 1
             ;;
     esac
 done
 
-if [ "$TEST_MODE" = true ]; then
-    print_info "Running in TEST mode..."
+# Show help
+if [ "$HELP" = true ]; then
+    echo "Smart Locker System - Enterprise Deployment Script"
+    echo "=================================================="
+    echo ""
+    echo "Usage: ./start.sh [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --demo          Load demo data (users, lockers, items)"
+    echo "  --reset-db      Reset database and recreate tables"
+    echo "  --verbose       Enable verbose logging"
+    echo "  --minimal       Minimal mode (admin user only, empty lockers)"
+    echo "  --test          Run comprehensive test suite after startup"
+    echo "  --help, -h      Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./start.sh --demo --reset-db --verbose"
+    echo "  ./start.sh --minimal --test"
+    echo "  ./start.sh --demo --test"
+    echo ""
+    echo "Default behavior:"
+    echo "  - Starts backend on port $BACKEND_PORT"
+    echo "  - Starts frontend on port $FRONTEND_PORT"
+    echo "  - Uses PostgreSQL database"
+    echo "  - Loads minimal admin user if no data exists"
+    echo ""
+    echo "Troubleshooting:"
+    echo "  If npm installation fails, manually clean and retry:"
+    echo "    cd frontend && rm -rf node_modules package-lock.json"
+    echo "    npm cache clean --force && npm install"
+    exit 0
 fi
 
-# Check and install PostgreSQL
-if ! command_exists psql; then
-    print_info "Installing PostgreSQL..."
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        brew install postgresql@14
-    else
-        sudo apt-get update && sudo apt-get install -y postgresql postgresql-contrib
+# Main execution
+main() {
+    log_info "Smart Locker System - Enterprise Deployment"
+    log_info "=========================================="
+    
+    # Check prerequisites
+    check_prerequisites
+    
+    # Setup environment
+    setup_environment
+    
+    # Start services
+    start_services
+    
+    # Run tests if requested
+    if [ "$TEST_MODE" = true ]; then
+        run_tests
     fi
-else
-    print_info "PostgreSQL is already installed"
-fi
+    
+    log_success "Smart Locker System deployment completed successfully"
+    log_info "Backend: http://localhost:$BACKEND_PORT"
+    log_info "Frontend: http://localhost:$FRONTEND_PORT"
+    log_info "Press Ctrl+C to stop all services"
+}
 
-# Start PostgreSQL service
-print_info "Starting PostgreSQL service..."
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    brew services start postgresql@14
-else
-    sudo systemctl start postgresql
-fi
-
-# Wait for PostgreSQL to be ready
-for i in {1..30}; do
-    if pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
-        print_success "PostgreSQL is running"
-        break
+# Check system prerequisites
+check_prerequisites() {
+    log_info "Checking system prerequisites..."
+    
+    # Check Python
+    if ! command -v python3 &> /dev/null; then
+        log_error "Python 3 is required but not installed"
+        exit 1
     fi
-    sleep 1
+    
+    # Check Node.js
+    if ! command -v node &> /dev/null; then
+        log_error "Node.js is required but not installed"
+        exit 1
+    fi
+    
+    # Check npm
+    if ! command -v npm &> /dev/null; then
+        log_error "npm is required but not installed"
+        exit 1
+    fi
+    
+    # Check PostgreSQL
+    if ! command -v psql &> /dev/null; then
+        log_error "PostgreSQL is required but not installed"
+        log_info "Install PostgreSQL: https://www.postgresql.org/download/"
+        exit 1
+    fi
+    
+    log_success "All prerequisites are satisfied"
+}
+
+# Setup environment
+setup_environment() {
+    log_info "Setting up environment..."
+    
+    # Create virtual environment if it doesn't exist
+    if [ ! -d ".venv" ]; then
+        log_info "Creating Python virtual environment..."
+        python3 -m venv .venv
+    fi
+    
+    # Activate virtual environment
+    source .venv/bin/activate
+    
+    # Install Python dependencies
+    log_info "Installing Python dependencies..."
+    pip install -r requirements.txt
+    
+    # Install Node.js dependencies
+    log_info "Installing Node.js dependencies..."
+    cd frontend
+    
+    # Clean npm cache and node_modules if there are issues
+    if [ -d "node_modules" ]; then
+        log_info "Cleaning existing node_modules..."
+        rm -rf node_modules package-lock.json
+    fi
+    
+    # Clear npm cache
+    npm cache clean --force
+    
+    # Install dependencies with retry logic
+    local npm_retries=3
+    local npm_success=false
+    
+    for ((i=1; i<=npm_retries; i++)); do
+        log_info "Installing Node.js dependencies (attempt $i/$npm_retries)..."
+        if npm install; then
+            npm_success=true
+            break
+        else
+            log_warning "npm install failed (attempt $i/$npm_retries)"
+            if [ $i -lt $npm_retries ]; then
+                log_info "Cleaning and retrying..."
+                rm -rf node_modules package-lock.json
+                npm cache clean --force
+                sleep 2
+            fi
+        fi
     done
-
-# Set up database
-print_info "Setting up database and user..."
-echo "DATABASE_URL set to: $DATABASE_URL"
-psql -U postgres -h localhost -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null || echo "[INFO] Database user already exists: $DB_USER"
-psql -U postgres -h localhost -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || echo "[INFO] Database already exists: $DB_NAME"
-psql -U postgres -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" 2>/dev/null || true
-psql -U postgres -h localhost -c "ALTER ROLE $DB_USER CREATEDB;" 2>/dev/null || true
-
-# Set up Python environment
-print_info "Setting up Python environment..."
-if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
-fi
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# Test database connection
-print_info "Testing database connection..."
-python3 -c "
-import psycopg2
-try:
-    conn = psycopg2.connect('$DATABASE_URL')
-    conn.close()
-    print('Database connection successful!')
-except Exception as e:
-    print(f'Database connection failed: {e}')
-    print('Attempting to create database and user...')
-    exit(1)
-" || {
-    print_warning "Database connection failed, attempting to create database..."
     
-    # Try to create database and user with postgres superuser
-    if psql -U postgres -h localhost -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null; then
-        print_success "Created database user: $DB_USER"
-    else
-        print_info "Database user already exists or creation failed"
+    if [ "$npm_success" = false ]; then
+        log_error "Failed to install Node.js dependencies after $npm_retries attempts"
+        exit 1
     fi
     
-    if psql -U postgres -h localhost -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null; then
-        print_success "Created database: $DB_NAME"
-    else
-        print_info "Database already exists or creation failed"
+    # Ensure Puppeteer is available for testing
+    if ! npm list puppeteer > /dev/null 2>&1; then
+        log_info "Installing Puppeteer for automated testing..."
+        npm install puppeteer
     fi
     
-    # Test connection again
-    if python3 -c "
-import psycopg2
-try:
-    conn = psycopg2.connect('$DATABASE_URL')
-    conn.close()
-    print('Database connection successful after setup!')
-except Exception as e:
-    print(f'Database connection still failed: {e}')
-    exit(1)
-"; then
-        print_success "Database connection test passed after setup!"
+    cd ..
+    
+    # Setup database
+    setup_database
+    
+    log_success "Environment setup completed"
+}
+
+# Setup database
+setup_database() {
+    log_info "Setting up database..."
+    
+    # Start PostgreSQL service
+    if command -v brew &> /dev/null; then
+        # macOS
+        brew services start postgresql@14 2>/dev/null || true
+    elif command -v systemctl &> /dev/null; then
+        # Linux
+        sudo systemctl start postgresql 2>/dev/null || true
+    fi
+    
+    # Create database and user
+    log_info "Creating database and user..."
+    
+    # Create user if it doesn't exist
+    psql -U postgres -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+    
+    # Create database if it doesn't exist
+    psql -U postgres -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
+    
+    # Grant privileges
+    psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;"
+    psql -U postgres -c "ALTER USER $DATABASE_USER CREATEDB;"
+    
+    # Set DATABASE_URL environment variable
+    export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
+    log_info "DATABASE_URL set to: $DATABASE_URL"
+    
+    log_success "Database setup completed"
+}
+
+# Start services
+start_services() {
+    log_info "Starting Smart Locker System services..."
+    
+    # Kill existing processes on ports
+    kill_process_on_port $BACKEND_PORT
+    kill_process_on_port $FRONTEND_PORT
+    
+    # Start backend
+    start_backend
+    
+    # Start frontend
+    start_frontend
+    
+    log_success "All services started successfully"
+}
+
+# Kill process on port
+kill_process_on_port() {
+    local port=$1
+    local pid=$(lsof -ti:$port 2>/dev/null)
+    if [ ! -z "$pid" ]; then
+        log_warning "Port $port is in use. Killing existing process..."
+        kill -9 $pid 2>/dev/null || true
+        sleep 2
+    fi
+}
+
+# Start backend service
+start_backend() {
+    log_info "Starting backend server..."
+    
+    cd backend
+    
+    # Build command based on flags
+    local cmd="python app.py --port $BACKEND_PORT"
+    
+    if [ "$DEMO_MODE" = true ]; then
+        cmd="$cmd --demo"
+    fi
+    
+    if [ "$RESET_DB" = true ]; then
+        cmd="$cmd --reset-db"
+    fi
+    
+    if [ "$VERBOSE" = true ]; then
+        cmd="$cmd --verbose"
+    fi
+    
+    if [ "$MINIMAL" = true ]; then
+        cmd="$cmd --minimal"
+    fi
+    
+    # Start backend in background
+    if [ "$VERBOSE" = true ]; then
+        $cmd &
     else
-        print_error "Database connection test failed even after setup"
-        print_error "Please check PostgreSQL installation and configuration"
+        $cmd > /dev/null 2>&1 &
+    fi
+    
+    BACKEND_PID=$!
+    cd ..
+    
+    # Wait for backend to start
+    log_info "Waiting for backend to start..."
+    local attempts=0
+    while [ $attempts -lt 30 ]; do
+        if curl -s http://localhost:$BACKEND_PORT/api/health > /dev/null 2>&1; then
+            log_success "Backend is healthy!"
+            break
+        fi
+        sleep 1
+        attempts=$((attempts + 1))
+    done
+    
+    if [ $attempts -eq 30 ]; then
+        log_error "Backend failed to start within 30 seconds"
         exit 1
     fi
 }
 
-# Install Node.js dependencies
-print_info "Installing Node.js dependencies..."
-cd frontend
-npm install
-cd ..
-
-# Kill any existing processes
-kill_port_processes 5172
-kill_port_processes 5173
-
-if [ "$TEST_MODE" = true ]; then
-    print_info "Starting servers for testing..."
-    if start_backend && start_frontend; then
-        print_success "Both servers started successfully"
-        
-        # Wait a bit for servers to fully initialize
-        sleep 5
-        
-        # Run comprehensive tests
-        if run_tests; then
-            print_success "All tests passed! System is working correctly."
-            print_info "Backend running on http://localhost:5172"
-            print_info "Frontend running on http://localhost:5173"
-            print_info "Demo credentials:"
-            print_info "  Admin: admin/admin123"
-            print_info "  Student: student1/student123"
-            print_info "  Manager: manager/manager123"
-            print_info "  Supervisor: supervisor/supervisor123"
-        else
-            print_error "Some tests failed. Check the logs above for details."
-            exit 1
+# Start frontend service
+start_frontend() {
+    log_info "Starting frontend server..."
+    
+    cd frontend
+    
+    # Start frontend in background
+    if [ "$VERBOSE" = true ]; then
+        npm run dev &
+    else
+        npm run dev > /dev/null 2>&1 &
+    fi
+    
+    FRONTEND_PID=$!
+    cd ..
+    
+    # Wait for frontend to start
+    log_info "Waiting for frontend to start..."
+    local attempts=0
+    while [ $attempts -lt 30 ]; do
+        if curl -s http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
+            log_success "Frontend is healthy!"
+            break
         fi
-    else
-        print_error "Failed to start servers for testing"
+        sleep 1
+        attempts=$((attempts + 1))
+    done
+    
+    if [ $attempts -eq 30 ]; then
+        log_error "Frontend failed to start within 30 seconds"
         exit 1
     fi
-else
-    print_info "Starting servers in normal mode..."
-    if start_backend && start_frontend; then
-        print_success "Both servers started successfully!"
-        print_info "Backend running on http://localhost:5172"
-        print_info "Frontend running on http://localhost:5173"
-        print_info "Press Ctrl+C to stop all servers"
-        wait
+}
+
+# Run comprehensive tests
+run_tests() {
+    log_info "Running comprehensive test suite..."
+    
+    # Wait a bit for services to fully initialize
+    sleep 5
+    
+    # Check if tests directory exists
+    if [ ! -d "tests" ]; then
+        log_warning "Tests directory not found. Skipping tests."
+        return
+    fi
+    
+    # Run tests
+    if node tests/run_all_tests.js; then
+        log_success "All tests passed!"
     else
-        print_error "Failed to start servers"
+        log_error "Some tests failed. Check the output above for details."
         exit 1
     fi
-fi 
+}
+
+# Cleanup function
+cleanup() {
+    log_info "Cleaning up..."
+    
+    # Kill background processes
+    if [ ! -z "$BACKEND_PID" ]; then
+        kill $BACKEND_PID 2>/dev/null || true
+    fi
+    
+    if [ ! -z "$FRONTEND_PID" ]; then
+        kill $FRONTEND_PID 2>/dev/null || true
+    fi
+    
+    # Kill any remaining processes on our ports
+    kill_process_on_port $BACKEND_PORT
+    kill_process_on_port $FRONTEND_PORT
+    
+    log_success "Cleanup completed"
+}
+
+# Trap cleanup on exit
+trap cleanup EXIT
+
+# Run main function
+main "$@" 

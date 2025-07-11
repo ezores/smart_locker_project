@@ -1598,17 +1598,88 @@ if __name__ == '__main__':
         print("Initializing database...")
         minimal = args.minimal or not args.demo
         with app.app_context():
-            init_db_func(minimal=minimal)
+            db.create_all()
+            if not User.query.filter_by(username='admin').first():
+                admin = User(
+                    username='admin',
+                    email='admin@smartlocker.com',
+                    first_name='Admin',
+                    last_name='User',
+                    role='admin',
+                    department='IT'
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("Created admin user")
+            
+            if minimal:
+                # Create 40 empty lockers
+                for i in range(1, 41):
+                    locker = Locker(
+                        name=f"Locker {i}",
+                        number=f"L{i}",
+                        location="Main Hall",
+                        description=f"Locker number {i}",
+                        status='active',
+                        is_active=True
+                    )
+                    db.session.add(locker)
+                db.session.commit()
+                print(f"Created 40 empty lockers for minimal mode")
+            else:
+                generate_dummy_data()
         print("Database initialization complete!")
     elif args.demo:
         print("Loading demo data...")
         with app.app_context():
-            init_db_func(minimal=False)
+            db.create_all()
+            if not User.query.filter_by(username='admin').first():
+                admin = User(
+                    username='admin',
+                    email='admin@smartlocker.com',
+                    first_name='Admin',
+                    last_name='User',
+                    role='admin',
+                    department='IT'
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("Created admin user")
+            generate_dummy_data()
         print("Demo data loaded!")
     elif args.minimal:
         print("Minimal mode: only admin user and empty lockers.")
         with app.app_context():
-            init_db_func(minimal=True)
+            db.create_all()
+            if not User.query.filter_by(username='admin').first():
+                admin = User(
+                    username='admin',
+                    email='admin@smartlocker.com',
+                    first_name='Admin',
+                    last_name='User',
+                    role='admin',
+                    department='IT'
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("Created admin user")
+            
+            # Create 40 empty lockers
+            for i in range(1, 41):
+                locker = Locker(
+                    name=f"Locker {i}",
+                    number=f"L{i}",
+                    location="Main Hall",
+                    description=f"Locker number {i}",
+                    status='active',
+                    is_active=True
+                )
+                db.session.add(locker)
+            db.session.commit()
+            print(f"Created 40 empty lockers for minimal mode")
         print("Minimal DB initialized!")
     
     print(f"Starting Smart Locker System on {args.host}:{args.port}")

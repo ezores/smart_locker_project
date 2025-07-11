@@ -6,7 +6,7 @@ async function testAuthFlow() {
   console.log("Testing Authentication Flow...");
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: "new",
     defaultViewport: null,
     args: ["--start-maximized"],
   });
@@ -28,7 +28,7 @@ async function testAuthFlow() {
     await page.click('button[type="submit"]');
 
     // Wait for error message
-    await page.waitForTimeout(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     console.log("Tested invalid login");
 
     // Clear form and test valid login
@@ -38,16 +38,23 @@ async function testAuthFlow() {
     await page.type('input[name="password"]', "admin123");
     await page.click('button[type="submit"]');
 
-    // Wait for redirect to main menu
-    await page.waitForSelector('h1:contains("Main Menu")', { timeout: 10000 });
+    // Wait for redirect to main menu - use XPath instead of :contains
+    await page.waitForSelector("xpath///h1[contains(text(), 'Main Menu')]", {
+      timeout: 10000,
+    });
     console.log("Login successful");
 
     // Test session persistence by refreshing page
     await page.reload();
-    await page.waitForSelector('h1:contains("Main Menu")', { timeout: 10000 });
+    await page.waitForSelector("xpath///h1[contains(text(), 'Main Menu')]", {
+      timeout: 10000,
+    });
     console.log("Session persistence verified");
 
     // Test logout
+    await page.waitForSelector("xpath///button[contains(text(), 'Logout')]", {
+      timeout: 5000,
+    });
     await page.click('button:contains("Logout")');
     await page.waitForSelector('input[name="username"]', { timeout: 10000 });
     console.log("Logout successful");

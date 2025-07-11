@@ -6,7 +6,7 @@ async function testReservations() {
   console.log("Testing Reservations Module...");
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: "new",
     defaultViewport: null,
     args: ["--start-maximized"],
   });
@@ -20,17 +20,25 @@ async function testReservations() {
     await page.type('input[name="username"]', "admin");
     await page.type('input[name="password"]', "admin123");
     await page.click('button[type="submit"]');
-    await page.waitForSelector('h1:contains("Main Menu")', { timeout: 10000 });
+    await page.waitForSelector("xpath///h1[contains(text(), 'Main Menu')]", {
+      timeout: 10000,
+    });
     console.log("Logged in successfully");
 
     // Navigate to reservations page
     await page.click('a[href="/reservations"]');
-    await page.waitForSelector('h1:contains("Reservations")', {
+    await page.waitForSelector("xpath///h1[contains(text(), 'Reservations')]", {
       timeout: 10000,
     });
     console.log("Navigated to reservations page");
 
     // Test creating a new reservation
+    await page.waitForSelector(
+      "xpath///button[contains(text(), 'New Reservation')]",
+      {
+        timeout: 5000,
+      }
+    );
     await page.click('button:contains("New Reservation")');
     await page.waitForSelector('input[name="locker_id"]', { timeout: 10000 });
     console.log("New reservation modal opened");
@@ -46,7 +54,7 @@ async function testReservations() {
     await page.click('button:contains("Create")');
 
     // Wait for success message or redirect
-    await page.waitForTimeout(3000);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     console.log("Created new reservation");
 
     // Test editing a reservation
@@ -61,7 +69,7 @@ async function testReservations() {
       await page.type('input[name="notes"]', " - Updated by automated test");
       await page.click('button:contains("Update")');
 
-      await page.waitForTimeout(2000);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log("Updated reservation");
     }
 
@@ -78,13 +86,13 @@ async function testReservations() {
         // No confirmation dialog, continue
       }
 
-      await page.waitForTimeout(2000);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log("Canceled reservation");
     }
 
     // Test filtering and search
     await page.type('input[placeholder*="search"]', "test");
-    await page.waitForTimeout(1000);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     console.log("Tested search functionality");
 
     // Clear search
@@ -95,7 +103,7 @@ async function testReservations() {
     const dateInputs = await page.$$('input[type="date"]');
     if (dateInputs.length > 0) {
       await dateInputs[0].type("2025-07-15");
-      await page.waitForTimeout(1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log("Tested date filtering");
     }
 

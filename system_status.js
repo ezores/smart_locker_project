@@ -31,7 +31,8 @@ async function checkSystemStatus() {
     console.log(`Backend: ${status.backend ? "RUNNING" : "DOWN"}`);
     console.log(`Database: ${status.database ? "CONNECTED" : "DISCONNECTED"}`);
   } catch (error) {
-    console.log(`❌ Backend: DOWN (${error.message})`);
+    console.log(`Backend: DOWN (${error.message})`);
+    return false;
   }
 
   // Check Frontend
@@ -40,7 +41,8 @@ async function checkSystemStatus() {
     status.frontend = response.status === 200;
     console.log(`Frontend: ${status.frontend ? "RUNNING" : "DOWN"}`);
   } catch (error) {
-    console.log(`❌ Frontend: DOWN (${error.message})`);
+    console.log(`Frontend: DOWN (${error.message})`);
+    return false;
   }
 
   // Check Authentication
@@ -54,7 +56,8 @@ async function checkSystemStatus() {
       `Authentication: ${status.authentication ? "WORKING" : "FAILED"}`
     );
   } catch (error) {
-    console.log(`❌ Authentication: FAILED (${error.message})`);
+    console.log(`Authentication: FAILED (${error.message})`);
+    return false;
   }
 
   // Check Lockers API
@@ -83,8 +86,9 @@ async function checkSystemStatus() {
       status.rs485 = rs485Response.status === 200;
       console.log(`RS485 System: ${status.rs485 ? "WORKING" : "FAILED"}`);
     } catch (error) {
-      console.log(`❌ Lockers API: FAILED (${error.message})`);
-      console.log(`❌ RS485 System: FAILED (${error.message})`);
+      console.log(`Lockers API: FAILED (${error.message})`);
+      console.log(`RS485 System: FAILED (${error.message})`);
+      return false;
     }
   }
 
@@ -135,7 +139,7 @@ async function checkSystemStatus() {
 // Run status check if this script is executed directly
 if (require.main === module) {
   checkSystemStatus().catch((error) => {
-    console.error("❌ Status check failed:", error.message);
+    console.error("Status check failed:", error.message);
     process.exit(1);
   });
 }

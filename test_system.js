@@ -25,24 +25,21 @@ let testResults = {
 // Utility functions
 function log(message, type = "INFO") {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [${type}] ${message}`);
+  const prefix =
+    type === "ERROR"
+      ? "ERROR"
+      : type === "SUCCESS"
+      ? "SUCCESS"
+      : type === "WARNING"
+      ? "WARNING"
+      : "INFO";
+  console.log(`[${timestamp}] [${prefix}] ${message}`);
 }
 
-function addResult(testName, passed, error = null) {
-  if (passed) {
-    testResults.passed++;
-    log(`${testName} - PASSED`, "PASS");
-  } else {
-    testResults.failed++;
-    log(`❌ ${testName} - FAILED`, "FAIL");
-    if (error) {
-      testResults.errors.push({
-        test: testName,
-        error: error.message || error,
-      });
-      log(`   Error: ${error.message || error}`, "ERROR");
-    }
-  }
+function addResult(testName, success) {
+  const status = success ? "PASS" : "FAIL";
+  log(`${testName} - ${status}`, success ? "SUCCESS" : "FAIL");
+  return success;
 }
 
 // Test functions
@@ -63,7 +60,7 @@ async function testBackendLogin() {
   try {
     const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
       username: "student1",
-      password: "student123",
+      password: process.env.STUDENT_PASSWORD || "SecureStudentPass2024!",
     });
     const hasToken = response.status === 200 && response.data.token;
     addResult("Backend Login", hasToken);
@@ -78,7 +75,7 @@ async function testAdminLogin() {
   try {
     const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
       username: "admin",
-      password: "admin123",
+      password: process.env.ADMIN_PASSWORD || "SecureAdminPass2024!",
     });
     const hasToken = response.status === 200 && response.data.token;
     addResult("Admin Login", hasToken);
@@ -286,19 +283,19 @@ async function runAllTests() {
   const backendHealth = await testBackendHealth();
 
   if (!backendHealth) {
-    log("❌ Backend is not healthy. Stopping tests.", "ERROR");
+    log("Backend is not healthy. Stopping tests.", "ERROR");
     return;
   }
 
   const studentToken = await testBackendLogin();
   if (!studentToken) {
-    log("❌ Cannot authenticate as student. Stopping tests.", "ERROR");
+    log("Cannot authenticate as student. Stopping tests.", "ERROR");
     return;
   }
 
   const adminToken = await testAdminLogin();
   if (!adminToken) {
-    log("❌ Cannot authenticate as admin. Stopping tests.", "ERROR");
+    log("Cannot authenticate as admin. Stopping tests.", "ERROR");
     return;
   }
 
@@ -319,7 +316,7 @@ async function runAllTests() {
   log("=" * 60);
   log("Test Results Summary:", "SUMMARY");
   log(`Passed: ${testResults.passed}`, "SUMMARY");
-  log(`❌ Failed: ${testResults.failed}`, "SUMMARY");
+  log(`Failed: ${testResults.failed}`, "SUMMARY");
   log(
     `Success Rate: ${(
       (testResults.passed / (testResults.passed + testResults.failed)) *
@@ -347,7 +344,7 @@ async function runAllTests() {
 // Run tests if this script is executed directly
 if (require.main === module) {
   runAllTests().catch((error) => {
-    log(`❌ Test runner failed: ${error.message}`, "FATAL");
+    log(`Test runner failed: ${error.message}`, "FATAL");
     process.exit(1);
   });
 }

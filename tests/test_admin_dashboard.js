@@ -6,7 +6,7 @@ async function testAdminDashboard() {
   console.log("Testing Admin Dashboard...");
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: "new",
     defaultViewport: null,
     args: ["--start-maximized"],
   });
@@ -20,12 +20,14 @@ async function testAdminDashboard() {
     await page.type('input[name="username"]', "admin");
     await page.type('input[name="password"]', "admin123");
     await page.click('button[type="submit"]');
-    await page.waitForSelector('h1:contains("Main Menu")', { timeout: 10000 });
+    await page.waitForSelector("xpath///h1[contains(text(), 'Main Menu')]", {
+      timeout: 10000,
+    });
     console.log("Logged in as admin");
 
     // Navigate to admin dashboard
     await page.click('a[href="/admin"]');
-    await page.waitForSelector('h1:contains("Admin Dashboard")', {
+    await page.waitForSelector("xpath///h1[contains(text(), 'Admin')]", {
       timeout: 10000,
     });
     console.log("Navigated to admin dashboard");
@@ -42,7 +44,9 @@ async function testAdminDashboard() {
     );
     if (userManagementLink) {
       await userManagementLink.click();
-      await page.waitForSelector('h1:contains("Users")', { timeout: 10000 });
+      await page.waitForSelector("xpath///h1[contains(text(), 'Users')]", {
+        timeout: 10000,
+      });
       console.log("Navigated to user management");
 
       // Test creating a new user
@@ -65,13 +69,13 @@ async function testAdminDashboard() {
         await page.type('input[name="password"]', "password123");
         await page.click('button:contains("Create")');
 
-        await page.waitForTimeout(2000);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         console.log("Created new user");
       }
 
       // Go back to admin dashboard
       await page.click('a[href="/admin"]');
-      await page.waitForSelector('h1:contains("Admin Dashboard")', {
+      await page.waitForSelector("xpath///h1[contains(text(), 'Admin')]", {
         timeout: 10000,
       });
     }
@@ -82,7 +86,9 @@ async function testAdminDashboard() {
     );
     if (reportsLink) {
       await reportsLink.click();
-      await page.waitForSelector('h1:contains("Reports")', { timeout: 10000 });
+      await page.waitForSelector("xpath///h1[contains(text(), 'Reports')]", {
+        timeout: 10000,
+      });
       console.log("Navigated to reports page");
 
       // Test generating a report
@@ -91,13 +97,13 @@ async function testAdminDashboard() {
       );
       if (generateButton) {
         await generateButton.click();
-        await page.waitForTimeout(2000);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         console.log("Tested report generation");
       }
 
       // Go back to admin dashboard
       await page.click('a[href="/admin"]');
-      await page.waitForSelector('h1:contains("Admin Dashboard")', {
+      await page.waitForSelector("xpath///h1[contains(text(), 'Admin')]", {
         timeout: 10000,
       });
     }
@@ -108,7 +114,9 @@ async function testAdminDashboard() {
     );
     if (settingsLink) {
       await settingsLink.click();
-      await page.waitForSelector('h1:contains("Settings")', { timeout: 10000 });
+      await page.waitForSelector("xpath///h1[contains(text(), 'Settings')]", {
+        timeout: 10000,
+      });
       console.log("Navigated to settings page");
 
       // Test updating settings
@@ -117,13 +125,13 @@ async function testAdminDashboard() {
       );
       if (saveButton) {
         await saveButton.click();
-        await page.waitForTimeout(1000);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log("Tested settings update");
       }
 
       // Go back to admin dashboard
       await page.click('a[href="/admin"]');
-      await page.waitForSelector('h1:contains("Admin Dashboard")', {
+      await page.waitForSelector("xpath///h1[contains(text(), 'Admin')]", {
         timeout: 10000,
       });
     }
@@ -132,7 +140,9 @@ async function testAdminDashboard() {
     const logsLink = await page.$('a[href="/logs"], button:contains("Logs")');
     if (logsLink) {
       await logsLink.click();
-      await page.waitForSelector('h1:contains("Logs")', { timeout: 10000 });
+      await page.waitForSelector("xpath///h1[contains(text(), 'Logs')]", {
+        timeout: 10000,
+      });
       console.log("Navigated to logs page");
 
       // Test log filtering
@@ -141,13 +151,13 @@ async function testAdminDashboard() {
       );
       if (filterInput) {
         await filterInput.type("login");
-        await page.waitForTimeout(1000);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log("Tested log filtering");
       }
 
       // Go back to admin dashboard
       await page.click('a[href="/admin"]');
-      await page.waitForSelector('h1:contains("Admin Dashboard")', {
+      await page.waitForSelector("xpath///h1[contains(text(), 'Admin')]", {
         timeout: 10000,
       });
     }

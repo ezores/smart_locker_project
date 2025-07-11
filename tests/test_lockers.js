@@ -6,7 +6,7 @@ async function testLockers() {
   console.log("Testing Lockers Module...");
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: "new",
     defaultViewport: null,
     args: ["--start-maximized"],
   });
@@ -20,73 +20,87 @@ async function testLockers() {
     await page.type('input[name="username"]', "admin");
     await page.type('input[name="password"]', "admin123");
     await page.click('button[type="submit"]');
-    await page.waitForSelector('h1:contains("Main Menu")', { timeout: 10000 });
+    await page.waitForSelector("xpath///h1[contains(text(), 'Main Menu')]", {
+      timeout: 10000,
+    });
     console.log("Logged in successfully");
 
     // Navigate to lockers page
     await page.click('a[href="/lockers"]');
-    await page.waitForSelector('h1:contains("Lockers")', { timeout: 10000 });
+    await page.waitForSelector("xpath///h1[contains(text(), 'Lockers')]", {
+      timeout: 10000,
+    });
     console.log("Navigated to lockers page");
 
-    // Wait for lockers to load
-    await page.waitForTimeout(2000);
-
-    // Test locker status display
-    const lockerCards = await page.$$(".locker-card, .bg-gray-800");
-    console.log(`Found ${lockerCards.length} lockers`);
-
-    // Test filtering by status
-    const statusFilters = await page.$$(
-      'button:contains("Active"), button:contains("Reserved"), button:contains("Maintenance")'
+    // Test creating a new locker
+    await page.waitForSelector(
+      "xpath///button[contains(text(), 'New Locker')]",
+      { timeout: 5000 }
     );
-    if (statusFilters.length > 0) {
-      await statusFilters[0].click();
-      await page.waitForTimeout(1000);
+    await page.click('button:contains("New Locker")');
+    await page.waitForSelector('input[name="locker_number"]', {
+      timeout: 10000,
+    });
+    console.log("New locker modal opened");
+
+    // Fill locker form
+    await page.type('input[name="locker_number"]', "999");
+    await page.type('input[name="location"]', "Test Area");
+    await page.select('select[name="status"]', "available");
+    await page.click('button:contains("Create")');
+
+    // Wait for success message or redirect
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log("Created new locker");
+
+    // Test editing a locker
+    const editButtons = await page.$$('button:contains("Edit")');
+    if (editButtons.length > 0) {
+      await editButtons[0].click();
+      await page.waitForSelector('input[name="location"]', { timeout: 10000 });
+      console.log("Edit modal opened");
+
+      // Update location
+      await page.click('input[name="location"]', { clickCount: 3 });
+      await page.type('input[name="location"]', " - Updated by automated test");
+      await page.click('button:contains("Update")');
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log("Updated locker");
+    }
+
+    // Test deleting a locker
+    const deleteButtons = await page.$$('button:contains("Delete")');
+    if (deleteButtons.length > 0) {
+      await deleteButtons[0].click();
+
+      // Handle confirmation dialog if present
+      try {
+        await page.waitForSelector(".modal", { timeout: 3000 });
+        await page.click('button:contains("Confirm")');
+      } catch (e) {
+        // No confirmation dialog, continue
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log("Deleted locker");
+    }
+
+    // Test filtering and search
+    await page.type('input[placeholder*="search"]', "test");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log("Tested search functionality");
+
+    // Clear search
+    await page.click('input[placeholder*="search"]', { clickCount: 3 });
+    await page.keyboard.press("Backspace");
+
+    // Test status filtering
+    const statusSelects = await page.$$('select[name="status"]');
+    if (statusSelects.length > 0) {
+      await statusSelects[0].select("available");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log("Tested status filtering");
-    }
-
-    // Test search functionality
-    const searchInput = await page.$(
-      'input[placeholder*="search"], input[placeholder*="Search"]'
-    );
-    if (searchInput) {
-      await searchInput.type("Locker 1");
-      await page.waitForTimeout(1000);
-      console.log("Tested search functionality");
-
-      // Clear search
-      await searchInput.click({ clickCount: 3 });
-      await page.keyboard.press("Backspace");
-    }
-
-    // Test viewing locker details
-    const firstLocker = await page.$(".locker-card, .bg-gray-800");
-    if (firstLocker) {
-      await firstLocker.click();
-      await page.waitForTimeout(1000);
-      console.log("Tested viewing locker details");
-    }
-
-    // Test sorting options
-    const sortSelect = await page.$('select[name="sort"]');
-    if (sortSelect) {
-      await sortSelect.select("name");
-      await page.waitForTimeout(1000);
-      console.log("Tested sorting by name");
-
-      await sortSelect.select("status");
-      await page.waitForTimeout(1000);
-      console.log("Tested sorting by status");
-    }
-
-    // Test pagination if present
-    const paginationButtons = await page.$$(
-      'button:contains("Next"), button:contains("Previous")'
-    );
-    if (paginationButtons.length > 0) {
-      await paginationButtons[0].click();
-      await page.waitForTimeout(1000);
-      console.log("Tested pagination");
     }
 
     console.log("Lockers module tests completed successfully!");

@@ -13,7 +13,8 @@ import sys
 # Configuration
 BASE_URL = "http://localhost:5172"
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
+import os
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'SecureAdminPass2024!')
 
 def print_section(title):
     print(f"\n{'='*50}")

@@ -188,19 +188,54 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Bandit
-        run: |
-          pip install bandit
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
 
-      - name: Run Bandit security scan
+      - name: Install security tools
         run: |
+          pip install bandit safety
+          cd frontend && npm ci && cd ..
+
+      - name: Run comprehensive security scan
+        run: |
+          echo "Running custom security scanner..."
+          python scripts/security_scan.py . --json > security-report.json || echo "Security scan completed with findings"
+
+          echo "Running Bandit scan..."
           bandit -r backend/ -f json -o bandit-report.json || echo "Bandit scan completed with warnings"
           bandit -r backend/ -f txt || echo "Bandit scan completed"
 
-      - name: Run npm audit
-        run: |
+          echo "Running npm audit..."
           cd frontend
-          npm audit --audit-level moderate || echo "npm audit completed with warnings"
+          npm audit --audit-level moderate --json > ../npm-audit-report.json || echo "npm audit completed with warnings"
+          cd ..
+
+      - name: Display security report
+        run: |
+          echo "=== Security Scan Results ==="
+          if [ -f "security-report.json" ]; then
+            python -c "import json; data=json.load(open('security-report.json')); print(f'Found {data.get(\"total_issues\", 0)} security issues')"
+          fi
+
+          if [ -f "bandit-report.json" ]; then
+            python -c "import json; data=json.load(open('bandit-report.json')); print(f'Bandit found {len(data.get(\"results\", []))} issues')"
+          fi
+
+          if [ -f "npm-audit-report.json" ]; then
+            python -c "import json; data=json.load(open('npm-audit-report.json')); print(f'npm audit found {len(data.get(\"vulnerabilities\", {}))} vulnerabilities')"
+          fi
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            security-report.json
+            bandit-report.json
+            npm-audit-report.json
+        continue-on-error: true
 
   code-quality:
     name: Code Quality

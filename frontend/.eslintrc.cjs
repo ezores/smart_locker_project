@@ -46,19 +46,4 @@ module.exports = {
     require: "readonly",
     global: "readonly",
   },
-  overrides: [
-    {
-      files: [
-        "**/*.test.js",
-        "**/*.test.jsx",
-        "**/*.spec.js",
-        "**/*.spec.jsx",
-        "**/__tests__/**/*",
-      ],
-      rules: {
-        "no-unused-vars": "off",
-        "react/react-in-jsx-scope": "error",
-      },
-    },
-  ],
 };

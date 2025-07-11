@@ -7,7 +7,7 @@ import json
 import pytest
 import requests
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://localhost:5050"
 
 
 @pytest.fixture(scope="module")

@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import Lockers from "./Lockers";
 import { LanguageProvider } from "../contexts/LanguageContext";

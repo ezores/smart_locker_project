@@ -6,7 +6,6 @@
  * @description Tests for MainMenu component functionality
  */
 
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext";

@@ -39,6 +39,10 @@ api.interceptors.response.use(
 // Auth API functions
 export const login = async (credentials) => {
   const response = await api.post("/auth/login", credentials);
+  // Use 'token' instead of 'access_token'
+  if (response.data.token) {
+    localStorage.setItem("token", response.data.token);
+  }
   return response.data;
 };
 

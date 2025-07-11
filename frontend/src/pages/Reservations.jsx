@@ -6,10 +6,35 @@ import api from "../utils/api";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
+// Add custom CSS for datetime inputs in dark mode
+const darkModeStyles = `
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+  input[type="datetime-local"]::-webkit-inner-spin-button {
+    filter: invert(1);
+  }
+  input[type="datetime-local"]::-webkit-clear-button {
+    filter: invert(1);
+  }
+`;
+
 const Reservations = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { isDarkMode } = useDarkMode();
+
+  // Add dark mode styles to head
+  useEffect(() => {
+    if (isDarkMode) {
+      const style = document.createElement("style");
+      style.textContent = darkModeStyles;
+      document.head.appendChild(style);
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, [isDarkMode]);
 
   const [reservations, setReservations] = useState([]);
   const [lockers, setLockers] = useState([]);
@@ -35,6 +60,19 @@ const Reservations = () => {
     fetchLockers();
   }, [filterStatus]);
 
+  // Debug effect to log lockers when they change
+  useEffect(() => {
+    console.log("Lockers updated:", lockers);
+    console.log(
+      "Active lockers:",
+      lockers.filter((l) => l.status === "active")
+    );
+    console.log(
+      "All locker statuses:",
+      lockers.map((l) => l.status)
+    );
+  }, [lockers]);
+
   const fetchReservations = async () => {
     try {
       setLoading(true);
@@ -54,10 +92,21 @@ const Reservations = () => {
 
   const fetchLockers = async () => {
     try {
+      console.log("Fetching lockers...");
+      console.log("Auth token:", localStorage.getItem("token"));
       const response = await api.get("/lockers");
-      setLockers(response.data.lockers || []);
+      console.log("Raw response:", response);
+      // The backend returns the array directly, not wrapped in a 'lockers' property
+      const lockersData = response.data || [];
+      console.log("Fetched lockers:", lockersData);
+      setLockers(lockersData);
     } catch (err) {
       console.error("Failed to fetch lockers:", err);
+      console.error("Error details:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      if (err.response?.status === 401) {
+        console.error("Authentication failed - user not logged in");
+      }
     }
   };
 
@@ -160,15 +209,22 @@ const Reservations = () => {
   };
 
   const openEditModal = (reservation) => {
+    console.log("Opening edit modal for reservation:", reservation);
+    console.log("Available lockers:", lockers);
     setSelectedReservation(reservation);
     setFormData({
-      locker_id: reservation.locker_id,
+      locker_id: String(reservation.locker_id || ""),
       start_time: reservation.start_time,
       end_time: reservation.end_time,
       notes: reservation.notes || "",
     });
     setShowEditModal(true);
     setError("");
+  };
+
+  // Helper function to ensure locker ID is always a string
+  const getLockerValue = (lockerId) => {
+    return lockerId?.toString() || "";
   };
 
   const getReservationsForDate = (date) => {
@@ -283,6 +339,19 @@ const Reservations = () => {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
               >
                 {t("reservations.createNew")}
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Current lockers:", lockers);
+                  alert(
+                    `Total lockers: ${lockers.length}\nStatuses: ${lockers
+                      .map((l) => l.status)
+                      .join(", ")}`
+                  );
+                }}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg"
+              >
+                Debug Lockers
               </button>
             </div>
 
@@ -509,6 +578,11 @@ const Reservations = () => {
                 {t("reservations.createNew")}
               </h2>
               <form onSubmit={handleCreateReservation} className="space-y-4">
+                {/* Debug: Show all lockers */}
+                <div className="text-xs text-gray-500 mb-2">
+                  Debug: {lockers.length} total lockers, Statuses:{" "}
+                  {lockers.map((l) => l.status).join(", ")}
+                </div>
                 <div>
                   <label
                     className={`block text-sm font-medium mb-1 ${
@@ -621,7 +695,7 @@ const Reservations = () => {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                   >
                     {t("reservations.cancel")}
                   </button>
@@ -759,7 +833,7 @@ const Reservations = () => {
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                   >
                     {t("reservations.cancel")}
                   </button>

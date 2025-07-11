@@ -316,6 +316,9 @@ def get_user(user_id):
 def get_lockers():
     try:
         lockers = Locker.query.all()
+        logger.info(f"Found {len(lockers)} lockers")
+        for locker in lockers:
+            logger.info(f"Locker: {locker.name} - {locker.number} - Status: {locker.status}")
         return jsonify([locker.to_dict() for locker in lockers])
     except Exception as e:
         logger.error(f"Get lockers error: {e}")

@@ -345,4 +345,88 @@ msgid "edit_item"
 msgstr "Editar Artículo"
 
 msgid "delete_item"
-msgstr "Eliminar Artículo" 
+msgstr "Eliminar Artículo"
+
+msgid "reservations"
+msgstr "Reservas"
+
+msgid "reservations_menu_description"
+msgstr "Gestionar reservas de casilleros y programación"
+
+msgid "reservations.title"
+msgstr "Reservas"
+
+msgid "reservations.calendar"
+msgstr "Calendario"
+
+msgid "reservations.allReservations"
+msgstr "Todas las Reservas"
+
+msgid "reservations.createNew"
+msgstr "Crear Nueva Reserva"
+
+msgid "reservations.edit"
+msgstr "Editar"
+
+msgid "reservations.cancel"
+msgstr "Cancelar"
+
+msgid "reservations.confirmCancel"
+msgstr "¿Estás seguro de que quieres cancelar esta reserva?"
+
+msgid "reservations.locker"
+msgstr "Casillero"
+
+msgid "reservations.selectLocker"
+msgstr "Seleccionar un casillero"
+
+msgid "reservations.startTime"
+msgstr "Hora de Inicio"
+
+msgid "reservations.endTime"
+msgstr "Hora de Fin"
+
+msgid "reservations.accessCode"
+msgstr "Código de Acceso"
+
+msgid "reservations.notes"
+msgstr "Notas"
+
+msgid "reservations.reservationCode"
+msgstr "Código de Reserva"
+
+msgid "reservations.reservationsFor"
+msgstr "Reservas para"
+
+msgid "reservations.noReservations"
+msgstr "No se encontraron reservas"
+
+msgid "reservations.create"
+msgstr "Crear"
+
+msgid "reservations.creating"
+msgstr "Creando..."
+
+msgid "reservations.update"
+msgstr "Actualizar"
+
+msgid "reservations.updating"
+msgstr "Actualizando..."
+
+msgid "reservations.editReservation"
+msgstr "Editar Reserva"
+
+msgid "reservations.allStatuses"
+msgstr "Todos los Estados"
+
+msgid "reservations.active"
+msgstr "Activo"
+
+msgid "reservations.cancelled"
+msgstr "Cancelado"
+
+msgid "reservations.completed"
+msgstr "Completado"
+
+msgid "reservations.expired"
+msgstr "Expirado" 

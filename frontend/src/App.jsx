@@ -23,6 +23,7 @@ import Lockers from "./pages/Lockers";
 import Logs from "./pages/Logs";
 import Emprunts from "./pages/Emprunts";
 import Payments from "./pages/Payments";
+import Reservations from "./pages/Reservations";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -125,6 +126,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Payments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservations"
+            element={
+              <ProtectedRoute>
+                <Reservations />
               </ProtectedRoute>
             }
           />

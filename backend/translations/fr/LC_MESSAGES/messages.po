@@ -345,4 +345,88 @@ msgid "edit_item"
 msgstr "Modifier l'Article"
 
 msgid "delete_item"
-msgstr "Supprimer l'Article" 
+msgstr "Supprimer l'Article"
+
+msgid "reservations"
+msgstr "Réservations"
+
+msgid "reservations_menu_description"
+msgstr "Gérer les réservations de casiers et la planification"
+
+msgid "reservations.title"
+msgstr "Réservations"
+
+msgid "reservations.calendar"
+msgstr "Calendrier"
+
+msgid "reservations.allReservations"
+msgstr "Toutes les Réservations"
+
+msgid "reservations.createNew"
+msgstr "Créer une Nouvelle Réservation"
+
+msgid "reservations.edit"
+msgstr "Modifier"
+
+msgid "reservations.cancel"
+msgstr "Annuler"
+
+msgid "reservations.confirmCancel"
+msgstr "Êtes-vous sûr de vouloir annuler cette réservation ?"
+
+msgid "reservations.locker"
+msgstr "Casier"
+
+msgid "reservations.selectLocker"
+msgstr "Sélectionner un casier"
+
+msgid "reservations.startTime"
+msgstr "Heure de Début"
+
+msgid "reservations.endTime"
+msgstr "Heure de Fin"
+
+msgid "reservations.accessCode"
+msgstr "Code d'Accès"
+
+msgid "reservations.notes"
+msgstr "Notes"
+
+msgid "reservations.reservationCode"
+msgstr "Code de Réservation"
+
+msgid "reservations.reservationsFor"
+msgstr "Réservations pour"
+
+msgid "reservations.noReservations"
+msgstr "Aucune réservation trouvée"
+
+msgid "reservations.create"
+msgstr "Créer"
+
+msgid "reservations.creating"
+msgstr "Création..."
+
+msgid "reservations.update"
+msgstr "Mettre à Jour"
+
+msgid "reservations.updating"
+msgstr "Mise à jour..."
+
+msgid "reservations.editReservation"
+msgstr "Modifier la Réservation"
+
+msgid "reservations.allStatuses"
+msgstr "Tous les Statuts"
+
+msgid "reservations.active"
+msgstr "Actif"
+
+msgid "reservations.cancelled"
+msgstr "Annulé"
+
+msgid "reservations.completed"
+msgstr "Terminé"
+
+msgid "reservations.expired"
+msgstr "Expiré" 

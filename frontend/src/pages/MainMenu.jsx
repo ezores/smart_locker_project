@@ -12,6 +12,7 @@ import {
   User,
   Clock,
   CreditCard,
+  Calendar,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getStats } from "../utils/api";
@@ -126,6 +127,14 @@ const MainMenu = () => {
       href: "/payments",
       color: "bg-emerald-500",
       iconColor: "text-emerald-500",
+    },
+    {
+      title: t("reservations"),
+      description: t("reservations_menu_description"),
+      icon: Calendar,
+      href: "/reservations",
+      color: "bg-amber-500",
+      iconColor: "text-amber-500",
     },
   ];
 

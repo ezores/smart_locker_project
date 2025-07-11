@@ -345,4 +345,88 @@ msgid "edit_item"
 msgstr "Eşyayı Düzenle"
 
 msgid "delete_item"
-msgstr "Eşyayı Sil" 
+msgstr "Eşyayı Sil"
+
+msgid "reservations"
+msgstr "Rezervasyonlar"
+
+msgid "reservations_menu_description"
+msgstr "Dolap rezervasyonlarını ve planlamayı yönetin"
+
+msgid "reservations.title"
+msgstr "Rezervasyonlar"
+
+msgid "reservations.calendar"
+msgstr "Takvim"
+
+msgid "reservations.allReservations"
+msgstr "Tüm Rezervasyonlar"
+
+msgid "reservations.createNew"
+msgstr "Yeni Rezervasyon Oluştur"
+
+msgid "reservations.edit"
+msgstr "Düzenle"
+
+msgid "reservations.cancel"
+msgstr "İptal"
+
+msgid "reservations.confirmCancel"
+msgstr "Bu rezervasyonu iptal etmek istediğinizden emin misiniz?"
+
+msgid "reservations.locker"
+msgstr "Dolap"
+
+msgid "reservations.selectLocker"
+msgstr "Bir dolap seçin"
+
+msgid "reservations.startTime"
+msgstr "Başlangıç Zamanı"
+
+msgid "reservations.endTime"
+msgstr "Bitiş Zamanı"
+
+msgid "reservations.accessCode"
+msgstr "Erişim Kodu"
+
+msgid "reservations.notes"
+msgstr "Notlar"
+
+msgid "reservations.reservationCode"
+msgstr "Rezervasyon Kodu"
+
+msgid "reservations.reservationsFor"
+msgstr "Rezervasyonlar"
+
+msgid "reservations.noReservations"
+msgstr "Rezervasyon bulunamadı"
+
+msgid "reservations.create"
+msgstr "Oluştur"
+
+msgid "reservations.creating"
+msgstr "Oluşturuluyor..."
+
+msgid "reservations.update"
+msgstr "Güncelle"
+
+msgid "reservations.updating"
+msgstr "Güncelleniyor..."
+
+msgid "reservations.editReservation"
+msgstr "Rezervasyonu Düzenle"
+
+msgid "reservations.allStatuses"
+msgstr "Tüm Durumlar"
+
+msgid "reservations.active"
+msgstr "Aktif"
+
+msgid "reservations.cancelled"
+msgstr "İptal Edildi"
+
+msgid "reservations.completed"
+msgstr "Tamamlandı"
+
+msgid "reservations.expired"
+msgstr "Süresi Doldu" 

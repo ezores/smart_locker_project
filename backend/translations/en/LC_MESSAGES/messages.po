@@ -200,6 +200,90 @@ msgstr "No payments have been made yet"
 msgid "failed_export_payments"
 msgstr "Failed to export payments"
 
+msgid "reservations"
+msgstr "Reservations"
+
+msgid "reservations_menu_description"
+msgstr "Manage locker reservations and scheduling"
+
+msgid "reservations.title"
+msgstr "Reservations"
+
+msgid "reservations.calendar"
+msgstr "Calendar"
+
+msgid "reservations.allReservations"
+msgstr "All Reservations"
+
+msgid "reservations.createNew"
+msgstr "Create New Reservation"
+
+msgid "reservations.edit"
+msgstr "Edit"
+
+msgid "reservations.cancel"
+msgstr "Cancel"
+
+msgid "reservations.confirmCancel"
+msgstr "Are you sure you want to cancel this reservation?"
+
+msgid "reservations.locker"
+msgstr "Locker"
+
+msgid "reservations.selectLocker"
+msgstr "Select a locker"
+
+msgid "reservations.startTime"
+msgstr "Start Time"
+
+msgid "reservations.endTime"
+msgstr "End Time"
+
+msgid "reservations.accessCode"
+msgstr "Access Code"
+
+msgid "reservations.notes"
+msgstr "Notes"
+
+msgid "reservations.reservationCode"
+msgstr "Reservation Code"
+
+msgid "reservations.reservationsFor"
+msgstr "Reservations for"
+
+msgid "reservations.noReservations"
+msgstr "No reservations found"
+
+msgid "reservations.create"
+msgstr "Create"
+
+msgid "reservations.creating"
+msgstr "Creating..."
+
+msgid "reservations.update"
+msgstr "Update"
+
+msgid "reservations.updating"
+msgstr "Updating..."
+
+msgid "reservations.editReservation"
+msgstr "Edit Reservation"
+
+msgid "reservations.allStatuses"
+msgstr "All Statuses"
+
+msgid "reservations.active"
+msgstr "Active"
+
+msgid "reservations.cancelled"
+msgstr "Cancelled"
+
+msgid "reservations.completed"
+msgstr "Completed"
+
+msgid "reservations.expired"
+msgstr "Expired"
+
 msgid "stripe_integration"
 msgstr "Stripe Integration"
 

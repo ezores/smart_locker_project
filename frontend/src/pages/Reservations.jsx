@@ -1,0 +1,776 @@
+import React, { useState, useEffect, useContext } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
+import api from "../utils/api";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+
+const Reservations = () => {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const { isDarkMode } = useDarkMode();
+
+  const [reservations, setReservations] = useState([]);
+  const [lockers, setLockers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // Form state for create/edit
+  const [formData, setFormData] = useState({
+    locker_id: "",
+    start_time: "",
+    end_time: "",
+    notes: "",
+  });
+
+  useEffect(() => {
+    fetchReservations();
+    fetchLockers();
+  }, [filterStatus]);
+
+  const fetchReservations = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filterStatus) {
+        params.append("status", filterStatus);
+      }
+
+      const response = await api.get(`/reservations?${params.toString()}`);
+      setReservations(response.data.reservations || []);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to fetch reservations");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLockers = async () => {
+    try {
+      const response = await api.get("/lockers");
+      setLockers(response.data.lockers || []);
+    } catch (err) {
+      console.error("Failed to fetch lockers:", err);
+    }
+  };
+
+  const handleCreateReservation = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const response = await api.post("/reservations", formData);
+      setReservations((prev) => [response.data.reservation, ...prev]);
+      setShowCreateModal(false);
+      setFormData({ locker_id: "", start_time: "", end_time: "", notes: "" });
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to create reservation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateReservation = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const response = await api.put(
+        `/reservations/${selectedReservation.id}`,
+        formData
+      );
+      setReservations((prev) =>
+        prev.map((res) =>
+          res.id === selectedReservation.id ? response.data.reservation : res
+        )
+      );
+      setShowEditModal(false);
+      setSelectedReservation(null);
+      setFormData({ locker_id: "", start_time: "", end_time: "", notes: "" });
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update reservation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelReservation = async (reservationId) => {
+    if (!window.confirm(t("reservations.confirmCancel"))) return;
+
+    try {
+      setLoading(true);
+      const response = await api.post(`/reservations/${reservationId}/cancel`);
+      setReservations((prev) =>
+        prev.map((res) =>
+          res.id === reservationId ? response.data.reservation : res
+        )
+      );
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to cancel reservation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = async (format) => {
+    try {
+      setExportLoading(true);
+      const params = new URLSearchParams();
+      params.append("format", format);
+      if (filterStatus) {
+        params.append("status", filterStatus);
+      }
+
+      const response = await api.get(
+        `/admin/export/reservations?${params.toString()}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `reservations_${new Date().toISOString().split("T")[0]}.${format}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      setError("Failed to export reservations");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setFormData({ locker_id: "", start_time: "", end_time: "", notes: "" });
+    setShowCreateModal(true);
+    setError("");
+  };
+
+  const openEditModal = (reservation) => {
+    setSelectedReservation(reservation);
+    setFormData({
+      locker_id: reservation.locker_id,
+      start_time: reservation.start_time,
+      end_time: reservation.end_time,
+      notes: reservation.notes || "",
+    });
+    setShowEditModal(true);
+    setError("");
+  };
+
+  const getReservationsForDate = (date) => {
+    return reservations.filter((reservation) => {
+      const reservationDate = new Date(reservation.start_time);
+      return reservationDate.toDateString() === date.toDateString();
+    });
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    return new Date(dateTimeString).toLocaleString();
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "active":
+        return "text-green-600";
+      case "cancelled":
+        return "text-red-600";
+      case "completed":
+        return "text-blue-600";
+      case "expired":
+        return "text-gray-600";
+      default:
+        return "text-gray-600";
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
+    if (isDarkMode) {
+      switch (status) {
+        case "active":
+          return `${baseClasses} bg-green-900 text-green-200`;
+        case "cancelled":
+          return `${baseClasses} bg-red-900 text-red-200`;
+        case "completed":
+          return `${baseClasses} bg-blue-900 text-blue-200`;
+        case "expired":
+          return `${baseClasses} bg-gray-700 text-gray-300`;
+        default:
+          return `${baseClasses} bg-gray-700 text-gray-300`;
+      }
+    } else {
+      switch (status) {
+        case "active":
+          return `${baseClasses} bg-green-100 text-green-800`;
+        case "cancelled":
+          return `${baseClasses} bg-red-100 text-red-800`;
+        case "completed":
+          return `${baseClasses} bg-blue-100 text-blue-800`;
+        case "expired":
+          return `${baseClasses} bg-gray-100 text-gray-800`;
+        default:
+          return `${baseClasses} bg-gray-100 text-gray-800`;
+      }
+    }
+  };
+
+  if (loading && reservations.length === 0) {
+    return (
+      <div
+        className={`min-h-screen ${
+          isDarkMode ? "bg-gray-900 text-white" : "bg-gray-50"
+        }`}
+      >
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`min-h-screen ${
+        isDarkMode ? "bg-gray-900 text-white" : "bg-gray-50"
+      }`}
+    >
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1
+            className={`text-3xl font-bold mb-4 ${
+              isDarkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            {t("reservations.title")}
+          </h1>
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex gap-4">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className={`px-4 py-2 border rounded-lg ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-600 text-white"
+                    : "bg-white border-gray-300"
+                }`}
+              >
+                <option value="">{t("reservations.allStatuses")}</option>
+                <option value="active">{t("reservations.active")}</option>
+                <option value="cancelled">{t("reservations.cancelled")}</option>
+                <option value="completed">{t("reservations.completed")}</option>
+                <option value="expired">{t("reservations.expired")}</option>
+              </select>
+
+              <button
+                onClick={openCreateModal}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              >
+                {t("reservations.createNew")}
+              </button>
+            </div>
+
+            {user?.role === "admin" && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleExport("csv")}
+                  disabled={exportLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {exportLoading ? "Exporting..." : "Export CSV"}
+                </button>
+                <button
+                  onClick={() => handleExport("excel")}
+                  disabled={exportLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {exportLoading ? "Exporting..." : "Export Excel"}
+                </button>
+                <button
+                  onClick={() => handleExport("pdf")}
+                  disabled={exportLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {exportLoading ? "Exporting..." : "Export PDF"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Calendar and List View */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Calendar */}
+          <div
+            className={`p-6 rounded-lg ${
+              isDarkMode ? "bg-gray-800" : "bg-white"
+            } shadow-lg`}
+          >
+            <h2
+              className={`text-xl font-semibold mb-4 ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              {t("reservations.calendar")}
+            </h2>
+            <Calendar
+              onChange={setSelectedDate}
+              value={selectedDate}
+              className={`${isDarkMode ? "text-white" : "text-gray-900"}`}
+              tileContent={({ date }) => {
+                const dayReservations = getReservationsForDate(date);
+                return dayReservations.length > 0 ? (
+                  <div className="text-xs text-blue-600 font-bold">
+                    {dayReservations.length}
+                  </div>
+                ) : null;
+              }}
+            />
+
+            {/* Selected Date Reservations */}
+            <div className="mt-4">
+              <h3
+                className={`font-semibold mb-2 ${
+                  isDarkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {t("reservations.reservationsFor")}{" "}
+                {selectedDate.toLocaleDateString()}
+              </h3>
+              <div className="space-y-2">
+                {getReservationsForDate(selectedDate).map((reservation) => (
+                  <div
+                    key={reservation.id}
+                    className={`p-3 rounded-lg border ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{reservation.locker_name}</p>
+                        <p className="text-sm text-gray-600">
+                          {formatDateTime(reservation.start_time)} -{" "}
+                          {formatDateTime(reservation.end_time)}
+                        </p>
+                        <p className="text-sm">
+                          Code: {reservation.access_code}
+                        </p>
+                      </div>
+                      <span className={getStatusBadge(reservation.status)}>
+                        {t(`reservations.${reservation.status}`)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Reservations List */}
+          <div
+            className={`p-6 rounded-lg ${
+              isDarkMode ? "bg-gray-800" : "bg-white"
+            } shadow-lg`}
+          >
+            <h2
+              className={`text-xl font-semibold mb-4 ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              {t("reservations.allReservations")}
+            </h2>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {reservations.map((reservation) => (
+                <div
+                  key={reservation.id}
+                  className={`p-4 rounded-lg border ${
+                    isDarkMode
+                      ? "bg-gray-700 border-gray-600"
+                      : "bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold">
+                        {reservation.locker_name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {t("reservations.reservationCode")}:{" "}
+                        {reservation.reservation_code}
+                      </p>
+                    </div>
+                    <span className={getStatusBadge(reservation.status)}>
+                      {t(`reservations.${reservation.status}`)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 text-sm">
+                    <p>
+                      <span className="font-medium">
+                        {t("reservations.startTime")}:
+                      </span>{" "}
+                      {formatDateTime(reservation.start_time)}
+                    </p>
+                    <p>
+                      <span className="font-medium">
+                        {t("reservations.endTime")}:
+                      </span>{" "}
+                      {formatDateTime(reservation.end_time)}
+                    </p>
+                    <p>
+                      <span className="font-medium">
+                        {t("reservations.accessCode")}:
+                      </span>{" "}
+                      {reservation.access_code}
+                    </p>
+                    {reservation.notes && (
+                      <p>
+                        <span className="font-medium">
+                          {t("reservations.notes")}:
+                        </span>{" "}
+                        {reservation.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    {reservation.status === "active" && (
+                      <>
+                        <button
+                          onClick={() => openEditModal(reservation)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                        >
+                          {t("reservations.edit")}
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleCancelReservation(reservation.id)
+                          }
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                        >
+                          {t("reservations.cancel")}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {reservations.length === 0 && (
+                <div
+                  className={`text-center py-8 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  {t("reservations.noReservations")}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Create Reservation Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div
+              className={`p-6 rounded-lg w-full max-w-md ${
+                isDarkMode ? "bg-gray-800" : "bg-white"
+              }`}
+            >
+              <h2
+                className={`text-xl font-semibold mb-4 ${
+                  isDarkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {t("reservations.createNew")}
+              </h2>
+              <form onSubmit={handleCreateReservation} className="space-y-4">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.locker")}
+                  </label>
+                  <select
+                    value={formData.locker_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, locker_id: e.target.value })
+                    }
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
+                    <option value="">{t("reservations.selectLocker")}</option>
+                    {lockers
+                      .filter((locker) => locker.status === "active")
+                      .map((locker) => (
+                        <option key={locker.id} value={locker.id}>
+                          {locker.name} - {locker.number}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.startTime")}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.start_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, start_time: e.target.value })
+                    }
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.endTime")}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.end_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, end_time: e.target.value })
+                    }
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.notes")}
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    rows="3"
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                  >
+                    {loading
+                      ? t("reservations.creating")
+                      : t("reservations.create")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    {t("reservations.cancel")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Reservation Modal */}
+        {showEditModal && selectedReservation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div
+              className={`p-6 rounded-lg w-full max-w-md ${
+                isDarkMode ? "bg-gray-800" : "bg-white"
+              }`}
+            >
+              <h2
+                className={`text-xl font-semibold mb-4 ${
+                  isDarkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {t("reservations.editReservation")}
+              </h2>
+              <form onSubmit={handleUpdateReservation} className="space-y-4">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.locker")}
+                  </label>
+                  <select
+                    value={formData.locker_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, locker_id: e.target.value })
+                    }
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
+                    <option value="">{t("reservations.selectLocker")}</option>
+                    {lockers
+                      .filter((locker) => locker.status === "active")
+                      .map((locker) => (
+                        <option key={locker.id} value={locker.id}>
+                          {locker.name} - {locker.number}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.startTime")}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.start_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, start_time: e.target.value })
+                    }
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.endTime")}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.end_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, end_time: e.target.value })
+                    }
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {t("reservations.notes")}
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    rows="3"
+                    className={`w-full px-3 py-2 border rounded-lg ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                  >
+                    {loading
+                      ? t("reservations.updating")
+                      : t("reservations.update")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    {t("reservations.cancel")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Reservations;

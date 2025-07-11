@@ -100,7 +100,7 @@ def get_locale():
 
 # Import and initialize models from models.py
 from models import init_models
-User, Locker, Item, Log, Borrow, Payment, init_db_func, generate_dummy_data = init_models(db)
+User, Locker, Item, Log, Borrow, Payment, Reservation, init_db_func, generate_dummy_data = init_models(db)
 
 # Store models in app config for dynamic access
 app.config['models'] = {
@@ -109,7 +109,8 @@ app.config['models'] = {
     'Item': Item,
     'Log': Log,
     'Borrow': Borrow,
-    'Payment': Payment
+    'Payment': Payment,
+    'Reservation': Reservation
 }
 
 # Remove the duplicate User model definition from app.py. Only use the User model from models.py via init_models(db).
@@ -1000,6 +1001,460 @@ def get_payments():
         logger.error(f"Get payments error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+# =============================================================================
+# RESERVATION API ENDPOINTS
+# =============================================================================
+
+@app.route('/api/reservations', methods=['GET'])
+@jwt_required()
+def get_reservations():
+    """Get reservations for current user or all for admin"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        status_filter = request.args.get('status', None)
+        
+        # Admin can see all reservations, users see only their own
+        if user.role == 'admin':
+            query = Reservation.query
+        else:
+            query = Reservation.query.filter_by(user_id=current_user_id)
+        
+        # Apply status filter if provided
+        if status_filter:
+            query = query.filter_by(status=status_filter)
+        
+        reservations = query.order_by(Reservation.start_time.desc()).offset(offset).limit(limit).all()
+        
+        return jsonify({
+            'reservations': [r.to_dict() for r in reservations],
+            'total': query.count(),
+            'limit': limit,
+            'offset': offset
+        })
+    except Exception as e:
+        logger.error(f"Get reservations error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/reservations', methods=['POST'])
+@jwt_required()
+def create_reservation():
+    """Create a new reservation"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['locker_id', 'start_time', 'end_time']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        
+        # Parse datetime strings
+        try:
+            start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
+            end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
+        except ValueError:
+            return jsonify({"error": "Invalid datetime format"}), 400
+        
+        # Validate time constraints
+        now = datetime.utcnow()
+        if start_time < now:
+            return jsonify({"error": "Start time cannot be in the past"}), 400
+        
+        if end_time <= start_time:
+            return jsonify({"error": "End time must be after start time"}), 400
+        
+        # Check maximum duration (24 hours)
+        duration = end_time - start_time
+        if duration > timedelta(hours=24):
+            return jsonify({"error": "Reservation cannot exceed 24 hours"}), 400
+        
+        # Check if locker is available for the requested time
+        locker = Locker.query.get(data['locker_id'])
+        if not locker:
+            return jsonify({"error": "Locker not found"}), 404
+        
+        if locker.status != 'active':
+            return jsonify({"error": "Locker is not available for reservation"}), 400
+        
+        # Check for conflicts with existing reservations
+        conflicting_reservations = Reservation.query.filter(
+            Reservation.locker_id == data['locker_id'],
+            Reservation.status == 'active',
+            db.or_(
+                db.and_(Reservation.start_time < end_time, Reservation.end_time > start_time)
+            )
+        ).first()
+        
+        if conflicting_reservations:
+            return jsonify({"error": "Locker is already reserved for this time period"}), 400
+        
+        # Create reservation
+        reservation = Reservation(
+            reservation_code=Reservation.generate_reservation_code(),
+            user_id=current_user_id,
+            locker_id=data['locker_id'],
+            start_time=start_time,
+            end_time=end_time,
+            access_code=Reservation.generate_access_code(),
+            notes=data.get('notes', ''),
+            status='active'
+        )
+        
+        db.session.add(reservation)
+        
+        # Update locker status to reserved
+        locker.status = 'reserved'
+        
+        db.session.commit()
+        
+        # Log the reservation creation
+        log_action(
+            'reservation_create',
+            user_id=current_user_id,
+            locker_id=data['locker_id'],
+            details=f"Reservation {reservation.reservation_code} created for locker {locker.name}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return jsonify({
+            "message": "Reservation created successfully",
+            "reservation": reservation.to_dict()
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Create reservation error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/reservations/<int:reservation_id>', methods=['GET'])
+@jwt_required()
+def get_reservation(reservation_id):
+    """Get a specific reservation"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        reservation = Reservation.query.get(reservation_id)
+        if not reservation:
+            return jsonify({"error": "Reservation not found"}), 404
+        
+        # Check access: admin can see all, users can only see their own
+        if user.role != 'admin' and reservation.user_id != current_user_id:
+            return jsonify({"error": "Access denied"}), 403
+        
+        return jsonify(reservation.to_dict())
+        
+    except Exception as e:
+        logger.error(f"Get reservation error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/reservations/<int:reservation_id>', methods=['PUT'])
+@jwt_required()
+def update_reservation(reservation_id):
+    """Update a reservation"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        reservation = Reservation.query.get(reservation_id)
+        if not reservation:
+            return jsonify({"error": "Reservation not found"}), 404
+        
+        # Check access: admin can modify all, users can only modify their own
+        if user.role != 'admin' and reservation.user_id != current_user_id:
+            return jsonify({"error": "Access denied"}), 403
+        
+        # Only active reservations can be modified
+        if reservation.status != 'active':
+            return jsonify({"error": "Only active reservations can be modified"}), 400
+        
+        data = request.get_json()
+        
+        # Parse datetime strings if provided
+        if 'start_time' in data:
+            try:
+                start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
+            except ValueError:
+                return jsonify({"error": "Invalid start_time format"}), 400
+        else:
+            start_time = reservation.start_time
+            
+        if 'end_time' in data:
+            try:
+                end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
+            except ValueError:
+                return jsonify({"error": "Invalid end_time format"}), 400
+        else:
+            end_time = reservation.end_time
+        
+        # Validate time constraints
+        now = datetime.utcnow()
+        if start_time < now:
+            return jsonify({"error": "Start time cannot be in the past"}), 400
+        
+        if end_time <= start_time:
+            return jsonify({"error": "End time must be after start time"}), 400
+        
+        # Check maximum duration (24 hours)
+        duration = end_time - start_time
+        if duration > timedelta(hours=24):
+            return jsonify({"error": "Reservation cannot exceed 24 hours"}), 400
+        
+        # Check for conflicts with existing reservations (excluding current reservation)
+        conflicting_reservations = Reservation.query.filter(
+            Reservation.locker_id == reservation.locker_id,
+            Reservation.status == 'active',
+            Reservation.id != reservation_id,
+            db.or_(
+                db.and_(Reservation.start_time < end_time, Reservation.end_time > start_time)
+            )
+        ).first()
+        
+        if conflicting_reservations:
+            return jsonify({"error": "Locker is already reserved for this time period"}), 400
+        
+        # Update reservation
+        reservation.start_time = start_time
+        reservation.end_time = end_time
+        reservation.notes = data.get('notes', reservation.notes)
+        reservation.modified_at = datetime.utcnow()
+        reservation.modified_by = current_user_id
+        
+        db.session.commit()
+        
+        # Log the reservation modification
+        log_action(
+            'reservation_modify',
+            user_id=current_user_id,
+            locker_id=reservation.locker_id,
+            details=f"Reservation {reservation.reservation_code} modified",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return jsonify({
+            "message": "Reservation updated successfully",
+            "reservation": reservation.to_dict()
+        })
+        
+    except Exception as e:
+        logger.error(f"Update reservation error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/reservations/<int:reservation_id>/cancel', methods=['POST'])
+@jwt_required()
+def cancel_reservation(reservation_id):
+    """Cancel a reservation"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        reservation = Reservation.query.get(reservation_id)
+        if not reservation:
+            return jsonify({"error": "Reservation not found"}), 404
+        
+        # Check access: admin can cancel all, users can only cancel their own
+        if user.role != 'admin' and reservation.user_id != current_user_id:
+            return jsonify({"error": "Access denied"}), 403
+        
+        # Only active reservations can be cancelled
+        if reservation.status != 'active':
+            return jsonify({"error": "Only active reservations can be cancelled"}), 400
+        
+        # Cancel reservation
+        reservation.status = 'cancelled'
+        reservation.cancelled_at = datetime.utcnow()
+        reservation.cancelled_by = current_user_id
+        
+        # Update locker status back to active if no other active reservations
+        other_active_reservations = Reservation.query.filter(
+            Reservation.locker_id == reservation.locker_id,
+            Reservation.status == 'active',
+            Reservation.id != reservation_id
+        ).first()
+        
+        if not other_active_reservations:
+            locker = Locker.query.get(reservation.locker_id)
+            if locker:
+                locker.status = 'active'
+        
+        db.session.commit()
+        
+        # Log the reservation cancellation
+        log_action(
+            'reservation_cancel',
+            user_id=current_user_id,
+            locker_id=reservation.locker_id,
+            details=f"Reservation {reservation.reservation_code} cancelled",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return jsonify({
+            "message": "Reservation cancelled successfully",
+            "reservation": reservation.to_dict()
+        })
+        
+    except Exception as e:
+        logger.error(f"Cancel reservation error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/reservations/access/<access_code>', methods=['POST'])
+@jwt_required()
+def access_reservation(access_code):
+    """Access a reservation using access code (for RFID/RS485)"""
+    try:
+        reservation = Reservation.query.filter_by(access_code=access_code).first()
+        if not reservation:
+            return jsonify({"error": "Invalid access code"}), 404
+        
+        # Check if reservation is active
+        if reservation.status != 'active':
+            return jsonify({"error": "Reservation is not active"}), 400
+        
+        # Check if reservation is within time window
+        now = datetime.utcnow()
+        if now < reservation.start_time or now > reservation.end_time:
+            return jsonify({"error": "Reservation is not within access time window"}), 400
+        
+        # Log the access attempt
+        log_action(
+            'reservation_access',
+            user_id=reservation.user_id,
+            locker_id=reservation.locker_id,
+            details=f"Reservation {reservation.reservation_code} accessed with code {access_code}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return jsonify({
+            "message": "Access granted",
+            "reservation": reservation.to_dict(),
+            "locker_id": reservation.locker_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Access reservation error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/reservations/rfid-access/<rfid_tag>', methods=['POST'])
+def rfid_access_reservation(rfid_tag):
+    """Access a reservation using RFID tag (no JWT required for RFID access)"""
+    try:
+        # Find user by RFID tag
+        user = User.query.filter_by(rfid_tag=rfid_tag).first()
+        if not user:
+            return jsonify({"error": "Invalid RFID tag"}), 404
+        
+        # Find active reservation for this user
+        reservation = Reservation.query.filter_by(
+            user_id=user.id,
+            status='active'
+        ).filter(
+            Reservation.start_time <= datetime.utcnow(),
+            Reservation.end_time >= datetime.utcnow()
+        ).first()
+        
+        if not reservation:
+            return jsonify({"error": "No active reservation found for this RFID tag"}), 404
+        
+        # Log the RFID access attempt
+        log_action(
+            'reservation_rfid_access',
+            user_id=user.id,
+            locker_id=reservation.locker_id,
+            details=f"Reservation {reservation.reservation_code} accessed with RFID {rfid_tag}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return jsonify({
+            "message": "RFID access granted",
+            "reservation": reservation.to_dict(),
+            "user": user.to_dict(),
+            "locker_id": reservation.locker_id
+        })
+        
+    except Exception as e:
+        logger.error(f"RFID access reservation error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/admin/export/reservations', methods=['GET'])
+@jwt_required()
+@admin_required
+def export_reservations():
+    """Export reservations data"""
+    try:
+        format_type = request.args.get('format', 'csv')
+        status_filter = request.args.get('status', None)
+        
+        # Get reservations with optional status filter
+        query = Reservation.query
+        if status_filter:
+            query = query.filter_by(status=status_filter)
+        
+        reservations = query.all()
+        
+        # Prepare data for export
+        data = []
+        for reservation in reservations:
+            user = User.query.get(reservation.user_id)
+            locker = Locker.query.get(reservation.locker_id)
+            data.append({
+                'Reservation Code': reservation.reservation_code,
+                'User': f"{user.first_name} {user.last_name}" if user else 'Unknown',
+                'Username': user.username if user else 'Unknown',
+                'Locker': locker.name if locker else 'Unknown',
+                'Locker Number': locker.number if locker else 'Unknown',
+                'Start Time': reservation.start_time.strftime('%Y-%m-%d %H:%M:%S') if reservation.start_time else '',
+                'End Time': reservation.end_time.strftime('%Y-%m-%d %H:%M:%S') if reservation.end_time else '',
+                'Status': reservation.status,
+                'Access Code': reservation.access_code,
+                'Notes': reservation.notes or '',
+                'Created At': reservation.created_at.strftime('%Y-%m-%d %H:%M:%S') if reservation.created_at else '',
+                'Cancelled At': reservation.cancelled_at.strftime('%Y-%m-%d %H:%M:%S') if reservation.cancelled_at else '',
+                'Modified At': reservation.modified_at.strftime('%Y-%m-%d %H:%M:%S') if reservation.modified_at else ''
+            })
+        
+        if format_type == 'csv':
+            return export_data_csv(data, 'reservations')
+        elif format_type == 'excel':
+            return export_data_excel(data, 'reservations')
+        elif format_type == 'pdf':
+            sections = [{'title': 'Reservations', 'content': data}]
+            return export_data_pdf('Reservations Report', sections, 'reservations')
+        else:
+            return jsonify({"error": "Unsupported format"}), 400
+            
+    except Exception as e:
+        logger.error(f"Export reservations error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
 if __name__ == '__main__':
     import argparse
     import sys
@@ -1038,6 +1493,11 @@ if __name__ == '__main__':
         minimal = args.minimal or not args.demo
         init_db(minimal=minimal)
         print("Database initialization complete!")
+    elif args.demo:
+        # If demo flag is set but not reset-db, still initialize with demo data
+        print("Loading demo data...")
+        init_db(minimal=False)
+        print("Demo data loaded!")
     
     print(f"Starting Smart Locker System on {args.host}:{args.port}")
     if args.minimal:

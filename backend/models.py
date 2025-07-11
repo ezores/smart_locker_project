@@ -24,6 +24,9 @@ def init_models(db):
         borrows = db.relationship('Borrow', backref='user', lazy=True)
         logs = db.relationship('Log', backref='user', lazy=True)
         payments = db.relationship('Payment', backref='user', lazy=True)
+        reservations = db.relationship('Reservation', foreign_keys='Reservation.user_id', backref='user', lazy=True)
+        cancelled_reservations = db.relationship('Reservation', foreign_keys='Reservation.cancelled_by', backref='cancelled_by_user', lazy=True)
+        modified_reservations = db.relationship('Reservation', foreign_keys='Reservation.modified_by', backref='modified_by_user', lazy=True)
 
         def set_password(self, password):
             self.password_hash = generate_password_hash(password)
@@ -54,7 +57,7 @@ def init_models(db):
         description = db.Column(db.Text)
         capacity = db.Column(db.Integer, default=10)
         current_occupancy = db.Column(db.Integer, default=0)
-        status = db.Column(db.String(20), default='active')  # active, maintenance, inactive
+        status = db.Column(db.String(20), default='active')  # active, maintenance, inactive, reserved
         is_active = db.Column(db.Boolean, default=True)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         
@@ -67,6 +70,7 @@ def init_models(db):
         items = db.relationship('Item', backref='locker', lazy=True)
         borrows = db.relationship('Borrow', backref='locker', lazy=True)
         logs = db.relationship('Log', backref='locker', lazy=True)
+        reservations = db.relationship('Reservation', backref='locker', lazy=True)
 
         def to_dict(self):
             return {
@@ -83,6 +87,60 @@ def init_models(db):
                 'rs485_locker_number': self.rs485_locker_number,
                 'created_at': self.created_at.isoformat() if self.created_at else None
             }
+
+    class Reservation(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        reservation_code = db.Column(db.String(16), unique=True, nullable=False)
+        user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+        locker_id = db.Column(db.Integer, db.ForeignKey('locker.id'), nullable=False)
+        start_time = db.Column(db.DateTime, nullable=False)
+        end_time = db.Column(db.DateTime, nullable=False)
+        status = db.Column(db.String(20), default='active')  # active, cancelled, completed, expired
+        access_code = db.Column(db.String(8), unique=True, nullable=False)  # 8-digit access code
+        notes = db.Column(db.Text)
+        created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        cancelled_at = db.Column(db.DateTime)
+        cancelled_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+        modified_at = db.Column(db.DateTime)
+        modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+        
+        # Relationships
+        logs = db.relationship('Log', backref='reservation', lazy=True)
+
+        def to_dict(self):
+            return {
+                'id': self.id,
+                'reservation_code': self.reservation_code,
+                'user_id': self.user_id,
+                'locker_id': self.locker_id,
+                'start_time': self.start_time.isoformat() if self.start_time else None,
+                'end_time': self.end_time.isoformat() if self.end_time else None,
+                'status': self.status,
+                'access_code': self.access_code,
+                'notes': self.notes,
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
+                'modified_at': self.modified_at.isoformat() if self.modified_at else None,
+                'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else None,
+                'locker_name': self.locker.name if self.locker else None,
+                'locker_number': self.locker.number if self.locker else None
+            }
+
+        @staticmethod
+        def generate_reservation_code():
+            """Generate a unique 8-character reservation code"""
+            while True:
+                code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                if not Reservation.query.filter_by(reservation_code=code).first():
+                    return code
+
+        @staticmethod
+        def generate_access_code():
+            """Generate a unique 8-digit access code"""
+            while True:
+                code = ''.join(random.choices(string.digits, k=8))
+                if not Reservation.query.filter_by(access_code=code).first():
+                    return code
 
     class Item(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -122,8 +180,9 @@ def init_models(db):
         user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
         item_id = db.Column(db.Integer, db.ForeignKey('item.id'))
         locker_id = db.Column(db.Integer, db.ForeignKey('locker.id'))
+        reservation_id = db.Column(db.Integer, db.ForeignKey('reservation.id'))
         timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-        action_type = db.Column(db.String(32), nullable=False)  # borrow, return, maintenance
+        action_type = db.Column(db.String(32), nullable=False)  # borrow, return, maintenance, reservation_create, reservation_cancel, reservation_modify
         notes = db.Column(db.Text)
         due_date = db.Column(db.DateTime)
         returned_at = db.Column(db.DateTime)
@@ -136,6 +195,7 @@ def init_models(db):
                 'user_id': self.user_id,
                 'item_id': self.item_id,
                 'locker_id': self.locker_id,
+                'reservation_id': self.reservation_id,
                 'action_type': self.action_type,
                 'notes': self.notes,
                 'ip_address': self.ip_address,
@@ -143,7 +203,8 @@ def init_models(db):
                 'timestamp': self.timestamp.isoformat() if self.timestamp else None,
                 'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else None,
                 'item_name': self.item.name if self.item else None,
-                'locker_name': self.locker.name if self.locker else None
+                'locker_name': self.locker.name if self.locker else None,
+                'reservation_code': self.reservation.reservation_code if self.reservation else None
             }
 
     class Borrow(db.Model):
@@ -207,6 +268,7 @@ def init_models(db):
         db.session.query(Locker).delete()
         db.session.query(User).delete()
         db.session.query(Payment).delete()
+        db.session.query(Reservation).delete()
         
         # Create users - much more comprehensive
         users_data = [
@@ -425,6 +487,26 @@ def init_models(db):
             items.append(item)
             db.session.add(item)
         
+        # Create reservations - much more comprehensive
+        # Remove static reservations_data and generate reservations only for valid users and lockers
+        max_reservations = min(len(users), len(lockers))
+        for i in range(max_reservations):
+            user = users[i]
+            locker = lockers[i]
+            reservation = Reservation(
+                reservation_code=Reservation.generate_reservation_code(),
+                user_id=user.id,
+                locker_id=locker.id,
+                start_time=datetime.now() - timedelta(days=i+1),
+                end_time=datetime.now() + timedelta(days=i+1),
+                status='active',
+                access_code=Reservation.generate_access_code(),
+                notes=f'Reservation for {user.username}',
+                created_at=datetime.utcnow()
+            )
+            db.session.add(reservation)
+        db.session.commit()
+        
         # Create logs and borrows - much more comprehensive
         action_types = ['borrow', 'return', 'maintenance', 'check_in', 'check_out']
         for i in range(500):  # Create 500 log entries
@@ -479,4 +561,4 @@ def init_models(db):
         if not User.query.first():
             generate_dummy_data()
     
-    return User, Locker, Item, Log, Borrow, Payment, init_db, generate_dummy_data 
+    return User, Locker, Item, Log, Borrow, Payment, Reservation, init_db, generate_dummy_data 

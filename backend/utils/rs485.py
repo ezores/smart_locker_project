@@ -205,6 +205,60 @@ def test_rs485_connection() -> Dict[str, Any]:
     """Test RS485 connection"""
     return rs485_controller.test_connection()
 
+def access_reservation_locker(access_code: str, locker_id: int, address: Optional[int] = None, locker_number: Optional[int] = None) -> Dict[str, Any]:
+    """Access a locker using reservation access code"""
+    try:
+        # Validate access code format (8 digits)
+        if not access_code.isdigit() or len(access_code) != 8:
+            return {
+                "success": False,
+                "error": "Invalid access code format",
+                "message": "Access code must be 8 digits"
+            }
+        
+        # Generate RS485 frame
+        if address is not None and locker_number is not None:
+            frame = generate_rs485_frame(address, locker_number)
+        else:
+            # Fallback to simple mapping if no address/numbers provided
+            address = (locker_id - 1) % 32
+            locker_number = ((locker_id - 1) % 24) + 1
+            frame = generate_rs485_frame(address, locker_number)
+        
+        # Send the frame
+        success = rs485_controller._send_command(frame)
+        
+        result = {
+            "success": success,
+            "locker_id": locker_id,
+            "access_code": access_code,
+            "action": "reservation_access",
+            "rs485_address": address,
+            "rs485_locker_number": locker_number,
+            "frame": frame,
+            "timestamp": time.time(),
+            "message": "Reservation access granted" if success else "Failed to access locker"
+        }
+        
+        if success:
+            logger.info(f"Reservation access granted for locker {locker_id} with code {access_code}")
+        else:
+            logger.error(f"Failed to access locker {locker_id} with code {access_code}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error accessing locker {locker_id} with code {access_code}: {e}")
+        return {
+            "success": False,
+            "locker_id": locker_id,
+            "access_code": access_code,
+            "action": "reservation_access",
+            "error": str(e),
+            "timestamp": time.time(),
+            "message": f"Error accessing locker: {e}"
+        }
+
 def generate_rs485_frame(address: int, locker_number: int) -> str:
     """
     Generate RS485 protocol frame for locker control

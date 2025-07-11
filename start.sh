@@ -33,6 +33,26 @@ print_info() {
     echo "[INFO] $1"
 }
 
+# Create .env file if it doesn't exist with database configuration
+if [ ! -f ".env" ]; then
+    print_info "Creating .env file with database configuration..."
+    cat > .env << EOF
+# Database Configuration
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
+DB_PASS=$DB_PASS
+DB_PORT=$DB_PORT
+DB_HOST=$DB_HOST
+DATABASE_URL=$DATABASE_URL
+
+# Flask Configuration
+FLASK_ENV=development
+FLASK_DEBUG=True
+SECRET_KEY=your-secret-key-change-in-production
+EOF
+    print_success "Created .env file with default configuration"
+fi
+
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -83,7 +103,20 @@ start_backend() {
     source ../.venv/bin/activate
     pkill -f "python.*app.py" 2>/dev/null || true
     sleep 2
-    python app.py --port 5172 --demo --verbose &
+    
+    # Build backend command with appropriate flags
+    BACKEND_CMD="python app.py --port 5172 --verbose"
+    if [ "$DEMO_MODE" = true ]; then
+        BACKEND_CMD="$BACKEND_CMD --demo"
+    fi
+    if [ "$RESET_DB" = true ]; then
+        BACKEND_CMD="$BACKEND_CMD --reset-db"
+    fi
+    if [ "$MINIMAL" = true ]; then
+        BACKEND_CMD="$BACKEND_CMD --minimal"
+    fi
+    
+    $BACKEND_CMD &
     BACKEND_PID=$!
     echo $BACKEND_PID > ../backend.pid
     popd > /dev/null
@@ -234,6 +267,8 @@ echo "=================================================="
 TEST_MODE=false
 DEMO_MODE=false
 VERBOSE=false
+RESET_DB=false
+MINIMAL=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --test)
@@ -246,6 +281,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --verbose)
             VERBOSE=true
+            shift
+            ;;
+        --reset-db)
+            RESET_DB=true
+            shift
+            ;;
+        --minimal)
+            MINIMAL=true
             shift
             ;;
         *)
@@ -315,12 +358,42 @@ try:
     print('Database connection successful!')
 except Exception as e:
     print(f'Database connection failed: {e}')
+    print('Attempting to create database and user...')
     exit(1)
 " || {
-    print_error "Database connection test failed"
-    exit 1
+    print_warning "Database connection failed, attempting to create database..."
+    
+    # Try to create database and user with postgres superuser
+    if psql -U postgres -h localhost -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null; then
+        print_success "Created database user: $DB_USER"
+    else
+        print_info "Database user already exists or creation failed"
+    fi
+    
+    if psql -U postgres -h localhost -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null; then
+        print_success "Created database: $DB_NAME"
+    else
+        print_info "Database already exists or creation failed"
+    fi
+    
+    # Test connection again
+    if python3 -c "
+import psycopg2
+try:
+    conn = psycopg2.connect('$DATABASE_URL')
+    conn.close()
+    print('Database connection successful after setup!')
+except Exception as e:
+    print(f'Database connection still failed: {e}')
+    exit(1)
+"; then
+        print_success "Database connection test passed after setup!"
+    else
+        print_error "Database connection test failed even after setup"
+        print_error "Please check PostgreSQL installation and configuration"
+        exit 1
+    fi
 }
-print_success "Database connection test passed!"
 
 # Install Node.js dependencies
 print_info "Installing Node.js dependencies..."

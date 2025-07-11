@@ -17,6 +17,28 @@ from functools import wraps
 from utils.rs485 import open_locker, close_locker, get_locker_status, test_rs485_connection
 from utils.export import export_data_csv, export_data_excel, export_data_pdf, export_system_report
 from flask_babel import Babel
+from dateutil import parser as dateutil_parser
+import pytz
+
+def parse_datetime_utc(dt_str):
+    """Parse datetime string and convert to UTC, treating input as local time"""
+    try:
+        # Parse the datetime string
+        dt = dateutil_parser.isoparse(dt_str)
+        
+        # If the datetime has timezone info, convert to UTC
+        if dt.tzinfo is not None:
+            return dt.astimezone(pytz.UTC).replace(tzinfo=None)
+        else:
+            # Treat as local time and convert to UTC
+            # Get local timezone
+            local_tz = pytz.timezone('America/New_York')  # Adjust for your timezone
+            local_dt = local_tz.localize(dt)
+            utc_dt = local_dt.astimezone(pytz.UTC)
+            return utc_dt.replace(tzinfo=None)
+    except Exception as e:
+        logger.error(f"Error parsing datetime '{dt_str}': {e}")
+        raise ValueError(f"Invalid datetime format: {dt_str}")
 
 # Configure logging
 logging.basicConfig(
@@ -56,9 +78,22 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 import sys
 
 database_url = os.getenv('DATABASE_URL')
-if not database_url or not database_url.startswith('postgresql://'):
-    print('ERROR: You must set the DATABASE_URL environment variable to a valid postgresql:// URI.')
+if not database_url:
+    # Try to construct DATABASE_URL from individual components
+    db_host = os.getenv('DB_HOST', 'localhost')
+    db_port = os.getenv('DB_PORT', '5432')
+    db_name = os.getenv('DB_NAME', 'smart_locker_db')
+    db_user = os.getenv('DB_USER', 'smart_locker_user')
+    db_pass = os.getenv('DB_PASS', 'smartlockerpass123')
+    
+    database_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    print(f"INFO: Constructed DATABASE_URL from individual components: {database_url}")
+
+if not database_url.startswith('postgresql://'):
+    print('ERROR: DATABASE_URL must be a valid postgresql:// URI.')
+    print(f'Current DATABASE_URL: {database_url}')
     sys.exit(1)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
@@ -317,8 +352,31 @@ def get_lockers():
     try:
         lockers = Locker.query.all()
         logger.info(f"Found {len(lockers)} lockers")
+        
+        # Get current time for checking active reservations
+        now = datetime.utcnow()
+        
         for locker in lockers:
+            # Check if locker has any active reservations (including future ones)
+            active_reservation = Reservation.query.filter(
+                Reservation.locker_id == locker.id,
+                Reservation.status == 'active'
+            ).first()
+            
+            # Update locker status based on reservations
+            if active_reservation:
+                if locker.status != 'reserved':
+                    locker.status = 'reserved'
+            else:
+                # If no active reservation but status is reserved, make it available
+                if locker.status == 'reserved':
+                    locker.status = 'active'
+            
             logger.info(f"Locker: {locker.name} - {locker.number} - Status: {locker.status}")
+        
+        # Commit the status changes
+        db.session.commit()
+        
         return jsonify([locker.to_dict() for locker in lockers])
     except Exception as e:
         logger.error(f"Get lockers error: {e}")
@@ -1008,10 +1066,51 @@ def get_payments():
 # RESERVATION API ENDPOINTS
 # =============================================================================
 
+def update_locker_status_from_reservations():
+    """Update locker status based on current reservations"""
+    try:
+        now = datetime.utcnow()
+        
+        # Auto-expire reservations whose end_time is in the past and status is still 'active'
+        expired = Reservation.query.filter(
+            Reservation.status == 'active',
+            Reservation.end_time < now
+        ).all()
+        for r in expired:
+            r.status = 'expired'
+        
+        # Get all lockers
+        lockers = Locker.query.all()
+        
+        for locker in lockers:
+            # Check if locker has any active reservations
+            active_reservation = Reservation.query.filter(
+                Reservation.locker_id == locker.id,
+                Reservation.status == 'active',
+                Reservation.start_time <= now,
+                Reservation.end_time >= now
+            ).first()
+            
+            # Update locker status based on reservations
+            if active_reservation:
+                if locker.status != 'reserved':
+                    locker.status = 'reserved'
+            else:
+                # If no active reservation but status is reserved, make it available
+                if locker.status == 'reserved':
+                    locker.status = 'active'
+        
+        # Commit the status changes
+        db.session.commit()
+        
+    except Exception as e:
+        logger.error(f"Update locker status error: {e}")
+        db.session.rollback()
+
 @app.route('/api/reservations', methods=['GET'])
 @jwt_required()
 def get_reservations():
-    """Get reservations for current user or all for admin"""
+    """Get reservations with optional filtering"""
     try:
         current_user_id = get_jwt_identity()
         user = User.query.get(current_user_id)
@@ -1019,9 +1118,13 @@ def get_reservations():
         if not user:
             return jsonify({"error": "User not found"}), 404
         
+        # Auto-expire reservations and update locker status
+        update_locker_status_from_reservations()
+        
+        # Get query parameters
         limit = request.args.get('limit', 50, type=int)
         offset = request.args.get('offset', 0, type=int)
-        status_filter = request.args.get('status', None)
+        status_filter = request.args.get('status')
         
         # Admin can see all reservations, users see only their own
         if user.role == 'admin':
@@ -1066,23 +1169,24 @@ def create_reservation():
         
         # Parse datetime strings
         try:
-            start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
-            end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
+            start_time = parse_datetime_utc(data['start_time'])
+            end_time = parse_datetime_utc(data['end_time'])
         except ValueError:
             return jsonify({"error": "Invalid datetime format"}), 400
         
-        # Validate time constraints
+        # Validate time constraints - compare in UTC
         now = datetime.utcnow()
-        if start_time < now:
+        # Allow reservations up to 1 minute in the past to account for clock drift
+        if start_time < (now - timedelta(minutes=1)):
             return jsonify({"error": "Start time cannot be in the past"}), 400
         
         if end_time <= start_time:
             return jsonify({"error": "End time must be after start time"}), 400
         
-        # Check maximum duration (24 hours)
+        # Check maximum duration (7 days)
         duration = end_time - start_time
-        if duration > timedelta(hours=24):
-            return jsonify({"error": "Reservation cannot exceed 24 hours"}), 400
+        if duration > timedelta(days=7):
+            return jsonify({"error": "Reservation cannot exceed 7 days"}), 400
         
         # Check if locker is available for the requested time
         locker = Locker.query.get(data['locker_id'])
@@ -1196,7 +1300,7 @@ def update_reservation(reservation_id):
         # Parse datetime strings if provided
         if 'start_time' in data:
             try:
-                start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
+                start_time = parse_datetime_utc(data['start_time'])
             except ValueError:
                 return jsonify({"error": "Invalid start_time format"}), 400
         else:
@@ -1204,7 +1308,7 @@ def update_reservation(reservation_id):
             
         if 'end_time' in data:
             try:
-                end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
+                end_time = parse_datetime_utc(data['end_time'])
             except ValueError:
                 return jsonify({"error": "Invalid end_time format"}), 400
         else:
@@ -1212,16 +1316,16 @@ def update_reservation(reservation_id):
         
         # Validate time constraints
         now = datetime.utcnow()
-        if start_time < now:
-            return jsonify({"error": "Start time cannot be in the past"}), 400
-        
+        # Only enforce 'start time cannot be in the past' on creation, not update
+        # if start_time < (now - timedelta(minutes=1)):
+        #     return jsonify({"error": "Start time cannot be in the past"}), 400
         if end_time <= start_time:
             return jsonify({"error": "End time must be after start time"}), 400
         
-        # Check maximum duration (24 hours)
+        # Check maximum duration (7 days)
         duration = end_time - start_time
-        if duration > timedelta(hours=24):
-            return jsonify({"error": "Reservation cannot exceed 24 hours"}), 400
+        if duration > timedelta(days=7):
+            return jsonify({"error": "Reservation cannot exceed 7 days"}), 400
         
         # Check for conflicts with existing reservations (excluding current reservation)
         conflicting_reservations = Reservation.query.filter(
@@ -1466,7 +1570,7 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=5050, help='Port to run on')
     parser.add_argument('--host', default='0.0.0.0', help='Host to run on')
     parser.add_argument('--init-db', action='store_true', help='Initialize database')
-    parser.add_argument('--minimal', action='store_true', help='Run in minimal mode (no demo data)')
+    parser.add_argument('--minimal', action='store_true', help='Run in minimal mode (no demo data, only admin user and empty lockers)')
     parser.add_argument('--demo', action='store_true', help='Load demo data (not minimal)')
     parser.add_argument('--reset-db', action='store_true', help='Drop and recreate all tables')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose (DEBUG) logging')
@@ -1483,8 +1587,8 @@ if __name__ == '__main__':
     # Create logs directory if it doesn't exist
     os.makedirs('logs', exist_ok=True)
     
-    # Only do this in dev/demo/test mode
-    if '--demo' in sys.argv or '--reset-db' in sys.argv or '--test' in sys.argv:
+    # Only do this in dev/demo/test/minimal mode
+    if '--demo' in sys.argv or '--reset-db' in sys.argv or '--test' in sys.argv or '--minimal' in sys.argv:
         with app.app_context():
             db.drop_all()
             db.create_all()
@@ -1492,19 +1596,24 @@ if __name__ == '__main__':
     # Handle --reset-db or --init-db
     if args.reset_db or args.init_db:
         print("Initializing database...")
-        # If minimal is set, or demo is not set, use minimal
         minimal = args.minimal or not args.demo
-        init_db(minimal=minimal)
+        with app.app_context():
+            init_db_func(minimal=minimal)
         print("Database initialization complete!")
     elif args.demo:
-        # If demo flag is set but not reset-db, still initialize with demo data
         print("Loading demo data...")
-        init_db(minimal=False)
+        with app.app_context():
+            init_db_func(minimal=False)
         print("Demo data loaded!")
+    elif args.minimal:
+        print("Minimal mode: only admin user and empty lockers.")
+        with app.app_context():
+            init_db_func(minimal=True)
+        print("Minimal DB initialized!")
     
     print(f"Starting Smart Locker System on {args.host}:{args.port}")
     if args.minimal:
-        print("Running in minimal mode")
+        print("Running in minimal mode (admin user, empty lockers)")
     if args.demo:
         print("Loading comprehensive demo data")
     app.run(host=args.host, port=int(os.environ.get('PORT', 5172)), debug=True) 

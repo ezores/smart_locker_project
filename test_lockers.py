@@ -97,6 +97,36 @@ def test_backend():
         print(f"❌ Reservations endpoint error: {e}")
         return False
 
+    # Test 5: Check for expired and active reservations
+    from datetime import datetime, timezone
+    print("\nTesting reservation status logic...")
+    try:
+        headers = {"Authorization": f"Bearer {token}"}
+        # Fetch active
+        response = requests.get(f"{base_url}/api/reservations?status=active", headers=headers)
+        active_reservations = response.json().get("reservations")
+        if active_reservations is None:
+            active_reservations = response.json()
+        print(f"Active reservations: {len(active_reservations)}")
+        now = datetime.now(timezone.utc)
+        actually_expired = [r for r in active_reservations if r.get('end_time') and datetime.fromisoformat(r['end_time']) < now]
+        if actually_expired:
+            print(f"❌ {len(actually_expired)} 'active' reservations are actually expired by time!")
+            for r in actually_expired[:5]:
+                print(f"  - {r.get('reservation_code')} ended at {r.get('end_time')}")
+        else:
+            print("✅ No 'active' reservations are expired by time.")
+        # Fetch expired
+        response = requests.get(f"{base_url}/api/reservations?status=expired", headers=headers)
+        expired_reservations = response.json().get("reservations")
+        if expired_reservations is None:
+            expired_reservations = response.json()
+        print(f"Expired reservations: {len(expired_reservations)}")
+        for r in expired_reservations[:5]:
+            print(f"  - {r.get('reservation_code')} ended at {r.get('end_time')}")
+    except Exception as e:
+        print(f"❌ Error checking reservation status logic: {e}")
+
 if __name__ == "__main__":
     print("🔍 Testing Smart Locker Backend...")
     print("=" * 50)

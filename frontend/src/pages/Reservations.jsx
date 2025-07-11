@@ -19,6 +19,26 @@ const darkModeStyles = `
   }
 `;
 
+// Helper to format a date string or Date object to 'YYYY-MM-DDTHH:mm' for datetime-local input
+function toDatetimeLocal(dt) {
+  if (!dt) return "";
+  const date = typeof dt === "string" ? new Date(dt) : dt;
+  // Pad with zeros
+  const pad = (n) => n.toString().padStart(2, "0");
+  // Use local time for datetime-local inputs
+  return (
+    date.getFullYear() +
+    "-" +
+    pad(date.getMonth() + 1) +
+    "-" +
+    pad(date.getDate()) +
+    "T" +
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes())
+  );
+}
+
 const Reservations = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -110,14 +130,66 @@ const Reservations = () => {
     }
   };
 
+  // Fix time comparison to handle datetime-local format properly
+  const isStartTimeInPast = (startTime) => {
+    if (!startTime) return false;
+    const now = new Date();
+    const start = new Date(startTime);
+    // Add 1 minute buffer to account for timezone differences and clock drift
+    const buffer = new Date(now.getTime() + 60000); // 1 minute buffer
+    return start.getTime() < buffer.getTime();
+  };
+
+  // Convert local datetime to UTC for API calls (preserve local time)
+  const localToUTC = (localDateTime) => {
+    if (!localDateTime) return null;
+    // Create a date object from the local datetime string
+    // This preserves the local time without timezone conversion
+    const [datePart, timePart] = localDateTime.split("T");
+    const [year, month, day] = datePart.split("-");
+    const [hour, minute] = timePart.split(":");
+
+    // Create date in local timezone
+    const localDate = new Date(year, month - 1, day, hour, minute);
+
+    // Convert to ISO string but preserve the local time
+    const offset = localDate.getTimezoneOffset() * 60000; // offset in milliseconds
+    const utcDate = new Date(localDate.getTime() - offset);
+    return utcDate.toISOString();
+  };
+
+  // Convert UTC datetime to local for display
+  const utcToLocal = (utcDateTime) => {
+    if (!utcDateTime) return null;
+    const date = new Date(utcDateTime);
+    return toDatetimeLocal(date);
+  };
+
   const handleCreateReservation = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const response = await api.post("/reservations", formData);
+
+      // Convert local times to UTC for API
+      const reservationData = {
+        ...formData,
+        start_time: localToUTC(formData.start_time),
+        end_time: localToUTC(formData.end_time),
+      };
+
+      const response = await api.post("/reservations", reservationData);
       setReservations((prev) => [response.data.reservation, ...prev]);
       setShowCreateModal(false);
-      setFormData({ locker_id: "", start_time: "", end_time: "", notes: "" });
+      // Set default start time to current time + 1 hour
+      const defaultStartTime = new Date();
+      defaultStartTime.setHours(defaultStartTime.getHours() + 1);
+      defaultStartTime.setMinutes(0, 0, 0); // Round to nearest hour
+      setFormData({
+        locker_id: "",
+        start_time: toDatetimeLocal(defaultStartTime),
+        end_time: "",
+        notes: "",
+      });
       setError("");
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create reservation");
@@ -130,9 +202,17 @@ const Reservations = () => {
     e.preventDefault();
     try {
       setLoading(true);
+
+      // Convert local times to UTC for API
+      const reservationData = {
+        ...formData,
+        start_time: localToUTC(formData.start_time),
+        end_time: localToUTC(formData.end_time),
+      };
+
       const response = await api.put(
         `/reservations/${selectedReservation.id}`,
-        formData
+        reservationData
       );
       setReservations((prev) =>
         prev.map((res) =>
@@ -141,7 +221,16 @@ const Reservations = () => {
       );
       setShowEditModal(false);
       setSelectedReservation(null);
-      setFormData({ locker_id: "", start_time: "", end_time: "", notes: "" });
+      // Set default start time to current time + 1 hour
+      const defaultStartTime2 = new Date();
+      defaultStartTime2.setHours(defaultStartTime2.getHours() + 1);
+      defaultStartTime2.setMinutes(0, 0, 0); // Round to nearest hour
+      setFormData({
+        locker_id: "",
+        start_time: toDatetimeLocal(defaultStartTime2),
+        end_time: "",
+        notes: "",
+      });
       setError("");
     } catch (err) {
       setError(err.response?.data?.error || "Failed to update reservation");
@@ -203,7 +292,17 @@ const Reservations = () => {
   };
 
   const openCreateModal = () => {
-    setFormData({ locker_id: "", start_time: "", end_time: "", notes: "" });
+    // Set default start time to current time + 1 hour
+    const defaultStartTime = new Date();
+    defaultStartTime.setHours(defaultStartTime.getHours() + 1);
+    defaultStartTime.setMinutes(0, 0, 0); // Round to nearest hour
+
+    setFormData({
+      locker_id: "",
+      start_time: toDatetimeLocal(defaultStartTime),
+      end_time: "",
+      notes: "",
+    });
     setShowCreateModal(true);
     setError("");
   };
@@ -212,10 +311,19 @@ const Reservations = () => {
     console.log("Opening edit modal for reservation:", reservation);
     console.log("Available lockers:", lockers);
     setSelectedReservation(reservation);
+
+    // Convert UTC times to local for the form
+    const startTime = reservation.start_time
+      ? toDatetimeLocal(new Date(reservation.start_time))
+      : "";
+    const endTime = reservation.end_time
+      ? toDatetimeLocal(new Date(reservation.end_time))
+      : "";
+
     setFormData({
       locker_id: String(reservation.locker_id || ""),
-      start_time: reservation.start_time,
-      end_time: reservation.end_time,
+      start_time: startTime,
+      end_time: endTime,
       notes: reservation.notes || "",
     });
     setShowEditModal(true);
@@ -282,6 +390,14 @@ const Reservations = () => {
           return `${baseClasses} bg-gray-100 text-gray-800`;
       }
     }
+  };
+
+  // Add a function to check if reservation duration exceeds 7 days
+  const isDurationTooLong = (start, end) => {
+    if (!start || !end) return false;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return endDate.getTime() - startDate.getTime() > 7 * 24 * 60 * 60 * 1000;
   };
 
   if (loading && reservations.length === 0) {
@@ -635,6 +751,11 @@ const Reservations = () => {
                         : "bg-white border-gray-300"
                     }`}
                   />
+                  {isStartTimeInPast(formData.start_time) && (
+                    <div className="text-red-500 text-xs mt-1">
+                      {t("reservations.startTimePast")}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -658,6 +779,14 @@ const Reservations = () => {
                         : "bg-white border-gray-300"
                     }`}
                   />
+                  {isDurationTooLong(
+                    formData.start_time,
+                    formData.end_time
+                  ) && (
+                    <div className="text-red-500 text-xs mt-1">
+                      Reservation cannot exceed 7 days
+                    </div>
+                  )}
                 </div>
 
                 <div>

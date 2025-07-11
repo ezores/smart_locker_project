@@ -6,7 +6,7 @@
  * @description Manages dark mode state across the application
  */
 
-import { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const DarkModeContext = createContext();
 

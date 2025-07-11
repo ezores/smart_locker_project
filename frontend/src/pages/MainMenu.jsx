@@ -14,7 +14,7 @@ import {
   CreditCard,
   Calendar,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getStats } from "../utils/api";
 
 const MainMenu = () => {

@@ -21,6 +21,7 @@ A comprehensive locker management system with Flask backend and React frontend, 
 - Node.js 18+
 - PostgreSQL 14+
 - Git
+- **Windows users:** Use [WSL](https://docs.microsoft.com/en-us/windows/wsl/) or Docker for best compatibility with project scripts.
 
 ### Installation
 
@@ -30,6 +31,11 @@ A comprehensive locker management system with Flask backend and React frontend, 
    git clone https://github.com/YOUR_USERNAME/smart_locker_project.git
    cd smart_locker_project
    ```
+
+   **Note for Windows users:**
+
+   - Use WSL (Windows Subsystem for Linux) or Docker to run `start.sh` and other scripts.
+   - Native Windows is not supported for Bash scripts; WSL is highly recommended.
 
 2. **Setup PostgreSQL**
 

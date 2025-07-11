@@ -6,7 +6,7 @@
  * @description Active borrows management interface for administrators
  */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {

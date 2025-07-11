@@ -6,7 +6,7 @@
  * @description Admin reporting component with date range selection and export functionality
  */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {

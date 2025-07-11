@@ -20,4 +20,9 @@ export default {
   ],
   coverageReporters: ["text", "lcov", "html"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+  transformIgnorePatterns: ["node_modules/(?!(react-calendar)/)"],
+  moduleFileExtensions: ["js", "jsx", "json"],
+  testEnvironmentOptions: {
+    url: "http://localhost",
+  },
 };

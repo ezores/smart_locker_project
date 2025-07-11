@@ -31,7 +31,7 @@ function log(message, type = "INFO") {
 function addResult(testName, passed, error = null) {
   if (passed) {
     testResults.passed++;
-    log(`✅ ${testName} - PASSED`, "PASS");
+    log(`${testName} - PASSED`, "PASS");
   } else {
     testResults.failed++;
     log(`❌ ${testName} - FAILED`, "FAIL");
@@ -278,7 +278,7 @@ async function testSystemIntegration() {
 
 // Main test runner
 async function runAllTests() {
-  log("🚀 Starting Smart Locker System Automated Tests", "START");
+  log("Starting Smart Locker System Automated Tests", "START");
   log("=" * 60);
 
   // Test backend functionality
@@ -317,11 +317,11 @@ async function runAllTests() {
 
   // Print results
   log("=" * 60);
-  log("📊 Test Results Summary:", "SUMMARY");
-  log(`✅ Passed: ${testResults.passed}`, "SUMMARY");
+  log("Test Results Summary:", "SUMMARY");
+  log(`Passed: ${testResults.passed}`, "SUMMARY");
   log(`❌ Failed: ${testResults.failed}`, "SUMMARY");
   log(
-    `📈 Success Rate: ${(
+    `Success Rate: ${(
       (testResults.passed / (testResults.passed + testResults.failed)) *
       100
     ).toFixed(1)}%`,
@@ -337,7 +337,7 @@ async function runAllTests() {
 
   const overallSuccess = testResults.failed === 0;
   log(
-    overallSuccess ? "🎉 All tests passed!" : "⚠️ Some tests failed.",
+    overallSuccess ? "All tests passed!" : "Some tests failed.",
     overallSuccess ? "SUCCESS" : "WARNING"
   );
 

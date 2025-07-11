@@ -1,0 +1,56 @@
+# Branch Protection Rules for Smart Locker Project
+# This file documents the branch protection settings that should be configured in GitHub
+
+# Main Branch Protection Rules
+main:
+  required_status_checks:
+    strict: true
+    contexts:
+      - "Backend Tests"
+      - "Frontend Tests"
+      - "Integration Tests"
+      - "Security Scan"
+      - "Code Quality"
+
+  enforce_admins: true
+
+  required_pull_request_reviews:
+    required_approving_review_count: 1
+    dismiss_stale_reviews: true
+    require_code_owner_reviews: false
+    require_last_push_approval: false
+
+  restrictions:
+    users: [] # No user restrictions - only the owner can push
+    teams: [] # No team restrictions
+
+  allow_force_pushes: false
+  allow_deletions: false
+  block_creations: false
+  required_conversation_resolution: true
+
+# Develop Branch Protection Rules (if using develop branch)
+develop:
+  required_status_checks:
+    strict: false
+    contexts:
+      - "Backend Tests"
+      - "Frontend Tests"
+      - "Security Scan"
+
+  enforce_admins: false
+
+  required_pull_request_reviews:
+    required_approving_review_count: 1
+    dismiss_stale_reviews: true
+    require_code_owner_reviews: false
+    require_last_push_approval: false
+
+  restrictions:
+    users: []
+    teams: []
+
+  allow_force_pushes: false
+  allow_deletions: false
+  block_creations: false
+  required_conversation_resolution: true

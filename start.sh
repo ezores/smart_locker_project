@@ -140,6 +140,11 @@ main() {
     log_info "Backend: http://localhost:$BACKEND_PORT"
     log_info "Frontend: http://localhost:$FRONTEND_PORT"
     log_info "Press Ctrl+C to stop all services"
+    
+    # Keep the script running and wait for user input
+    while true; do
+        sleep 1
+    done
 }
 
 # Check system prerequisites
@@ -195,39 +200,45 @@ setup_environment() {
     log_info "Installing Node.js dependencies..."
     cd frontend
     
-    # Clean npm cache and node_modules if there are issues
-    if [ -d "node_modules" ]; then
-        log_info "Cleaning existing node_modules..."
-        rm -rf node_modules package-lock.json
-    fi
-    
-    # Clear npm cache
-    npm cache clean --force
-    
-    # Install dependencies with retry logic
-    local npm_retries=3
-    local npm_success=false
-    
-    for ((i=1; i<=npm_retries; i++)); do
-        log_info "Installing Node.js dependencies (attempt $i/$npm_retries)..."
-        if npm install; then
-            npm_success=true
-            break
-        else
-            log_warning "npm install failed (attempt $i/$npm_retries)"
-            if [ $i -lt $npm_retries ]; then
-                log_info "Cleaning and retrying..."
-                rm -rf node_modules package-lock.json
-                npm cache clean --force
-                sleep 2
-            fi
+    # Only clean node_modules if there are issues or if --reset-db is specified
+    if [ "$RESET_DB" = true ] || [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
+        if [ -d "node_modules" ]; then
+            log_info "Cleaning existing node_modules..."
+            rm -rf node_modules package-lock.json
         fi
-    done
-    
-    if [ "$npm_success" = false ]; then
-        log_error "Failed to install Node.js dependencies after $npm_retries attempts"
-        exit 1
+        
+        # Clear npm cache
+        npm cache clean --force
+        
+        # Install dependencies with retry logic
+        local npm_retries=3
+        local npm_success=false
+        
+        for ((i=1; i<=npm_retries; i++)); do
+            log_info "Installing Node.js dependencies (attempt $i/$npm_retries)..."
+            if npm install; then
+                npm_success=true
+                break
+            else
+                log_warning "npm install failed (attempt $i/$npm_retries)"
+                if [ $i -lt $npm_retries ]; then
+                    log_info "Cleaning and retrying..."
+                    rm -rf node_modules package-lock.json
+                    npm cache clean --force
+                    sleep 2
+                fi
+            fi
+        done
+        
+        if [ "$npm_success" = false ]; then
+            log_error "Failed to install Node.js dependencies after $npm_retries attempts"
+            exit 1
+        fi
+    else
+        log_info "Node.js dependencies already installed, skipping..."
     fi
+    
+
     
     # Ensure Puppeteer is available for testing
     if ! npm list puppeteer > /dev/null 2>&1; then

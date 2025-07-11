@@ -1964,4 +1964,4 @@ if __name__ == "__main__":
         print("Running in minimal mode (admin user, empty lockers)")
     if args.demo:
         print("Loading comprehensive demo data")
-    app.run(host=args.host, port=int(os.environ.get("PORT", 5172)), debug=True)
+    app.run(host=args.host, port=args.port, debug=True)

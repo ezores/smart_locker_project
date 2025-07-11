@@ -328,15 +328,15 @@ def init_models(db):
         db.session.query(Reservation).delete()
 
         # Create users - much more comprehensive
-        # Use environment variables for passwords, fallback to secure defaults
+        # Use environment variables for passwords, fallback to simple demo defaults
         import os
 
-        admin_password = os.environ.get("ADMIN_PASSWORD", "SecureAdminPass2024!")
-        manager_password = os.environ.get("MANAGER_PASSWORD", "SecureManagerPass2024!")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+        manager_password = os.environ.get("MANAGER_PASSWORD", "manager123")
         supervisor_password = os.environ.get(
-            "SUPERVISOR_PASSWORD", "SecureSupervisorPass2024!"
+            "SUPERVISOR_PASSWORD", "supervisor123"
         )
-        student_password = os.environ.get("STUDENT_PASSWORD", "SecureStudentPass2024!")
+        student_password = os.environ.get("STUDENT_PASSWORD", "student123")
 
         users_data = [
             # Admins

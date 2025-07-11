@@ -269,5 +269,5 @@ jobs:
       - name: Create test report
         run: |
           echo "## Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
-          echo "📊 Coverage reports available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports available in artifacts" >> $GITHUB_STEP_SUMMARY

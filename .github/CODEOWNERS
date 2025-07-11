@@ -1,0 +1,33 @@
+# Global owners
+* @ezores
+
+# Backend specific files
+/backend/ @ezores
+*.py @ezores
+requirements.txt @ezores
+
+# Frontend specific files
+/frontend/ @ezores
+*.jsx @ezores
+*.js @ezores
+package.json @ezores
+package-lock.json @ezores
+
+# Documentation
+/docs/ @ezores
+*.md @ezores
+
+# Configuration files
+.github/ @ezores
+.gitignore @ezores
+start.sh @ezores
+setup_postgresql.sh @ezores
+
+# Tests
+/tests/ @ezores
+*test*.py @ezores
+*test*.js @ezores
+
+# Data and logs
+/data/ @ezores
+/logs/ @ezores 

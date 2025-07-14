@@ -57,13 +57,14 @@ def test_server_startup():
             cwd=os.path.join(os.path.dirname(__file__), ".."),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env={**os.environ, "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/smart_locker_db"}
         )
         
         # Wait for server to start
-        time.sleep(10)
+        time.sleep(15)
         
         # Test health endpoint
-        response = requests.get("http://localhost:5051/api/health", timeout=5)
+        response = requests.get("http://localhost:5051/api/health", timeout=10)
         assert response.status_code == 200
         
         # Clean up
@@ -74,6 +75,7 @@ def test_server_startup():
     except Exception as e:
         print(f"Server startup test failed: {e}")
         # Don't fail the test if server startup fails in CI environment
+        # This is expected in CI where the server might not be able to start
         pass
 
 

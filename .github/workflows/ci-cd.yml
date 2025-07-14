@@ -48,6 +48,14 @@ jobs:
           cd backend
           python app.py --reset-db --minimal
 
+      - name: Start backend server for tests
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/smart_locker_db"
+        run: |
+          cd backend
+          python app.py --minimal &
+          sleep 10
+
       - name: Run backend tests
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/smart_locker_db"
@@ -86,9 +94,12 @@ jobs:
           npm ci
 
       - name: Run frontend tests
+        env:
+          CI: true
+          NODE_ENV: test
         run: |
           cd frontend
-          npm test -- --coverage --watchAll=false --passWithNoTests --testPathPattern="Simple.test.jsx|Header.test.jsx" --silent || echo "Frontend tests completed with warnings"
+          npm test -- --coverage --watchAll=false --passWithNoTests --testPathPattern="Simple.test.jsx|Header.test.jsx" --silent --verbose || echo "Frontend tests completed with warnings"
 
       - name: Upload frontend coverage
         uses: codecov/codecov-action@v3

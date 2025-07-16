@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Smart Locker System - PostgreSQL Setup Script
-# This script helps install and configure PostgreSQL for the Smart Locker project
+# PostgreSQL Setup Script for Smart Locker System
+# Author: Alp Alpdogan
+# In memory of Mehmet Ugurlu and Yusuf Alpdogan
 
 set -e
 
@@ -12,147 +13,168 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_info() {
+# Logging functions
+log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-print_header() {
-    echo "========================================"
-    echo "$1"
-    echo "========================================"
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-# Default configuration
-DB_NAME="smart_locker"
-DB_USER="postgres"
-DB_PASSWORD="postgres"
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
 
-print_header "PostgreSQL Setup for Smart Locker System"
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
-# Detect OS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    OS="macos"
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    OS="linux"
-else
-    print_error "Unsupported operating system: $OSTYPE"
-    exit 1
-fi
+# Configuration
+DATABASE_NAME="smart_locker_db"
+DATABASE_USER="smart_locker_user"
+DATABASE_PASSWORD="smartlockerpass123"
 
-print_info "Detected OS: $OS"
+log_info "PostgreSQL Setup for Smart Locker System"
+log_info "========================================"
+log_info "PostgreSQL is REQUIRED for the Smart Locker System to function properly."
+log_info "This script will install and configure PostgreSQL automatically."
 
-# Check if PostgreSQL is already installed
-if command -v psql &> /dev/null; then
-    print_success "PostgreSQL client is already installed"
-else
-    print_info "PostgreSQL client not found. Installing..."
-    
-    if [ "$OS" = "macos" ]; then
-        if command -v brew &> /dev/null; then
-            print_info "Installing PostgreSQL using Homebrew..."
-            brew install postgresql
-            brew services start postgresql
-        else
-            print_error "Homebrew not found. Please install Homebrew first:"
-            echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-            exit 1
-        fi
-    elif [ "$OS" = "linux" ]; then
-        print_info "Installing PostgreSQL using apt..."
+# Detect OS and install PostgreSQL
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    if command -v apt-get &> /dev/null; then
+        # Debian/Ubuntu
+        log_info "Detected Debian/Ubuntu system"
+        log_info "Installing PostgreSQL..."
+        
+        # Update package list
         sudo apt-get update
+        
+        # Install PostgreSQL
         sudo apt-get install -y postgresql postgresql-contrib
+        
+        # Start PostgreSQL service
         sudo systemctl start postgresql
         sudo systemctl enable postgresql
-    fi
-fi
-
-# Check if PostgreSQL service is running
-print_info "Checking PostgreSQL service status..."
-
-if [ "$OS" = "macos" ]; then
-    if brew services list | grep postgresql | grep started > /dev/null; then
-        print_success "PostgreSQL service is running"
-    else
-        print_info "Starting PostgreSQL service..."
-        brew services start postgresql
-    fi
-elif [ "$OS" = "linux" ]; then
-    if sudo systemctl is-active --quiet postgresql; then
-        print_success "PostgreSQL service is running"
-    else
-        print_info "Starting PostgreSQL service..."
+        
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL/Fedora
+        log_info "Detected CentOS/RHEL/Fedora system"
+        log_info "Installing PostgreSQL..."
+        
+        # Install PostgreSQL
+        sudo yum install -y postgresql postgresql-server postgresql-contrib
+        
+        # Initialize database
+        sudo postgresql-setup initdb
+        
+        # Start PostgreSQL service
         sudo systemctl start postgresql
+        sudo systemctl enable postgresql
+        
+    elif command -v dnf &> /dev/null; then
+        # Fedora (newer versions)
+        log_info "Detected Fedora system"
+        log_info "Installing PostgreSQL..."
+        
+        # Install PostgreSQL
+        sudo dnf install -y postgresql postgresql-server postgresql-contrib
+        
+        # Initialize database
+        sudo postgresql-setup initdb
+        
+        # Start PostgreSQL service
+        sudo systemctl start postgresql
+        sudo systemctl enable postgresql
+        
+    else
+        log_error "Unsupported Linux distribution"
+        log_info "Please install PostgreSQL manually: https://www.postgresql.org/download/linux/"
+        exit 1
     fi
-fi
-
-# Create database and user
-print_info "Setting up database and user..."
-
-# Try to connect to PostgreSQL and create database
-if PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d postgres -c "SELECT 1;" > /dev/null 2>&1; then
-    print_success "PostgreSQL connection successful"
+    
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    log_info "Detected macOS system"
+    
+    if command -v brew &> /dev/null; then
+        log_info "Installing PostgreSQL via Homebrew..."
+        brew install postgresql@14
+        
+        # Start PostgreSQL service
+        brew services start postgresql@14
+        
+        # Add to PATH
+        echo 'export PATH="/usr/local/opt/postgresql@14/bin:$PATH"' >> ~/.zshrc
+        echo 'export PATH="/usr/local/opt/postgresql@14/bin:$PATH"' >> ~/.bash_profile
+        export PATH="/usr/local/opt/postgresql@14/bin:$PATH"
+        
+    else
+        log_error "Homebrew not found"
+        log_info "Please install Homebrew first: https://brew.sh/"
+        log_info "Or install PostgreSQL manually: https://www.postgresql.org/download/macosx/"
+        exit 1
+    fi
+    
 else
-    print_warning "Could not connect with default credentials. You may need to:"
-    echo "1. Set a password for the postgres user:"
-    echo "   sudo -u postgres psql"
-    echo "   ALTER USER postgres PASSWORD 'postgres';"
-    echo "   \\q"
-    echo ""
-    echo "2. Or create a new user:"
-    echo "   sudo -u postgres createuser --interactive"
-    echo ""
-    echo "3. Or modify the database configuration in start.sh"
-    echo ""
-    read -p "Press Enter to continue or Ctrl+C to exit..."
-fi
-
-# Try to create database
-print_info "Creating database '$DB_NAME'..."
-if PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d postgres -c "CREATE DATABASE $DB_NAME;" 2>/dev/null; then
-    print_success "Database '$DB_NAME' created successfully"
-elif PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-    print_success "Database '$DB_NAME' already exists"
-else
-    print_warning "Could not create database. You may need to create it manually:"
-    echo "  createdb $DB_NAME"
-    echo "  or"
-    echo "  sudo -u postgres createdb $DB_NAME"
-fi
-
-# Test database connection
-print_info "Testing database connection..."
-if PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT version();" > /dev/null 2>&1; then
-    print_success "Database connection test successful"
-else
-    print_error "Database connection test failed"
-    echo "Please check your PostgreSQL configuration and try again."
+    log_error "Unsupported operating system: $OSTYPE"
+    log_info "Please install PostgreSQL manually: https://www.postgresql.org/download/"
     exit 1
 fi
 
-print_header "PostgreSQL Setup Complete!"
+# Wait for PostgreSQL to be ready
+log_info "Waiting for PostgreSQL to be ready..."
+local pg_attempts=0
+while [ $pg_attempts -lt 30 ]; do
+    if pg_isready -h localhost -p 5432 -U postgres > /dev/null 2>&1; then
+        log_success "PostgreSQL is ready!"
+        break
+    fi
+    sleep 1
+    pg_attempts=$((pg_attempts + 1))
+done
 
-echo "Database Configuration:"
-echo "  Host: localhost"
-echo "  Port: 5432"
-echo "  Database: $DB_NAME"
-echo "  User: $DB_USER"
-echo "  Password: $DB_PASSWORD"
-echo ""
-echo "You can now run the Smart Locker system with:"
-echo "  ./start.sh --dev --demo --verbose"
-echo ""
-echo "Or test the database connection with:"
-echo "  PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME" 
+if [ $pg_attempts -eq 30 ]; then
+    log_error "PostgreSQL failed to start within 30 seconds"
+    exit 1
+fi
+
+# Create database user and database
+log_info "Setting up database and user..."
+
+# Switch to postgres user to create database and user
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux - use sudo -u postgres
+    sudo -u postgres psql -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+    sudo -u postgres psql -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
+    
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS - postgres user might not exist, use current user
+    psql -U postgres -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+    psql -U postgres -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
+    psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
+    psql -U postgres -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
+fi
+
+log_success "PostgreSQL setup completed!"
+log_info "Database: $DATABASE_NAME"
+log_info "User: $DATABASE_USER"
+log_info "Password: $DATABASE_PASSWORD"
+log_info "Connection URL: postgresql://$DATABASE_USER:$DATABASE_PASSWORD@localhost:5432/$DATABASE_NAME"
+
+# Test connection
+log_info "Testing database connection..."
+if psql -h localhost -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT version();" > /dev/null 2>&1; then
+    log_success "Database connection test successful!"
+else
+    log_warning "Database connection test failed. You may need to configure pg_hba.conf"
+    log_info "For development, you can edit pg_hba.conf to allow local connections:"
+    log_info "  local   all             all                                     trust"
+fi
+
+log_success "PostgreSQL is now ready for use with the Smart Locker System!"
+log_info "PostgreSQL is REQUIRED - the system will not function without it."
+log_info "Run './start.sh --demo --reset-db --verbose' to start the system." 

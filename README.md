@@ -8,7 +8,7 @@ A comprehensive smart locker management system with RFID access, reservation sys
 
 - Python 3.8+
 - Node.js 16+
-- PostgreSQL 12+
+- PostgreSQL 12+ (required)
 - npm
 
 ### Installation & Startup
@@ -20,21 +20,76 @@ A comprehensive smart locker management system with RFID access, reservation sys
    cd smart_locker_project
    ```
 
-2. **Run the unified startup script:**
+2. **Test platform compatibility (recommended)**
+
+   ```bash
+   ./test_platform_compatibility.sh
+   ```
+
+3. **Run the unified startup script:**
 
    ```bash
    ./start.sh --demo --reset-db --verbose
    ```
 
-3. **Access the application:**
+4. **Access the application:**
 
    - Backend API: http://localhost:5050
    - Health Check: http://localhost:5050/api/health
    - Frontend: http://localhost:5173
 
-4. **Demo credentials:**
+5. **Demo credentials:**
    - Username: `admin`
    - Password: `admin123`
+
+### Linux/WSL Setup
+
+If you're running on Linux or WSL and encounter issues:
+
+1. **Install PostgreSQL (required):**
+
+   ```bash
+   ./setup_postgresql.sh
+   ```
+
+2. **Ensure PostgreSQL is running:**
+
+   ```bash
+   # Ubuntu/Debian
+   sudo systemctl start postgresql
+   sudo systemctl enable postgresql
+
+   # macOS
+   brew services start postgresql@14
+   ```
+
+3. **Fix npm cache issues (if needed):**
+
+   ```bash
+   cd frontend
+   rm -rf node_modules package-lock.json
+   npm cache clean --force
+   npm install --force
+   cd ..
+   ```
+
+4. **Ensure proper permissions:**
+   ```bash
+   chmod +x start.sh
+   chmod +x setup_postgresql.sh
+   chmod +x test_platform_compatibility.sh
+   ```
+
+### Platform Support
+
+The system is tested and supported on:
+
+- **macOS** (Intel & Apple Silicon)
+- **Ubuntu/Debian** (20.04+, including Raspberry Pi OS)
+- **CentOS/RHEL** (7+, 8+)
+- **Fedora** (32+)
+- **WSL** (Windows Subsystem for Linux)
+- **Raspberry Pi** (3B+, 4B, 5)
 
 ### Startup Options
 
@@ -118,9 +173,43 @@ The system uses environment variables for configuration:
 ### Common Issues
 
 1. **Port already in use**: The script will automatically kill conflicting processes
-2. **Database connection issues**: Ensure PostgreSQL is running and accessible
+2. **Database connection issues**:
+   - Ensure PostgreSQL is running (`sudo systemctl start postgresql`)
+   - Check PostgreSQL connection settings
+   - Verify database user permissions
 3. **npm installation fails**: The script includes retry logic and cache cleaning
 4. **Frontend not loading**: Check if Vite dev server is running on port 5173
+5. **Virtual environment issues**: The script automatically creates and activates `.venv`
+
+### Linux/WSL Specific Issues
+
+1. **npm cache errors**: Use `npm install --force` or run the setup script
+2. **PostgreSQL not found**: Run `./setup_postgresql.sh` to install PostgreSQL
+3. **Permission denied**: Ensure scripts are executable (`chmod +x *.sh`)
+4. **Virtual environment activation fails**: The script now handles multiple shell types
+5. **PostgreSQL service not running**: Start with `sudo systemctl start postgresql`
+
+### Platform-Specific Notes
+
+#### Raspberry Pi
+
+- Frontend compilation may be slower
+- Consider using `--minimal` mode for testing
+- Ensure adequate cooling for extended use
+- Recommended: 2GB+ RAM, 8GB+ storage
+
+#### WSL (Windows Subsystem for Linux)
+
+- PostgreSQL must be installed and running
+- npm may need `--force` flag
+- File permissions may need adjustment
+- Consider using Windows paths for better performance
+
+#### macOS
+
+- All features fully supported
+- PostgreSQL via Homebrew
+- Node.js via Homebrew or official installer
 
 ### Manual Cleanup
 
@@ -134,7 +223,7 @@ lsof -ti:5173 | xargs kill -9
 # Clean npm cache
 cd frontend && npm cache clean --force
 
-# Restart PostgreSQL
+# Restart PostgreSQL (if using)
 brew services restart postgresql@14  # macOS
 sudo systemctl restart postgresql    # Linux
 ```

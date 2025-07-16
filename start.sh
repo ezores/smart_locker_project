@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Smart Locker System - Enterprise Deployment Script
-# Version: 2.0.0
+# Version: 2.1.0
 # Author: Alp Alpdogan
 # In memory of Mehmet Ugurlu and Yusuf Alpdogan
 # License: MIT
@@ -112,13 +112,27 @@ if [ "$HELP" = true ]; then
     echo "Default behavior:"
     echo "  - Starts backend on port $BACKEND_PORT"
     echo "  - Starts frontend on port $FRONTEND_PORT"
-    echo "  - Uses PostgreSQL database"
+    echo "  - Uses PostgreSQL database (required)"
     echo "  - Loads minimal admin user if no data exists"
+    echo ""
+    echo "Prerequisites:"
+    echo "  - Python 3.8+"
+    echo "  - Node.js 16+"
+    echo "  - PostgreSQL 12+ (required)"
+    echo "  - npm"
     echo ""
     echo "Troubleshooting:"
     echo "  If npm installation fails, manually clean and retry:"
     echo "    cd frontend && rm -rf node_modules package-lock.json"
     echo "    npm cache clean --force && npm install"
+    echo ""
+    echo "PostgreSQL Setup:"
+    echo "  If PostgreSQL is not installed, run: ./setup_postgresql.sh"
+    echo ""
+    echo "Linux/WSL Notes:"
+    echo "  - PostgreSQL is required and must be running"
+    echo "  - If using WSL, ensure proper file permissions"
+    echo "  - Virtual environment will be created automatically"
     exit 0
 fi
 
@@ -159,25 +173,29 @@ check_prerequisites() {
     # Check Python
     if ! command -v python3 &> /dev/null; then
         log_error "Python 3 is required but not installed"
+        log_info "Install Python 3: https://www.python.org/downloads/"
         exit 1
     fi
     
     # Check Node.js
     if ! command -v node &> /dev/null; then
         log_error "Node.js is required but not installed"
+        log_info "Install Node.js: https://nodejs.org/"
         exit 1
     fi
     
     # Check npm
     if ! command -v npm &> /dev/null; then
         log_error "npm is required but not installed"
+        log_info "Install npm: https://www.npmjs.com/get-npm"
         exit 1
     fi
     
-    # Check PostgreSQL
+    # Check PostgreSQL - Required, not optional
     if ! command -v psql &> /dev/null; then
         log_error "PostgreSQL is required but not installed"
         log_info "Install PostgreSQL: https://www.postgresql.org/download/"
+        log_info "Or run: ./setup_postgresql.sh"
         exit 1
     fi
     
@@ -194,16 +212,41 @@ setup_environment() {
         python3 -m venv .venv
     fi
     
-    # Activate virtual environment
-    source .venv/bin/activate
+    # Activate virtual environment - handle different shell types
+    log_info "Activating virtual environment..."
+    if [ -f ".venv/bin/activate" ]; then
+        source .venv/bin/activate
+    elif [ -f ".venv/Scripts/activate" ]; then
+        source .venv/Scripts/activate
+    else
+        log_error "Virtual environment activation script not found"
+        exit 1
+    fi
+    
+    # Verify virtual environment is active
+    if [ -z "$VIRTUAL_ENV" ]; then
+        log_error "Failed to activate virtual environment"
+        exit 1
+    fi
+    
+    log_success "Virtual environment activated: $VIRTUAL_ENV"
     
     # Install Python dependencies
     log_info "Installing Python dependencies..."
+    pip install --upgrade pip setuptools wheel
     pip install -r requirements.txt
     
     # Install Node.js dependencies
     log_info "Installing Node.js dependencies..."
     cd frontend
+    
+    # Handle npm cache issues on WSL/Windows
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || -n "$WSL_DISTRO_NAME" ]]; then
+        log_info "Detected WSL/Windows environment, using npm with --force..."
+        npm_force_flag="--force"
+    else
+        npm_force_flag=""
+    fi
     
     # Only clean node_modules if there are issues or if --reset-db is specified
     if [ "$RESET_DB" = true ] || [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
@@ -212,8 +255,9 @@ setup_environment() {
             rm -rf node_modules package-lock.json
         fi
         
-        # Clear npm cache
-        npm cache clean --force
+        # Clear npm cache with error handling
+        log_info "Clearing npm cache..."
+        npm cache clean --force 2>/dev/null || log_warning "npm cache clean failed, continuing..."
         
         # Install dependencies with retry logic
         local npm_retries=3
@@ -221,7 +265,7 @@ setup_environment() {
         
         for ((i=1; i<=npm_retries; i++)); do
             log_info "Installing Node.js dependencies (attempt $i/$npm_retries)..."
-            if npm install; then
+            if npm install $npm_force_flag; then
                 npm_success=true
                 break
             else
@@ -229,7 +273,7 @@ setup_environment() {
                 if [ $i -lt $npm_retries ]; then
                     log_info "Cleaning and retrying..."
                     rm -rf node_modules package-lock.json
-                    npm cache clean --force
+                    npm cache clean --force 2>/dev/null || true
                     sleep 2
                 fi
             fi
@@ -237,18 +281,17 @@ setup_environment() {
         
         if [ "$npm_success" = false ]; then
             log_error "Failed to install Node.js dependencies after $npm_retries attempts"
+            log_info "Try manually: cd frontend && npm install --force"
             exit 1
         fi
     else
         log_info "Node.js dependencies already installed, skipping..."
     fi
     
-
-    
     # Ensure Puppeteer is available for testing
     if ! npm list puppeteer > /dev/null 2>&1; then
         log_info "Installing Puppeteer for automated testing..."
-        npm install puppeteer
+        npm install puppeteer $npm_force_flag
     fi
     
     cd ..
@@ -263,13 +306,45 @@ setup_environment() {
 setup_database() {
     log_info "Setting up database..."
     
-    # Start PostgreSQL service
+    # Check if PostgreSQL is available
+    if ! command -v psql &> /dev/null; then
+        log_error "PostgreSQL not available. This script cannot function without PostgreSQL."
+        exit 1
+    fi
+    
+    # Start PostgreSQL service based on OS
     if command -v brew &> /dev/null; then
         # macOS
-        brew services start postgresql@14 2>/dev/null || true
+        log_info "Starting PostgreSQL on macOS..."
+        brew services start postgresql@14 2>/dev/null || brew services start postgresql 2>/dev/null || true
     elif command -v systemctl &> /dev/null; then
-        # Linux
-        sudo systemctl start postgresql 2>/dev/null || true
+        # Linux with systemd
+        log_info "Starting PostgreSQL on Linux..."
+        sudo systemctl start postgresql 2>/dev/null || sudo systemctl start postgresql@14 2>/dev/null || true
+    elif command -v service &> /dev/null; then
+        # Linux with service command
+        log_info "Starting PostgreSQL with service command..."
+        sudo service postgresql start 2>/dev/null || true
+    else
+        log_warning "Could not start PostgreSQL service automatically"
+        log_info "Please ensure PostgreSQL is running manually"
+    fi
+    
+    # Wait for PostgreSQL to be ready
+    log_info "Waiting for PostgreSQL to be ready..."
+    local pg_attempts=0
+    while [ $pg_attempts -lt 30 ]; do
+        if pg_isready -h $DATABASE_HOST -p $DATABASE_PORT -U postgres > /dev/null 2>&1; then
+            log_success "PostgreSQL is ready!"
+            break
+        fi
+        sleep 1
+        pg_attempts=$((pg_attempts + 1))
+    done
+    
+    if [ $pg_attempts -eq 30 ]; then
+        log_error "PostgreSQL not ready after 30 seconds. Exiting."
+        exit 1
     fi
     
     # Create database and user
@@ -282,8 +357,8 @@ setup_database() {
     psql -U postgres -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
     
     # Grant privileges
-    psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;"
-    psql -U postgres -c "ALTER USER $DATABASE_USER CREATEDB;"
+    psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
+    psql -U postgres -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
     
     # Set DATABASE_URL environment variable
     export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
@@ -322,7 +397,7 @@ start_services() {
 # Kill process on port
 kill_process_on_port() {
     local port=$1
-    local pid=$(lsof -ti:$port 2>/dev/null)
+    local pid=$(lsof -ti:$port 2>/dev/null || ss -tulpn 2>/dev/null | grep ":$port " | awk '{print $7}' | cut -d'/' -f1)
     if [ ! -z "$pid" ]; then
         log_warning "Port $port is in use. Killing existing process..."
         kill -9 $pid 2>/dev/null || true

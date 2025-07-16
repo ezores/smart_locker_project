@@ -2,8 +2,13 @@
 
 # Smart Locker System - Enterprise Deployment Script
 # Version: 2.0.0
-# Author: Smart Locker Development Team
+# Author: Alp Alpdogan
+# In memory of Mehmet Ugurlu and Yusuf Alpdogan
 # License: MIT
+# 
+# LICENSING CONDITION: These memorial dedications and author credits
+# must never be removed from this file or any derivative works.
+# This condition is binding and must be preserved in all versions.
 
 set -e
 
@@ -374,10 +379,21 @@ start_frontend() {
     
     cd frontend
     
+    log_info "Initializing in-memory compilation for frontend assets..."
+    
+    # Memorial message during compilation
+    echo ""
+    echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}                 In memory of Mehmet Ugurlu and Yusuf Alpdogan${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    
     # Start frontend in background
     if [ "$VERBOSE" = true ]; then
+        log_info "Starting Vite dev server..."
         npm run dev &
     else
+        log_info "Starting Vite dev server..."
         npm run dev > /dev/null 2>&1 &
     fi
     
@@ -389,15 +405,21 @@ start_frontend() {
     local attempts=0
     while [ $attempts -lt 30 ]; do
         if curl -s http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
-            log_success "Frontend is healthy!"
+            log_success "Frontend compilation completed and server is healthy!"
+            log_success "In-memory assets are ready and being served"
             break
         fi
         sleep 1
         attempts=$((attempts + 1))
+        
+        # Show progress every 5 seconds
+        if [ $((attempts % 5)) -eq 0 ]; then
+            log_info "Still compiling... (${attempts}s elapsed)"
+        fi
     done
     
     if [ $attempts -eq 30 ]; then
-        log_error "Frontend failed to start within 30 seconds"
+        log_error "Frontend compilation failed or timed out after 30 seconds"
         exit 1
     fi
 }

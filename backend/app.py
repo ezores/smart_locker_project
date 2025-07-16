@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+"""
+Smart Locker System - Main Application
+Author: Alp Alpdogan
+In memory of Mehmet Ugurlu and Yusuf Alpdogan
+
+LICENSING CONDITION: These memorial dedications and author credits
+must never be removed from this file or any derivative works.
+This condition is binding and must be preserved in all versions.
+"""
+
 import csv
 import io
 import json

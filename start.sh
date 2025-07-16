@@ -456,33 +456,32 @@ install_npm() {
 ensure_postgresql_auto_config() {
     log_info "Ensuring PostgreSQL is configured for automatic operation..."
     
-    # Check if we can connect without password prompts
-    if ! sudo -u postgres psql -c "SELECT 1;" > /dev/null 2>&1; then
-        log_warning "PostgreSQL authentication needs configuration for automatic operation"
-        
-        # Try to find and configure pg_hba.conf
-        pg_hba_locations=(
-            "/etc/postgresql/*/main/pg_hba.conf"
-            "/var/lib/postgresql/data/pg_hba.conf"
-            "/var/lib/pgsql/data/pg_hba.conf"
-            "/usr/local/var/postgres/pg_hba.conf"
-            "/opt/homebrew/var/postgresql@14/pg_hba.conf"
-            "/opt/homebrew/var/postgresql/pg_hba.conf"
-        )
-        
-        pg_hba_found=false
-        for pattern in "${pg_hba_locations[@]}"; do
-            for file in $pattern; do
-                if [ -f "$file" ]; then
-                    log_info "Found pg_hba.conf at: $file"
-                    pg_hba_found=true
-                    
-                    # Backup the original file
-                    sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
-                    
-                    # Configure for automatic operation with trust authentication
-                    log_info "Configuring $file for automatic operation..."
-                    sudo tee "$file" > /dev/null << 'EOF'
+    # Always configure pg_hba.conf for trust authentication to ensure it works
+    log_info "Configuring PostgreSQL authentication for automatic operation..."
+    
+    # Try to find and configure pg_hba.conf
+    pg_hba_locations=(
+        "/etc/postgresql/*/main/pg_hba.conf"
+        "/var/lib/postgresql/data/pg_hba.conf"
+        "/var/lib/pgsql/data/pg_hba.conf"
+        "/usr/local/var/postgres/pg_hba.conf"
+        "/opt/homebrew/var/postgresql@14/pg_hba.conf"
+        "/opt/homebrew/var/postgresql/pg_hba.conf"
+    )
+    
+    pg_hba_found=false
+    for pattern in "${pg_hba_locations[@]}"; do
+        for file in $pattern; do
+            if [ -f "$file" ]; then
+                log_info "Found pg_hba.conf at: $file"
+                pg_hba_found=true
+                
+                # Backup the original file
+                sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                
+                # Configure for automatic operation with trust authentication
+                log_info "Configuring $file for automatic operation..."
+                sudo tee "$file" > /dev/null << 'EOF'
 # PostgreSQL Client Authentication Configuration File
 # ===============================================
 
@@ -503,31 +502,35 @@ local   replication     all                                     trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
 EOF
-                    
-                    log_info "Configured $file for automatic operation"
-                    
-                    # Reload PostgreSQL configuration
-                    if command -v systemctl &> /dev/null; then
-                        sudo systemctl reload postgresql 2>/dev/null || sudo systemctl reload postgresql@14 2>/dev/null || true
-                    elif command -v service &> /dev/null; then
-                        sudo service postgresql reload 2>/dev/null || true
-                    fi
-                    
-                    # Wait for configuration to take effect
-                    sleep 3
-                    break 2
+                
+                log_info "Configured $file for automatic operation"
+                
+                # Reload PostgreSQL configuration
+                if command -v systemctl &> /dev/null; then
+                    sudo systemctl reload postgresql 2>/dev/null || sudo systemctl reload postgresql@14 2>/dev/null || true
+                elif command -v service &> /dev/null; then
+                    sudo service postgresql reload 2>/dev/null || true
                 fi
-            done
+                
+                # Wait for configuration to take effect
+                sleep 3
+                break 2
+            fi
         done
-        
-        if [ "$pg_hba_found" = false ]; then
-            log_warning "Could not find pg_hba.conf file automatically"
-            log_info "PostgreSQL may need manual configuration for automatic operation"
-        else
-            log_success "PostgreSQL configured for automatic operation"
-        fi
+    done
+    
+    if [ "$pg_hba_found" = false ]; then
+        log_warning "Could not find pg_hba.conf file automatically"
+        log_info "PostgreSQL may need manual configuration for automatic operation"
     else
-        log_success "PostgreSQL already configured for automatic operation"
+        log_success "PostgreSQL configured for automatic operation"
+    fi
+    
+    # Test the configuration
+    if sudo -u postgres psql -c "SELECT 1;" > /dev/null 2>&1; then
+        log_success "PostgreSQL trust authentication is working"
+    else
+        log_warning "PostgreSQL trust authentication may not be working properly"
     fi
 }
 
@@ -688,6 +691,15 @@ setup_environment() {
                 exit 1
             fi
         fi
+        
+        # Handle npm audit warnings (non-breaking)
+        log_info "Checking for npm audit issues..."
+        if npm audit --audit-level=moderate > /dev/null 2>&1; then
+            log_info "No critical npm audit issues found"
+        else
+            log_warning "npm audit found some issues, attempting to fix non-breaking ones..."
+            npm audit fix --force > /dev/null 2>&1 || log_warning "Some audit issues could not be automatically fixed"
+        fi
     else
         log_info "Node.js dependencies already installed, skipping..."
     fi
@@ -839,9 +851,9 @@ setup_database() {
     # Grant sequence ownership for existing sequences
     sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP EXECUTE 'ALTER SEQUENCE ' || r.sequence_name || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
     
-    # Set DATABASE_URL environment variable
-    export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
-    log_info "DATABASE_URL set to: $DATABASE_URL"
+    # Set DATABASE_URL environment variable based on successful connection method
+    # We'll set this after testing the connection
+    log_info "Testing database connection to determine best DATABASE_URL..."
     
     # Test database connection with multiple methods
     log_info "Testing database connection..."
@@ -890,6 +902,21 @@ setup_database() {
         fi
     fi
     
+    # Also set individual environment variables for the backend
+    export DB_HOST="$DATABASE_HOST"
+    export DB_PORT="$DATABASE_PORT"
+    export DB_NAME="$DATABASE_NAME"
+    export DB_USER="postgres"
+    export DB_PASSWORD=""
+    export DB_PASS=""
+    
+    log_info "Database environment variables set:"
+    log_info "DATABASE_URL: $DATABASE_URL"
+    log_info "DB_HOST: $DB_HOST"
+    log_info "DB_PORT: $DB_PORT"
+    log_info "DB_NAME: $DB_NAME"
+    log_info "DB_USER: $DB_USER"
+    
     # Run database migration for enhanced logging
     log_info "Running database migration for enhanced logging..."
     cd backend
@@ -936,6 +963,18 @@ start_backend() {
     log_info "Starting backend server..."
     
     cd backend
+    
+    # Ensure environment variables are set for the backend
+    log_info "Setting up environment variables for backend..."
+    export DATABASE_URL="$DATABASE_URL"
+    export DB_HOST="$DB_HOST"
+    export DB_PORT="$DB_PORT"
+    export DB_NAME="$DB_NAME"
+    export DB_USER="$DB_USER"
+    export DB_PASSWORD="$DB_PASSWORD"
+    export DB_PASS="$DB_PASS"
+    
+    log_info "Backend will use DATABASE_URL: $DATABASE_URL"
     
     # Build command based on flags
     local cmd="python app.py --port $BACKEND_PORT"

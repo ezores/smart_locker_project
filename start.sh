@@ -194,9 +194,14 @@ install_postgresql() {
         # Ubuntu/Debian
         log_info "Detected Ubuntu/Debian system"
         sudo apt-get update
-        sudo apt-get install -y postgresql postgresql-contrib
+        sudo apt-get install -y postgresql postgresql-contrib postgresql-client
         sudo systemctl enable postgresql
         sudo systemctl start postgresql
+        
+        # Wait for PostgreSQL to be ready after installation
+        log_info "Waiting for PostgreSQL to start after installation..."
+        sleep 5
+        sudo systemctl status postgresql --no-pager || true
     elif command -v yum &> /dev/null; then
         # CentOS/RHEL/Fedora
         log_info "Detected CentOS/RHEL/Fedora system"
@@ -227,7 +232,19 @@ install_postgresql() {
     log_success "PostgreSQL installed successfully"
     
     # Set up PostgreSQL user and basic configuration
-    log_info "Setting up PostgreSQL user..."
+    log_info "Setting up PostgreSQL user and initial configuration..."
+    
+    # Initialize PostgreSQL database cluster if needed (for fresh installs)
+    if command -v sudo &> /dev/null; then
+        # Check if PostgreSQL data directory exists
+        pg_data_dir=$(sudo -u postgres psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        if [ -z "$pg_data_dir" ]; then
+            log_info "PostgreSQL data directory not found. Initializing database cluster..."
+            sudo -u postgres initdb -D /var/lib/postgresql/data 2>/dev/null || sudo -u postgres initdb 2>/dev/null || true
+            sudo systemctl restart postgresql 2>/dev/null || true
+            sleep 3
+        fi
+    fi
     if command -v brew &> /dev/null; then
         # macOS - set password for postgres user
         psql postgres -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
@@ -522,6 +539,29 @@ setup_database() {
         exit 1
     fi
     
+    # Test basic PostgreSQL connectivity
+    log_info "Testing basic PostgreSQL installation..."
+    if ! psql --version > /dev/null 2>&1; then
+        log_error "PostgreSQL client is not working properly"
+        exit 1
+    fi
+    
+    # Try to connect as postgres user to verify basic setup
+    if ! sudo -u postgres psql -c "SELECT version();" > /dev/null 2>&1; then
+        log_warning "Cannot connect as postgres user. This might indicate a PostgreSQL configuration issue."
+        log_info "Attempting to fix basic PostgreSQL setup..."
+        
+        # Try to initialize PostgreSQL if it's not properly set up
+        if command -v initdb &> /dev/null; then
+            log_info "Initializing PostgreSQL database cluster..."
+            sudo -u postgres initdb -D /var/lib/postgresql/data 2>/dev/null || sudo -u postgres initdb 2>/dev/null || true
+            sudo systemctl restart postgresql 2>/dev/null || true
+            sleep 3
+        fi
+    else
+        log_success "Basic PostgreSQL connectivity verified"
+    fi
+    
     # Start PostgreSQL service based on OS
     if command -v brew &> /dev/null; then
         # macOS
@@ -548,12 +588,28 @@ setup_database() {
             log_success "PostgreSQL is ready!"
             break
         fi
+        
+        # If PostgreSQL is not responding, try to restart it
+        if [ $pg_attempts -eq 10 ]; then
+            log_warning "PostgreSQL not responding, attempting to restart..."
+            if command -v systemctl &> /dev/null; then
+                sudo systemctl restart postgresql 2>/dev/null || true
+            elif command -v service &> /dev/null; then
+                sudo service postgresql restart 2>/dev/null || true
+            fi
+            sleep 5
+        fi
+        
         sleep 1
         pg_attempts=$((pg_attempts + 1))
     done
     
     if [ $pg_attempts -eq 30 ]; then
-        log_error "PostgreSQL not ready after 30 seconds. Exiting."
+        log_error "PostgreSQL not ready after 30 seconds."
+        log_info "PostgreSQL troubleshooting:"
+        log_info "1. Check service status: sudo systemctl status postgresql"
+        log_info "2. Check logs: sudo journalctl -u postgresql -n 20"
+        log_info "3. Try manual start: sudo systemctl start postgresql"
         exit 1
     fi
     
@@ -593,43 +649,47 @@ setup_database() {
     export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
     log_info "DATABASE_URL set to: $DATABASE_URL"
     
-    # Test database connection with the new user
+    # Test database connection with multiple methods
     log_info "Testing database connection..."
+    
+    # Method 1: Try with smart_locker_user
+    log_info "Testing connection with smart_locker_user..."
     if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-        log_success "Database connection test successful!"
+        log_success "Database connection test successful with smart_locker_user!"
     else
-        log_error "Database connection test failed!"
-        log_info "Trying to fix authentication issues..."
+        log_warning "smart_locker_user connection failed, trying postgres user..."
         
-        # Try to fix authentication by updating pg_hba.conf or using trust method temporarily
-        if command -v sudo &> /dev/null; then
-            log_info "Attempting to fix PostgreSQL authentication..."
-            # For development, we can temporarily allow password authentication
-            sudo -u postgres psql -c "ALTER USER $DATABASE_USER PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+        # Method 2: Try with postgres user (no password)
+        if psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+            log_success "Database connection successful with postgres user (no password)!"
+            export DATABASE_URL="postgresql://postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
+            log_info "Using postgres user without password: $DATABASE_URL"
+        else
+            log_warning "postgres user connection failed, trying with password..."
             
-            # Test connection again
-            if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                log_success "Database connection test successful after fix!"
-            else
-                log_error "Database connection still failing. Trying fallback method..."
-                
-                # Fallback: Use postgres user directly
-                log_info "Using postgres user as fallback..."
+            # Method 3: Try with postgres user and password
+            if PGPASSWORD="postgres" psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                log_success "Database connection successful with postgres user and password!"
                 export DATABASE_URL="postgresql://postgres:postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
-                log_info "Fallback DATABASE_URL set to: $DATABASE_URL"
+                log_info "Using postgres user with password: $DATABASE_URL"
+            else
+                log_warning "postgres user with password failed, trying local socket connection..."
                 
-                # Test fallback connection
-                if PGPASSWORD="postgres" psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                    log_success "Fallback database connection successful!"
+                # Method 4: Try local socket connection (no host specification)
+                if psql -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                    log_success "Database connection successful with local socket!"
+                    export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
+                    log_info "Using local socket connection: $DATABASE_URL"
                 else
-                    log_error "Both database connections failed. Please check PostgreSQL configuration."
-                    log_info "You may need to manually configure PostgreSQL authentication."
+                    log_error "All database connection methods failed!"
+                    log_info "PostgreSQL troubleshooting information:"
+                    log_info "1. Check if PostgreSQL is running: sudo systemctl status postgresql"
+                    log_info "2. Check PostgreSQL logs: sudo journalctl -u postgresql"
+                    log_info "3. Try connecting manually: sudo -u postgres psql"
+                    log_info "4. Check pg_hba.conf configuration"
                     exit 1
                 fi
             fi
-        else
-            log_error "Cannot fix authentication automatically. Please check PostgreSQL configuration."
-            exit 1
         fi
     fi
     

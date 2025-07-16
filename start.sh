@@ -399,17 +399,17 @@ install_nodejs() {
     elif command -v apt-get &> /dev/null; then
         # Ubuntu/Debian
         log_info "Detected Ubuntu/Debian system"
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
         sudo apt-get install -y nodejs
     elif command -v yum &> /dev/null; then
         # CentOS/RHEL
         log_info "Detected CentOS/RHEL system"
-        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+        curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
         sudo yum install -y nodejs
     elif command -v dnf &> /dev/null; then
         # Fedora
         log_info "Detected Fedora system"
-        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+        curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
         sudo dnf install -y nodejs
     elif command -v pacman &> /dev/null; then
         # Arch Linux
@@ -563,7 +563,17 @@ check_prerequisites() {
         log_info "Node.js not found. Installing Node.js..."
         install_nodejs
     else
-        log_success "Node.js is already installed"
+        # Check Node.js version compatibility
+        NODE_VERSION=$(node --version | cut -d'v' -f2)
+        NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
+        
+        if [ "$NODE_MAJOR" -lt 20 ]; then
+            log_warning "Node.js version $NODE_VERSION is too old. Vite requires Node.js 20.19.0 or >=22.12.0"
+            log_info "Upgrading Node.js to version 22..."
+            install_nodejs
+        else
+            log_success "Node.js version $NODE_VERSION is compatible"
+        fi
     fi
     
     # Check and install npm
@@ -630,10 +640,14 @@ setup_environment() {
         npm_force_flag=""
     fi
     
-    # Only clean node_modules if there are issues or if --reset-db is specified
-    if [ "$RESET_DB" = true ] || [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
+    # Check if we need to clean node_modules due to Node.js version upgrade
+    NODE_VERSION=$(node --version | cut -d'v' -f2)
+    NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
+    
+    # Clean node_modules if Node.js was upgraded or if --reset-db is specified
+    if [ "$RESET_DB" = true ] || [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ] || [ "$NODE_MAJOR" -ge 22 ]; then
         if [ -d "node_modules" ]; then
-            log_info "Cleaning existing node_modules..."
+            log_info "Cleaning existing node_modules (Node.js version: $NODE_VERSION)..."
             rm -rf node_modules package-lock.json
         fi
         
@@ -662,9 +676,17 @@ setup_environment() {
         done
         
         if [ "$npm_success" = false ]; then
-            log_error "Failed to install Node.js dependencies after $npm_retries attempts"
-            log_info "Try manually: cd frontend && npm install --force"
-            exit 1
+            log_warning "Failed to install Node.js dependencies after $npm_retries attempts"
+            log_info "Attempting to fix Vite compatibility issue..."
+            
+            # Try to downgrade Vite to a compatible version
+            if npm install vite@^5.0.0 --save-dev; then
+                log_success "Successfully downgraded Vite to compatible version"
+            else
+                log_error "Failed to fix Vite compatibility issue"
+                log_info "Try manually: cd frontend && npm install --force"
+                exit 1
+            fi
         fi
     else
         log_info "Node.js dependencies already installed, skipping..."
@@ -824,34 +846,36 @@ setup_database() {
     # Test database connection with multiple methods
     log_info "Testing database connection..."
     
-    # Method 1: Try with smart_locker_user (using trust authentication)
-    log_info "Testing connection with smart_locker_user..."
-    if psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-        log_success "Database connection test successful with smart_locker_user!"
+    # Method 1: Try with postgres user (using trust authentication) - this should work
+    log_info "Testing connection with postgres user..."
+    if psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+        log_success "Database connection successful with postgres user!"
+        export DATABASE_URL="postgresql://postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
+        log_info "Using postgres user: $DATABASE_URL"
     else
-        log_warning "smart_locker_user connection failed, trying postgres user..."
+        log_warning "postgres user connection failed, trying local socket connection..."
         
-        # Method 2: Try with postgres user (using trust authentication)
-        if psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-            log_success "Database connection successful with postgres user!"
-            export DATABASE_URL="postgresql://postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
-            log_info "Using postgres user: $DATABASE_URL"
+        # Method 2: Try local socket connection (no host specification)
+        if psql -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+            log_success "Database connection successful with local socket!"
+            export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
+            log_info "Using local socket connection: $DATABASE_URL"
         else
-            log_warning "postgres user connection failed, trying local socket connection..."
+            log_warning "local socket connection failed, trying sudo -u postgres..."
             
-            # Method 3: Try local socket connection (no host specification)
-            if psql -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                log_success "Database connection successful with local socket!"
+            # Method 3: Try with sudo -u postgres (fallback)
+            if sudo -u postgres psql -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                log_success "Database connection successful with sudo -u postgres!"
                 export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
-                log_info "Using local socket connection: $DATABASE_URL"
+                log_info "Using sudo postgres connection: $DATABASE_URL"
             else
-                log_warning "local socket connection failed, trying sudo -u postgres..."
+                log_warning "sudo postgres connection failed, trying smart_locker_user with password..."
                 
-                # Method 4: Try with sudo -u postgres (fallback)
-                if sudo -u postgres psql -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                    log_success "Database connection successful with sudo -u postgres!"
-                    export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
-                    log_info "Using sudo postgres connection: $DATABASE_URL"
+                # Method 4: Try with smart_locker_user and password (last resort)
+                if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                    log_success "Database connection successful with smart_locker_user and password!"
+                    export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
+                    log_info "Using smart_locker_user with password: $DATABASE_URL"
                 else
                     log_error "All database connection methods failed!"
                     log_info "PostgreSQL troubleshooting information:"
@@ -965,6 +989,22 @@ start_frontend() {
     log_info "Starting frontend server..."
     
     cd frontend
+    
+    # Check if dependencies are properly installed
+    if [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
+        log_warning "Frontend dependencies not found. Installing..."
+        npm install --force
+    fi
+    
+    # Check if Vite is compatible with current Node.js version
+    NODE_VERSION=$(node --version | cut -d'v' -f2)
+    NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
+    
+    if [ "$NODE_MAJOR" -lt 20 ]; then
+        log_warning "Node.js version $NODE_VERSION detected. Ensuring Vite compatibility..."
+        # Downgrade Vite to a compatible version
+        npm install vite@^5.0.0 --save-dev --force
+    fi
     
     log_info "Initializing in-memory compilation for frontend assets..."
     

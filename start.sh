@@ -116,21 +116,32 @@ if [ "$HELP" = true ]; then
     echo "  - Loads minimal admin user if no data exists"
     echo ""
     echo "Prerequisites:"
-    echo "  - Python 3.8+"
-    echo "  - Node.js 16+"
-    echo "  - PostgreSQL 12+ (required)"
-    echo "  - npm"
+    echo "  - Python 3.8+ (required, will exit if not found)"
+    echo "  - PostgreSQL, Node.js, and npm will be installed automatically"
+    echo "  - Supported systems: macOS (with Homebrew), Linux (Ubuntu/Debian, CentOS/RHEL, Fedora, Arch)"
+    echo ""
+    echo "Automatic Installation:"
+    echo "  The script will automatically detect your system and install:"
+    echo "  - PostgreSQL (with proper service setup)"
+    echo "  - Node.js 18.x (from official repositories)"
+    echo "  - npm (package manager for Node.js)"
+    echo ""
+    echo "macOS Requirements:"
+    echo "  - Homebrew must be installed (https://brew.sh/)"
+    echo "  - Run: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+    echo ""
+    echo "Manual Installation (if automatic fails):"
+    echo "  - PostgreSQL: https://www.postgresql.org/download/"
+    echo "  - Node.js: https://nodejs.org/"
+    echo "  - npm: https://www.npmjs.com/get-npm"
     echo ""
     echo "Troubleshooting:"
     echo "  If npm installation fails, manually clean and retry:"
     echo "    cd frontend && rm -rf node_modules package-lock.json"
     echo "    npm cache clean --force && npm install"
     echo ""
-    echo "PostgreSQL Setup:"
-    echo "  If PostgreSQL is not installed, run: ./setup_postgresql.sh"
-    echo ""
     echo "Linux/WSL Notes:"
-    echo "  - PostgreSQL is required and must be running"
+    echo "  - PostgreSQL service will be started automatically"
     echo "  - If using WSL, ensure proper file permissions"
     echo "  - Virtual environment will be created automatically"
     exit 0
@@ -166,9 +177,165 @@ main() {
     done
 }
 
-# Check system prerequisites
+# Install PostgreSQL
+install_postgresql() {
+    log_info "Installing PostgreSQL..."
+    
+    if command -v brew &> /dev/null; then
+        # macOS
+        log_info "Detected macOS system"
+        brew install postgresql@14
+        brew services start postgresql@14
+        # Create postgres user if it doesn't exist
+        createuser -s postgres 2>/dev/null || true
+    elif command -v apt-get &> /dev/null; then
+        # Ubuntu/Debian
+        log_info "Detected Ubuntu/Debian system"
+        sudo apt-get update
+        sudo apt-get install -y postgresql postgresql-contrib
+        sudo systemctl enable postgresql
+        sudo systemctl start postgresql
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL/Fedora
+        log_info "Detected CentOS/RHEL/Fedora system"
+        sudo yum install -y postgresql postgresql-server postgresql-contrib
+        sudo postgresql-setup initdb
+        sudo systemctl enable postgresql
+        sudo systemctl start postgresql
+    elif command -v dnf &> /dev/null; then
+        # Fedora (newer versions)
+        log_info "Detected Fedora system"
+        sudo dnf install -y postgresql postgresql-server postgresql-contrib
+        sudo postgresql-setup initdb
+        sudo systemctl enable postgresql
+        sudo systemctl start postgresql
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux
+        log_info "Detected Arch Linux system"
+        sudo pacman -S --noconfirm postgresql
+        sudo -u postgres initdb -D /var/lib/postgres/data
+        sudo systemctl enable postgresql
+        sudo systemctl start postgresql
+    else
+        log_error "Unsupported package manager for PostgreSQL installation"
+        log_info "Please install PostgreSQL manually: https://www.postgresql.org/download/"
+        exit 1
+    fi
+    
+    log_success "PostgreSQL installed successfully"
+    
+    # Set up PostgreSQL user and basic configuration
+    log_info "Setting up PostgreSQL user..."
+    if command -v brew &> /dev/null; then
+        # macOS - set password for postgres user
+        psql postgres -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+        log_success "PostgreSQL setup completed for macOS"
+    elif command -v sudo &> /dev/null; then
+        # Linux - switch to postgres user and set password
+        sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+        log_success "PostgreSQL setup completed"
+    else
+        log_warning "Could not set up PostgreSQL user automatically"
+        log_info "Please run: sudo -u postgres psql -c \"ALTER USER postgres PASSWORD 'postgres';\""
+    fi
+}
+
+# Install curl if not available
+install_curl() {
+    log_info "Installing curl..."
+    
+    if command -v brew &> /dev/null; then
+        # macOS
+        brew install curl
+    elif command -v apt-get &> /dev/null; then
+        sudo apt-get install -y curl
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y curl
+    elif command -v dnf &> /dev/null; then
+        sudo dnf install -y curl
+    elif command -v pacman &> /dev/null; then
+        sudo pacman -S --noconfirm curl
+    else
+        log_error "Unsupported package manager for curl installation"
+        exit 1
+    fi
+    
+    log_success "curl installed successfully"
+}
+
+# Install Node.js
+install_nodejs() {
+    log_info "Installing Node.js..."
+    
+    # Check if curl is available for NodeSource setup
+    if ! command -v curl &> /dev/null; then
+        log_info "curl not found. Installing curl first..."
+        install_curl
+    fi
+    
+    if command -v brew &> /dev/null; then
+        # macOS
+        log_info "Detected macOS system"
+        brew install node
+    elif command -v apt-get &> /dev/null; then
+        # Ubuntu/Debian
+        log_info "Detected Ubuntu/Debian system"
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL
+        log_info "Detected CentOS/RHEL system"
+        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+        sudo yum install -y nodejs
+    elif command -v dnf &> /dev/null; then
+        # Fedora
+        log_info "Detected Fedora system"
+        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+        sudo dnf install -y nodejs
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux
+        log_info "Detected Arch Linux system"
+        sudo pacman -S --noconfirm nodejs npm
+    else
+        log_error "Unsupported package manager for Node.js installation"
+        log_info "Please install Node.js manually: https://nodejs.org/"
+        exit 1
+    fi
+    
+    log_success "Node.js installed successfully"
+}
+
+# Install npm (if not included with Node.js)
+install_npm() {
+    log_info "Installing npm..."
+    
+    if command -v brew &> /dev/null; then
+        # macOS - npm comes with node
+        log_info "npm should already be installed with Node.js"
+    elif command -v apt-get &> /dev/null; then
+        # Ubuntu/Debian
+        sudo apt-get install -y npm
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL
+        sudo yum install -y npm
+    elif command -v dnf &> /dev/null; then
+        # Fedora
+        sudo dnf install -y npm
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux - npm comes with nodejs
+        log_info "npm should already be installed with Node.js"
+    else
+        log_error "Unsupported package manager for npm installation"
+        log_info "Please install npm manually: https://www.npmjs.com/get-npm"
+        exit 1
+    fi
+    
+    log_success "npm installed successfully"
+}
+
+# Check and install system prerequisites
 check_prerequisites() {
-    log_info "Checking system prerequisites..."
+    log_info "Checking and installing system prerequisites..."
     
     # Check Python
     if ! command -v python3 &> /dev/null; then
@@ -177,26 +344,36 @@ check_prerequisites() {
         exit 1
     fi
     
-    # Check Node.js
-    if ! command -v node &> /dev/null; then
-        log_error "Node.js is required but not installed"
-        log_info "Install Node.js: https://nodejs.org/"
+    # Check for Homebrew on macOS
+    if [[ "$OSTYPE" == "darwin"* ]] && ! command -v brew &> /dev/null; then
+        log_error "Homebrew is required on macOS but not installed"
+        log_info "Install Homebrew: https://brew.sh/"
+        log_info "Run: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
         exit 1
     fi
     
-    # Check npm
-    if ! command -v npm &> /dev/null; then
-        log_error "npm is required but not installed"
-        log_info "Install npm: https://www.npmjs.com/get-npm"
-        exit 1
-    fi
-    
-    # Check PostgreSQL - Required, not optional
+    # Check and install PostgreSQL
     if ! command -v psql &> /dev/null; then
-        log_error "PostgreSQL is required but not installed"
-        log_info "Install PostgreSQL: https://www.postgresql.org/download/"
-        log_info "Or run: ./setup_postgresql.sh"
-        exit 1
+        log_info "PostgreSQL not found. Installing PostgreSQL..."
+        install_postgresql
+    else
+        log_success "PostgreSQL is already installed"
+    fi
+    
+    # Check and install Node.js
+    if ! command -v node &> /dev/null; then
+        log_info "Node.js not found. Installing Node.js..."
+        install_nodejs
+    else
+        log_success "Node.js is already installed"
+    fi
+    
+    # Check and install npm
+    if ! command -v npm &> /dev/null; then
+        log_info "npm not found. Installing npm..."
+        install_npm
+    else
+        log_success "npm is already installed"
     fi
     
     log_success "All prerequisites are satisfied"

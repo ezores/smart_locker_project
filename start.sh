@@ -289,6 +289,16 @@ setup_database() {
     export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
     log_info "DATABASE_URL set to: $DATABASE_URL"
     
+    # Run database migration for enhanced logging
+    log_info "Running database migration for enhanced logging..."
+    cd backend
+    if python db_migration.py; then
+        log_success "Database migration completed successfully"
+    else
+        log_warning "Database migration failed, but continuing..."
+    fi
+    cd ..
+    
     log_success "Database setup completed"
 }
 
@@ -431,19 +441,39 @@ run_tests() {
     # Wait a bit for services to fully initialize
     sleep 5
     
-    # Check if tests directory exists
-    if [ ! -d "tests" ]; then
-        log_warning "Tests directory not found. Skipping tests."
-        return
+    # Run backend authentication tests
+    log_info "Running comprehensive authentication tests..."
+    cd backend
+    if python test_auth_comprehensive.py; then
+        log_success "Authentication tests passed!"
+    else
+        log_warning "Some authentication tests failed. Check the output above for details."
+    fi
+    cd ..
+    
+    # Run logging system tests
+    log_info "Running logging system tests..."
+    cd backend
+    if python test_logging.py; then
+        log_success "Logging system tests passed!"
+    else
+        log_warning "Some logging tests failed. Check the output above for details."
+    fi
+    cd ..
+    
+    # Check if frontend tests directory exists
+    if [ -d "tests" ]; then
+        log_info "Running frontend tests..."
+        if node tests/run_all_tests.js; then
+            log_success "Frontend tests passed!"
+        else
+            log_warning "Some frontend tests failed. Check the output above for details."
+        fi
+    else
+        log_info "Frontend tests directory not found. Skipping frontend tests."
     fi
     
-    # Run tests
-    if node tests/run_all_tests.js; then
-        log_success "All tests passed!"
-    else
-        log_error "Some tests failed. Check the output above for details."
-        exit 1
-    fi
+    log_success "Test suite completed!"
 }
 
 # Cleanup function

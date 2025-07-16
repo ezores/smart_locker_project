@@ -139,16 +139,39 @@ CORS(app)
 # JWT error handlers
 @jwt.invalid_token_loader
 def invalid_token_callback(error_string):
+    # Log invalid token attempts
+    log_action(
+        "auth_failed",
+        details=f"Invalid JWT token attempt: {error_string}",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
     return jsonify({"error": "Invalid token"}), 401
 
 
 @jwt.unauthorized_loader
 def missing_token_callback(error_string):
+    # Log missing token attempts
+    log_action(
+        "auth_failed",
+        details=f"Missing JWT token: {error_string}",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
     return jsonify({"error": "Missing token"}), 401
 
 
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
+    # Log expired token attempts
+    user_id = jwt_payload.get('sub') if jwt_payload else None
+    log_action(
+        "auth_failed",
+        user_id=user_id,
+        details=f"Expired JWT token attempt",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
     return jsonify({"error": "Token has expired"}), 401
 
 
@@ -211,6 +234,12 @@ def log_action(
 ):
     """Log an action to the database"""
     try:
+        # Get IP address and user agent if not provided
+        if ip_address is None:
+            ip_address = request.remote_addr if request else None
+        if user_agent is None:
+            user_agent = request.headers.get('User-Agent') if request else None
+            
         log = Log(
             user_id=user_id,
             item_id=item_id,
@@ -289,6 +318,14 @@ def login():
 @jwt_required()
 def api_logout():
     """API logout endpoint (stateless JWT, just for client to clear token)"""
+    # Log the logout event
+    log_action(
+        "logout",
+        get_jwt_identity(),
+        details="User logged out",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
     return jsonify({"message": "Logged out successfully"}), 200
 
 
@@ -317,6 +354,13 @@ def api_login():
         user = User.query.filter_by(username=username).first()
 
         if not user:
+            # Log failed login attempt - user not found
+            log_action(
+                "login_failed", 
+                details=f"Failed login attempt for username '{username}' - User not found",
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
             return (
                 jsonify(
                     {
@@ -328,6 +372,14 @@ def api_login():
             )
 
         if not user.check_password(password):
+            # Log failed login attempt - wrong password
+            log_action(
+                "login_failed", 
+                user_id=user.id,
+                details=f"Failed login attempt for user '{username}' - Invalid password",
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
             return (
                 jsonify(
                     {
@@ -339,8 +391,14 @@ def api_login():
             )
 
         access_token = create_access_token(identity=user.id)
-        # Log the login
-        log_action("login", user.id, details=f"User {username} logged in")
+        # Log successful login
+        log_action(
+            "login", 
+            user.id, 
+            details=f"User '{username}' logged in successfully",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
         return jsonify(
             {
                 "token": access_token,  # Frontend expects 'token' not 'access_token'
@@ -368,10 +426,24 @@ def register():
             return jsonify({"error": "Username and password required"}), 400
 
         if User.query.filter_by(username=username).first():
+            # Log failed registration attempt - username exists
+            log_action(
+                "register_failed",
+                details=f"Failed registration attempt - Username '{username}' already exists",
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
             return jsonify({"error": "Username already exists"}), 400
 
         # Check if student_id already exists
         if student_id and User.query.filter_by(student_id=student_id).first():
+            # Log failed registration attempt - student ID exists
+            log_action(
+                "register_failed",
+                details=f"Failed registration attempt - Student ID '{student_id}' already exists",
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
             return jsonify({"error": "Student ID already exists"}), 400
 
         user = User(
@@ -387,10 +459,13 @@ def register():
         db.session.add(user)
         db.session.commit()
 
+        # Log successful registration
         log_action(
             "register",
             user.id,
-            details=f"New user {username} registered with student ID {student_id}",
+            details=f"New user '{username}' registered successfully with student ID '{student_id}' and role '{role}'",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
         )
 
         return (
@@ -835,30 +910,28 @@ def create_locker():
     try:
         data = request.get_json()
         name = data.get("name")
-        location = data.get("location", "")
-        status = data.get("status", "available")
+        number = data.get("number")
+        location = data.get("location")
+        description = data.get("description")
+        capacity = data.get("capacity", 10)
         rs485_address = data.get("rs485_address", 0)
         rs485_locker_number = data.get("rs485_locker_number", 1)
 
-        if not name:
-            return jsonify({"error": "Locker name is required"}), 400
+        if not name or not number:
+            return jsonify({"error": "Name and number are required"}), 400
 
-        # Validate RS485 fields
-        if not (0 <= rs485_address <= 31):
-            return jsonify({"error": "RS485 address must be between 0 and 31"}), 400
-        if not (1 <= rs485_locker_number <= 24):
-            return jsonify({"error": "Locker number must be between 1 and 24"}), 400
+        if Locker.query.filter_by(name=name).first():
+            return jsonify({"error": "Locker name already exists"}), 400
 
-        # Generate unique number if not provided
-        number = data.get("number")
-        if not number:
-            number = f"L{len(Locker.query.all()) + 1:03d}"
+        if Locker.query.filter_by(number=number).first():
+            return jsonify({"error": "Locker number already exists"}), 400
 
         locker = Locker(
             name=name,
             number=number,
             location=location,
-            status=status,
+            description=description,
+            capacity=capacity,
             rs485_address=rs485_address,
             rs485_locker_number=rs485_locker_number,
         )
@@ -866,14 +939,18 @@ def create_locker():
         db.session.add(locker)
         db.session.commit()
 
-        log_action("create_locker", None, None, locker.id, f"Created locker {name}")
-
-        return (
-            jsonify(
-                {"message": "Locker created successfully", "locker": locker.to_dict()}
-            ),
-            201,
+        # Log locker creation
+        current_user_id = get_jwt_identity()
+        log_action(
+            "admin_action",
+            current_user_id,
+            locker_id=locker.id,
+            details=f"Admin created locker '{name}' (Number: {number})",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
         )
+
+        return jsonify({"message": "Locker created successfully", "locker": locker.to_dict()}), 201
 
     except Exception as e:
         logger.error(f"Create locker error: {e}")
@@ -888,36 +965,55 @@ def update_locker(locker_id):
         locker = Locker.query.get_or_404(locker_id)
         data = request.get_json()
 
-        # Update basic fields
+        # Store original values for logging
+        original_name = locker.name
+        original_number = locker.number
+
         if "name" in data:
+            if Locker.query.filter_by(name=data["name"]).filter(Locker.id != locker_id).first():
+                return jsonify({"error": "Locker name already exists"}), 400
             locker.name = data["name"]
+
+        if "number" in data:
+            if Locker.query.filter_by(number=data["number"]).filter(Locker.id != locker_id).first():
+                return jsonify({"error": "Locker number already exists"}), 400
+            locker.number = data["number"]
+
         if "location" in data:
             locker.location = data["location"]
+
+        if "description" in data:
+            locker.description = data["description"]
+
+        if "capacity" in data:
+            locker.capacity = data["capacity"]
+
         if "status" in data:
             locker.status = data["status"]
 
-        # Update RS485 fields
+        if "is_active" in data:
+            locker.is_active = data["is_active"]
+
         if "rs485_address" in data:
-            rs485_address = data["rs485_address"]
-            if not (0 <= rs485_address <= 31):
-                return jsonify({"error": "RS485 address must be between 0 and 31"}), 400
-            locker.rs485_address = rs485_address
+            locker.rs485_address = data["rs485_address"]
 
         if "rs485_locker_number" in data:
-            rs485_locker_number = data["rs485_locker_number"]
-            if not (1 <= rs485_locker_number <= 24):
-                return jsonify({"error": "Locker number must be between 1 and 24"}), 400
-            locker.rs485_locker_number = rs485_locker_number
+            locker.rs485_locker_number = data["rs485_locker_number"]
 
         db.session.commit()
 
+        # Log locker update
+        current_user_id = get_jwt_identity()
         log_action(
-            "update_locker", None, None, locker.id, f"Updated locker {locker.name}"
+            "admin_action",
+            current_user_id,
+            locker_id=locker.id,
+            details=f"Admin updated locker '{original_name}' (Number: {original_number}) to '{locker.name}' (Number: {locker.number})",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
         )
 
-        return jsonify(
-            {"message": "Locker updated successfully", "locker": locker.to_dict()}
-        )
+        return jsonify({"message": "Locker updated successfully", "locker": locker.to_dict()})
 
     except Exception as e:
         logger.error(f"Update locker error: {e}")
@@ -930,24 +1026,22 @@ def update_locker(locker_id):
 def delete_locker(locker_id):
     try:
         locker = Locker.query.get_or_404(locker_id)
-
-        # Check if locker has items
-        if locker.items:
-            return jsonify({"error": "Cannot delete locker with items"}), 400
-
-        # Check if locker has active borrows
-        active_borrows = Borrow.query.filter_by(
-            locker_id=locker_id, status="borrowed"
-        ).count()
-        if active_borrows > 0:
-            return jsonify({"error": "Cannot delete locker with active borrows"}), 400
-
+        
+        # Store locker info for logging before deletion
         locker_name = locker.name
+        locker_number = locker.number
+        
         db.session.delete(locker)
         db.session.commit()
 
+        # Log locker deletion
+        current_user_id = get_jwt_identity()
         log_action(
-            "delete_locker", None, None, locker_id, f"Deleted locker {locker_name}"
+            "admin_action",
+            current_user_id,
+            details=f"Admin deleted locker '{locker_name}' (Number: {locker_number})",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
         )
 
         return jsonify({"message": "Locker deleted successfully"})

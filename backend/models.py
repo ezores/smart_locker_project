@@ -222,13 +222,18 @@ def init_models(db):
         reservation_id = db.Column(db.Integer, db.ForeignKey("reservation.id"))
         timestamp = db.Column(db.DateTime, default=datetime.utcnow)
         action_type = db.Column(
-            db.String(32), nullable=False
-        )  # borrow, return, maintenance, reservation_create, reservation_cancel, reservation_modify
+            db.String(64), nullable=False
+        )  # Enhanced action types:
+        # Authentication: login, login_failed, logout, register, register_failed, auth_failed
+        # Borrowing: borrow, return, overdue
+        # Reservations: reservation_create, reservation_cancel, reservation_modify, reservation_access
+        # Admin: admin_action, user_management, locker_management, system_maintenance
+        # Security: security_alert, access_denied
         notes = db.Column(db.Text)
         due_date = db.Column(db.DateTime)
         returned_at = db.Column(db.DateTime)
-        ip_address = db.Column(db.String(45))
-        user_agent = db.Column(db.Text)
+        ip_address = db.Column(db.String(45))  # IPv4/IPv6 addresses
+        user_agent = db.Column(db.Text)  # Browser/client information
 
         def to_dict(self):
             return {

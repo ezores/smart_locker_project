@@ -245,38 +245,114 @@ install_postgresql() {
             sleep 3
         fi
     fi
+    
+    # Configure PostgreSQL authentication for automatic operation
+    log_info "Configuring PostgreSQL authentication for automatic operation..."
+    
     if command -v brew &> /dev/null; then
         # macOS - set password for postgres user
         psql postgres -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
         log_success "PostgreSQL setup completed for macOS"
     elif command -v sudo &> /dev/null; then
-        # Linux - switch to postgres user and set password
+        # Linux - configure for automatic operation without password prompts
+        
+        # Set password for postgres user
         sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
         
-        # Configure PostgreSQL to allow password authentication for local connections
-        log_info "Configuring PostgreSQL authentication..."
-        pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ')
+        # Configure PostgreSQL to allow trust authentication for local connections
+        log_info "Configuring PostgreSQL authentication for local connections..."
+        pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        
         if [ -n "$pg_hba_conf" ] && [ -f "$pg_hba_conf" ]; then
             log_info "Found pg_hba.conf at: $pg_hba_conf"
             # Backup the original file
             sudo cp "$pg_hba_conf" "${pg_hba_conf}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
             
-            # Add password authentication for local connections if not already present
-            if ! sudo grep -q "smart_locker_user" "$pg_hba_conf" 2>/dev/null; then
-                echo "local smart_locker_db smart_locker_user md5" | sudo tee -a "$pg_hba_conf" > /dev/null
-                echo "host smart_locker_db smart_locker_user 127.0.0.1/32 md5" | sudo tee -a "$pg_hba_conf" > /dev/null
-                echo "host smart_locker_db smart_locker_user ::1/128 md5" | sudo tee -a "$pg_hba_conf" > /dev/null
-                log_info "Added authentication rules to pg_hba.conf"
-                
-                # Reload PostgreSQL configuration
-                sudo systemctl reload postgresql 2>/dev/null || sudo service postgresql reload 2>/dev/null || true
-                log_info "Reloaded PostgreSQL configuration"
-            fi
+            # Configure for automatic operation - allow trust for local connections
+            log_info "Configuring pg_hba.conf for automatic operation..."
+            
+            # Create a new pg_hba.conf with proper authentication
+            sudo tee "$pg_hba_conf" > /dev/null << 'EOF'
+# PostgreSQL Client Authentication Configuration File
+# ===============================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+EOF
+            
+            log_info "Configured pg_hba.conf for automatic operation"
+            
+            # Reload PostgreSQL configuration
+            sudo systemctl reload postgresql 2>/dev/null || sudo service postgresql reload 2>/dev/null || true
+            log_info "Reloaded PostgreSQL configuration"
+            
+            # Wait a moment for the configuration to take effect
+            sleep 2
         else
-            log_warning "Could not find pg_hba.conf file"
+            log_warning "Could not find pg_hba.conf file, attempting alternative configuration..."
+            
+            # Try to find pg_hba.conf in common locations
+            common_locations=(
+                "/etc/postgresql/*/main/pg_hba.conf"
+                "/var/lib/postgresql/data/pg_hba.conf"
+                "/var/lib/pgsql/data/pg_hba.conf"
+                "/usr/local/var/postgres/pg_hba.conf"
+            )
+            
+            for location in "${common_locations[@]}"; do
+                for file in $location; do
+                    if [ -f "$file" ]; then
+                        log_info "Found pg_hba.conf at: $file"
+                        # Backup and configure
+                        sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                        
+                        # Configure for automatic operation
+                        sudo tee "$file" > /dev/null << 'EOF'
+# PostgreSQL Client Authentication Configuration File
+# ===============================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+EOF
+                        
+                        log_info "Configured pg_hba.conf at $file for automatic operation"
+                        sudo systemctl reload postgresql 2>/dev/null || sudo service postgresql reload 2>/dev/null || true
+                        sleep 2
+                        break 2
+                    fi
+                done
+            done
         fi
         
-        log_success "PostgreSQL setup completed"
+        log_success "PostgreSQL setup completed for automatic operation"
     else
         log_warning "Could not set up PostgreSQL user automatically"
         log_info "Please run: sudo -u postgres psql -c \"ALTER USER postgres PASSWORD 'postgres';\""
@@ -374,6 +450,85 @@ install_npm() {
     fi
     
     log_success "npm installed successfully"
+}
+
+# Ensure PostgreSQL is configured for automatic operation
+ensure_postgresql_auto_config() {
+    log_info "Ensuring PostgreSQL is configured for automatic operation..."
+    
+    # Check if we can connect without password prompts
+    if ! sudo -u postgres psql -c "SELECT 1;" > /dev/null 2>&1; then
+        log_warning "PostgreSQL authentication needs configuration for automatic operation"
+        
+        # Try to find and configure pg_hba.conf
+        pg_hba_locations=(
+            "/etc/postgresql/*/main/pg_hba.conf"
+            "/var/lib/postgresql/data/pg_hba.conf"
+            "/var/lib/pgsql/data/pg_hba.conf"
+            "/usr/local/var/postgres/pg_hba.conf"
+            "/opt/homebrew/var/postgresql@14/pg_hba.conf"
+            "/opt/homebrew/var/postgresql/pg_hba.conf"
+        )
+        
+        pg_hba_found=false
+        for pattern in "${pg_hba_locations[@]}"; do
+            for file in $pattern; do
+                if [ -f "$file" ]; then
+                    log_info "Found pg_hba.conf at: $file"
+                    pg_hba_found=true
+                    
+                    # Backup the original file
+                    sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                    
+                    # Configure for automatic operation with trust authentication
+                    log_info "Configuring $file for automatic operation..."
+                    sudo tee "$file" > /dev/null << 'EOF'
+# PostgreSQL Client Authentication Configuration File
+# ===============================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+EOF
+                    
+                    log_info "Configured $file for automatic operation"
+                    
+                    # Reload PostgreSQL configuration
+                    if command -v systemctl &> /dev/null; then
+                        sudo systemctl reload postgresql 2>/dev/null || sudo systemctl reload postgresql@14 2>/dev/null || true
+                    elif command -v service &> /dev/null; then
+                        sudo service postgresql reload 2>/dev/null || true
+                    fi
+                    
+                    # Wait for configuration to take effect
+                    sleep 3
+                    break 2
+                fi
+            done
+        done
+        
+        if [ "$pg_hba_found" = false ]; then
+            log_warning "Could not find pg_hba.conf file automatically"
+            log_info "PostgreSQL may need manual configuration for automatic operation"
+        else
+            log_success "PostgreSQL configured for automatic operation"
+        fi
+    else
+        log_success "PostgreSQL already configured for automatic operation"
+    fi
 }
 
 # Check and install system prerequisites
@@ -546,6 +701,9 @@ setup_database() {
         exit 1
     fi
     
+    # Ensure PostgreSQL is properly configured for automatic operation
+    ensure_postgresql_auto_config
+    
     # Try to connect as postgres user to verify basic setup
     if ! sudo -u postgres psql -c "SELECT version();" > /dev/null 2>&1; then
         log_warning "Cannot connect as postgres user. This might indicate a PostgreSQL configuration issue."
@@ -571,10 +729,24 @@ setup_database() {
         # Linux with systemd
         log_info "Starting PostgreSQL on Linux..."
         sudo systemctl start postgresql 2>/dev/null || sudo systemctl start postgresql@14 2>/dev/null || true
+        
+        # Ensure PostgreSQL is running and restart if needed
+        if ! sudo systemctl is-active --quiet postgresql && ! sudo systemctl is-active --quiet postgresql@14; then
+            log_warning "PostgreSQL not running, attempting to restart..."
+            sudo systemctl restart postgresql 2>/dev/null || sudo systemctl restart postgresql@14 2>/dev/null || true
+            sleep 3
+        fi
     elif command -v service &> /dev/null; then
         # Linux with service command
         log_info "Starting PostgreSQL with service command..."
         sudo service postgresql start 2>/dev/null || true
+        
+        # Ensure PostgreSQL is running and restart if needed
+        if ! sudo service postgresql status > /dev/null 2>&1; then
+            log_warning "PostgreSQL not running, attempting to restart..."
+            sudo service postgresql restart 2>/dev/null || true
+            sleep 3
+        fi
     else
         log_warning "Could not start PostgreSQL service automatically"
         log_info "Please ensure PostgreSQL is running manually"
@@ -617,33 +789,33 @@ setup_database() {
     log_info "Creating database and user..."
     
     # Drop user if exists and recreate (for fresh installs)
-    psql -U postgres -c "DROP USER IF EXISTS $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -c "DROP USER IF EXISTS $DATABASE_USER;" 2>/dev/null || true
     
     # Create user with password
-    psql -U postgres -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+    sudo -u postgres psql -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
     
     # Drop database if exists and recreate (for fresh installs)
-    psql -U postgres -c "DROP DATABASE IF EXISTS $DATABASE_NAME;" 2>/dev/null || true
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DATABASE_NAME;" 2>/dev/null || true
     
     # Create database with proper owner
-    psql -U postgres -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
     
     # Grant privileges
-    psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
-    psql -U postgres -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
     
     # Grant table and sequence privileges
-    psql -U postgres -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
-    psql -U postgres -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
-    psql -U postgres -d $DATABASE_NAME -c "GRANT CREATE ON SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
-    psql -U postgres -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DATABASE_USER;" 2>/dev/null || true
-    psql -U postgres -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "GRANT CREATE ON SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DATABASE_USER;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DATABASE_USER;" 2>/dev/null || true
     
     # Grant table ownership for existing tables
-    psql -U postgres -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LOOP EXECUTE 'ALTER TABLE ' || quote_ident(r.table_name) || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LOOP EXECUTE 'ALTER TABLE ' || quote_ident(r.table_name) || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
     
     # Grant sequence ownership for existing sequences
-    psql -U postgres -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP EXECUTE 'ALTER SEQUENCE ' || r.sequence_name || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+    sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP EXECUTE 'ALTER SEQUENCE ' || r.sequence_name || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
     
     # Set DATABASE_URL environment variable
     export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
@@ -652,34 +824,34 @@ setup_database() {
     # Test database connection with multiple methods
     log_info "Testing database connection..."
     
-    # Method 1: Try with smart_locker_user
+    # Method 1: Try with smart_locker_user (using trust authentication)
     log_info "Testing connection with smart_locker_user..."
-    if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+    if psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
         log_success "Database connection test successful with smart_locker_user!"
     else
         log_warning "smart_locker_user connection failed, trying postgres user..."
         
-        # Method 2: Try with postgres user (no password)
+        # Method 2: Try with postgres user (using trust authentication)
         if psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-            log_success "Database connection successful with postgres user (no password)!"
+            log_success "Database connection successful with postgres user!"
             export DATABASE_URL="postgresql://postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
-            log_info "Using postgres user without password: $DATABASE_URL"
+            log_info "Using postgres user: $DATABASE_URL"
         else
-            log_warning "postgres user connection failed, trying with password..."
+            log_warning "postgres user connection failed, trying local socket connection..."
             
-            # Method 3: Try with postgres user and password
-            if PGPASSWORD="postgres" psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                log_success "Database connection successful with postgres user and password!"
-                export DATABASE_URL="postgresql://postgres:postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
-                log_info "Using postgres user with password: $DATABASE_URL"
+            # Method 3: Try local socket connection (no host specification)
+            if psql -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                log_success "Database connection successful with local socket!"
+                export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
+                log_info "Using local socket connection: $DATABASE_URL"
             else
-                log_warning "postgres user with password failed, trying local socket connection..."
+                log_warning "local socket connection failed, trying sudo -u postgres..."
                 
-                # Method 4: Try local socket connection (no host specification)
-                if psql -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                    log_success "Database connection successful with local socket!"
+                # Method 4: Try with sudo -u postgres (fallback)
+                if sudo -u postgres psql -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                    log_success "Database connection successful with sudo -u postgres!"
                     export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
-                    log_info "Using local socket connection: $DATABASE_URL"
+                    log_info "Using sudo postgres connection: $DATABASE_URL"
                 else
                     log_error "All database connection methods failed!"
                     log_info "PostgreSQL troubleshooting information:"
@@ -687,6 +859,7 @@ setup_database() {
                     log_info "2. Check PostgreSQL logs: sudo journalctl -u postgresql"
                     log_info "3. Try connecting manually: sudo -u postgres psql"
                     log_info "4. Check pg_hba.conf configuration"
+                    log_info "5. Check if trust authentication is properly configured"
                     exit 1
                 fi
             fi

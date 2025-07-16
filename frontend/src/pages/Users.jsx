@@ -75,7 +75,13 @@ const Users = () => {
         rfid_tag: "",
       });
       fetchUsers();
-      alert("User created successfully!");
+
+      // Check if there's a warning message (RFID conflict)
+      if (response.data.warning) {
+        alert(`Warning: ${response.data.warning}`);
+      } else {
+        alert("User created successfully!");
+      }
     } catch (error) {
       console.error("Error adding user:", error);
       const errorMessage = error.response?.data?.error || "Failed to add user";
@@ -99,7 +105,13 @@ const Users = () => {
         rfid_tag: "",
       });
       fetchUsers();
-      alert("User updated successfully!");
+
+      // Check if there's a warning message (RFID conflict)
+      if (response.data.warning) {
+        alert(`Warning: ${response.data.warning}`);
+      } else {
+        alert("User updated successfully!");
+      }
     } catch (error) {
       console.error("Error updating user:", error);
       const errorMessage =

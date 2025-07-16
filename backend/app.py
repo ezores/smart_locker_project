@@ -1298,6 +1298,7 @@ def create_admin_user():
     """Create a new user (admin only)"""
     try:
         data = request.get_json()
+        rfid_conflict_warning = False
 
         # Validate required fields
         required_fields = ["username", "password", "role"]
@@ -1310,8 +1311,30 @@ def create_admin_user():
             return jsonify({"error": "Username already exists"}), 400
 
         # Check if RFID tag already exists (if provided)
-        if data.get("rfid_tag") and User.query.filter_by(rfid_tag=data["rfid_tag"]).first():
-            return jsonify({"error": "RFID tag already exists"}), 400
+        if data.get("rfid_tag"):
+            existing_user = User.query.filter_by(rfid_tag=data["rfid_tag"]).first()
+            if existing_user:
+                # For admin users, allow RFID override but inform about the conflict
+                current_admin = User.query.get(get_jwt_identity())
+                if current_admin and current_admin.role == "admin":
+                    # Log the RFID override during creation
+                    try:
+                        log_action(
+                            "admin_action",
+                            user_id=get_jwt_identity(),
+                            details=f"RFID override during creation: {data['username']} assigned existing RFID {data['rfid_tag']}",
+                            ip_address=request.remote_addr,
+                            user_agent=request.headers.get("User-Agent"),
+                        )
+                    except Exception as log_error:
+                        logger.warning(f"Failed to log RFID override during creation: {log_error}")
+                    # Remove RFID from previous user
+                    existing_user.rfid_tag = None
+                    db.session.commit()
+                    # Continue with creation but will return warning
+                    rfid_conflict_warning = True
+                else:
+                    return jsonify({"error": "RFID tag already exists"}), 400
 
         # Create new user
         user = User(
@@ -1339,7 +1362,12 @@ def create_admin_user():
             user_agent=request.headers.get("User-Agent"),
         )
 
-        return jsonify({"message": "User created successfully", "user": user.to_dict()}), 201
+        # Return response with warning if there was an RFID conflict
+        response_data = {"message": "User created successfully", "user": user.to_dict()}
+        if rfid_conflict_warning:
+            response_data["warning"] = "RFID tag was already assigned to another user. The override has been applied."
+        
+        return jsonify(response_data), 201
 
     except Exception as e:
         logger.error(f"Create admin user error: {e}")
@@ -1367,10 +1395,10 @@ def update_admin_user(user_id):
         # Check if RFID tag already exists (if being changed)
         if "rfid_tag" in data and data["rfid_tag"] != user.rfid_tag:
             if data["rfid_tag"] and User.query.filter(User.rfid_tag == data["rfid_tag"], User.id != user_id).first():
-                # For admin users, allow RFID override but log it
+                # For admin users, allow RFID override but log it and inform about the conflict
                 current_admin = User.query.get(get_jwt_identity())
                 if current_admin and current_admin.role == "admin":
-                    # Log the RFID override - simplified to avoid errors
+                    # Log the RFID override
                     try:
                         log_action(
                             "admin_action",
@@ -1381,6 +1409,12 @@ def update_admin_user(user_id):
                         )
                     except Exception as log_error:
                         logger.warning(f"Failed to log RFID override: {log_error}")
+                    
+                    # Return a warning message for admin about RFID conflict
+                    return jsonify({
+                        "warning": "RFID tag is already assigned to another user. The override has been applied.",
+                        "user": user.to_dict()
+                    }), 200
                 else:
                     return jsonify({"error": "RFID tag already exists"}), 400
 

@@ -1291,6 +1291,162 @@ def get_admin_users():
         return jsonify({"error": "Internal server error"}), 500
 
 
+@app.route("/api/admin/users", methods=["POST"])
+@jwt_required()
+@admin_required
+def create_admin_user():
+    """Create a new user (admin only)"""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ["username", "password", "role"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        # Check if username already exists
+        if User.query.filter_by(username=data["username"]).first():
+            return jsonify({"error": "Username already exists"}), 400
+
+        # Check if RFID tag already exists (if provided)
+        if data.get("rfid_tag") and User.query.filter_by(rfid_tag=data["rfid_tag"]).first():
+            return jsonify({"error": "RFID tag already exists"}), 400
+
+        # Create new user
+        user = User(
+            username=data["username"],
+            role=data["role"],
+            email=data.get("email"),
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            student_id=data.get("student_id"),
+            department=data.get("department"),
+            rfid_tag=data.get("rfid_tag"),
+            qr_code=data.get("qr_code"),
+        )
+        user.set_password(data["password"])
+
+        db.session.add(user)
+        db.session.commit()
+
+        # Log the user creation
+        log_action(
+            "admin_action",
+            user_id=get_jwt_identity(),
+            details=f"Created user: {user.username} with role: {user.role}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+
+        return jsonify({"message": "User created successfully", "user": user.to_dict()}), 201
+
+    except Exception as e:
+        logger.error(f"Create admin user error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["PUT"])
+@jwt_required()
+@admin_required
+def update_admin_user(user_id):
+    """Update a user (admin only)"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        data = request.get_json()
+
+        # Check if username already exists (if being changed)
+        if "username" in data and data["username"] != user.username:
+            if User.query.filter_by(username=data["username"]).first():
+                return jsonify({"error": "Username already exists"}), 400
+
+        # Check if RFID tag already exists (if being changed)
+        if "rfid_tag" in data and data["rfid_tag"] != user.rfid_tag:
+            if data["rfid_tag"] and User.query.filter_by(rfid_tag=data["rfid_tag"]).first():
+                return jsonify({"error": "RFID tag already exists"}), 400
+
+        # Update user fields
+        if "username" in data:
+            user.username = data["username"]
+        if "role" in data:
+            user.role = data["role"]
+        if "email" in data:
+            user.email = data["email"]
+        if "first_name" in data:
+            user.first_name = data["first_name"]
+        if "last_name" in data:
+            user.last_name = data["last_name"]
+        if "student_id" in data:
+            user.student_id = data["student_id"]
+        if "department" in data:
+            user.department = data["department"]
+        if "rfid_tag" in data:
+            user.rfid_tag = data["rfid_tag"]
+        if "qr_code" in data:
+            user.qr_code = data["qr_code"]
+
+        # Update password if provided
+        if data.get("password"):
+            user.set_password(data["password"])
+
+        db.session.commit()
+
+        # Log the user update
+        log_action(
+            "admin_action",
+            user_id=get_jwt_identity(),
+            details=f"Updated user: {user.username}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+
+        return jsonify({"message": "User updated successfully", "user": user.to_dict()})
+
+    except Exception as e:
+        logger.error(f"Update admin user error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
+@jwt_required()
+@admin_required
+def delete_admin_user(user_id):
+    """Delete a user (admin only)"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Prevent deletion of admin users
+        if user.role == "admin":
+            return jsonify({"error": "Cannot delete admin users"}), 400
+
+        username = user.username
+        db.session.delete(user)
+        db.session.commit()
+
+        # Log the user deletion
+        log_action(
+            "admin_action",
+            user_id=get_jwt_identity(),
+            details=f"Deleted user: {username}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+
+        return jsonify({"message": "User deleted successfully"})
+
+    except Exception as e:
+        logger.error(f"Delete admin user error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
 @app.route("/api/user/profile", methods=["GET"])
 @jwt_required()
 def get_user_profile():

@@ -41,6 +41,7 @@ const Users = () => {
     username: "",
     password: "",
     role: "student",
+    rfid_tag: "",
   });
 
   useEffect(() => {
@@ -65,7 +66,12 @@ const Users = () => {
     try {
       await axios.post("/api/admin/users", formData);
       setShowAddModal(false);
-      setFormData({ username: "", password: "", role: "student" });
+      setFormData({
+        username: "",
+        password: "",
+        role: "student",
+        rfid_tag: "",
+      });
       fetchUsers();
     } catch (error) {
       console.error("Error adding user:", error);
@@ -78,7 +84,12 @@ const Users = () => {
     try {
       await axios.put(`/api/admin/users/${editingUser.id}`, formData);
       setEditingUser(null);
-      setFormData({ username: "", password: "", role: "student" });
+      setFormData({
+        username: "",
+        password: "",
+        role: "student",
+        rfid_tag: "",
+      });
       fetchUsers();
     } catch (error) {
       console.error("Error updating user:", error);
@@ -104,13 +115,14 @@ const Users = () => {
       username: user.username,
       password: "",
       role: user.role,
+      rfid_tag: user.rfid_tag || "",
     });
   };
 
   const closeModal = () => {
     setShowAddModal(false);
     setEditingUser(null);
-    setFormData({ username: "", password: "", role: "student" });
+    setFormData({ username: "", password: "", role: "student", rfid_tag: "" });
     setShowPassword(false);
   };
 
@@ -252,6 +264,13 @@ const Users = () => {
                       isDarkMode ? "text-gray-300" : "text-gray-500"
                     }`}
                   >
+                    RFID
+                  </th>
+                  <th
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                      isDarkMode ? "text-gray-300" : "text-gray-500"
+                    }`}
+                  >
                     {t("actions")}
                   </th>
                 </tr>
@@ -303,6 +322,15 @@ const Users = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getRoleBadge(user.role)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-500"
+                        }`}
+                      >
+                        {user.rfid_tag || "—"}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
@@ -438,6 +466,28 @@ const Users = () => {
                   <option value="admin">{t("admin")}</option>
                 </select>
               </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? "text-white" : "text-gray-700"
+                  }`}
+                >
+                  RFID Tag
+                </label>
+                <input
+                  type="text"
+                  value={formData.rfid_tag}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rfid_tag: e.target.value })
+                  }
+                  placeholder="Enter RFID code (optional)"
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -568,6 +618,28 @@ const Users = () => {
                   <option value="student">{t("student")}</option>
                   <option value="admin">{t("admin")}</option>
                 </select>
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? "text-white" : "text-gray-700"
+                  }`}
+                >
+                  RFID Tag
+                </label>
+                <input
+                  type="text"
+                  value={formData.rfid_tag}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rfid_tag: e.target.value })
+                  }
+                  placeholder="Enter RFID code (optional)"
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
+                />
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button

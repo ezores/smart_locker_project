@@ -61,6 +61,8 @@ def init_models(db):
                 "department": self.department,
                 "balance": self.balance,
                 "is_active": self.is_active,
+                "rfid_tag": self.rfid_tag,
+                "qr_code": self.qr_code,
                 "created_at": self.created_at.isoformat() if self.created_at else None,
             }
 

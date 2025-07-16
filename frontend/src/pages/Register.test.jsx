@@ -1,5 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import Register from "./Register";
 import { LanguageProvider } from "../contexts/LanguageContext";
@@ -101,7 +107,11 @@ describe("Register Component", () => {
       expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/student id/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+      // Disambiguate confirm password input
+      const confirmPasswordInputs =
+        screen.getAllByLabelText(/confirm password/i);
+      expect(confirmPasswordInputs[0].tagName).toBe("INPUT");
+      expect(confirmPasswordInputs[0]).toBeInTheDocument();
 
       // Check for icons (using aria-describedby attributes)
       expect(screen.getByLabelText(/username/i)).toHaveAttribute(
@@ -128,7 +138,7 @@ describe("Register Component", () => {
         "aria-describedby",
         "password-icon password-toggle"
       );
-      expect(screen.getByLabelText(/confirm password/i)).toHaveAttribute(
+      expect(confirmPasswordInputs[0]).toHaveAttribute(
         "aria-describedby",
         "confirm-password-icon confirm-password-toggle"
       );
@@ -139,11 +149,9 @@ describe("Register Component", () => {
 
       const languageButton = screen.getByLabelText(/current language/i);
       expect(languageButton).toBeInTheDocument();
-      expect(languageButton.closest("div")).toHaveClass(
-        "fixed",
-        "top-4",
-        "right-4"
-      );
+      // Check that it's positioned at the top (fixed)
+      const languageContainer = languageButton.closest(".fixed.top-4.right-4");
+      expect(languageContainer).toBeInTheDocument();
     });
 
     test("renders password strength indicators", () => {

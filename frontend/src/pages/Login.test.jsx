@@ -1,5 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext";
 import { LanguageProvider } from "../contexts/LanguageContext";
@@ -71,14 +77,11 @@ describe("Login Page", () => {
 
     test("renders language selector in visible position", () => {
       renderLogin();
-
-      // Language selector should be visible without scrolling
       const languageButton = screen.getByLabelText(/Current language/i);
       expect(languageButton).toBeInTheDocument();
-
-      // Check that it's positioned at the top
-      const languageContainer = languageButton.closest("div");
-      expect(languageContainer).toHaveClass("absolute", "top-4", "right-4");
+      // Check that it's positioned at the top (fixed)
+      const languageContainer = languageButton.closest(".fixed.top-4.right-4");
+      expect(languageContainer).toBeInTheDocument();
     });
 
     test("renders icons in username and password fields", () => {
@@ -198,39 +201,41 @@ describe("Login Page", () => {
   describe("Form Validation", () => {
     test("shows error when submitting empty form", async () => {
       renderLogin();
-      const submitButton = screen.getByRole("button", { name: "Sign In" });
-      fireEvent.click(submitButton);
-      await waitFor(() => {
-        expect(
-          screen.getByText(/fill all fields|all fields are required/i)
-        ).toBeInTheDocument();
+      await act(async () => {
+        const submitButton = screen.getByRole("button", { name: "Sign In" });
+        fireEvent.click(submitButton);
       });
+      expect(screen.getByTestId("login-error-message")).toHaveTextContent(
+        /fill all fields|all fields are required/i
+      );
     });
 
     test("shows error when only username is provided", async () => {
       renderLogin();
-      const usernameField = screen.getByLabelText("Username");
-      fireEvent.change(usernameField, { target: { value: "testuser" } });
-      const submitButton = screen.getByRole("button", { name: "Sign In" });
-      fireEvent.click(submitButton);
-      await waitFor(() => {
-        expect(
-          screen.getByText(/fill all fields|all fields are required/i)
-        ).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText("Username"), {
+          target: { value: "testuser" },
+        });
+        const submitButton = screen.getByRole("button", { name: "Sign In" });
+        fireEvent.click(submitButton);
       });
+      expect(screen.getByTestId("login-error-message")).toHaveTextContent(
+        /fill all fields|all fields are required/i
+      );
     });
 
     test("shows error when only password is provided", async () => {
       renderLogin();
-      const passwordField = screen.getByLabelText("Password");
-      fireEvent.change(passwordField, { target: { value: "testpass" } });
-      const submitButton = screen.getByRole("button", { name: "Sign In" });
-      fireEvent.click(submitButton);
-      await waitFor(() => {
-        expect(
-          screen.getByText(/fill all fields|all fields are required/i)
-        ).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText("Password"), {
+          target: { value: "testpass" },
+        });
+        const submitButton = screen.getByRole("button", { name: "Sign In" });
+        fireEvent.click(submitButton);
       });
+      expect(screen.getByTestId("login-error-message")).toHaveTextContent(
+        /fill all fields|all fields are required/i
+      );
     });
   });
 

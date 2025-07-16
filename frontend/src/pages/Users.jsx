@@ -50,7 +50,8 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("/api/admin/users");
+      // Request all users by setting a high limit
+      const response = await axios.get("/api/admin/users?limit=1000");
       const usersData = response.data;
       setUsers(usersData.users || usersData || []);
     } catch (error) {

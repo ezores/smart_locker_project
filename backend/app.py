@@ -1367,7 +1367,22 @@ def update_admin_user(user_id):
         # Check if RFID tag already exists (if being changed)
         if "rfid_tag" in data and data["rfid_tag"] != user.rfid_tag:
             if data["rfid_tag"] and User.query.filter(User.rfid_tag == data["rfid_tag"], User.id != user_id).first():
-                return jsonify({"error": "RFID tag already exists"}), 400
+                # For admin users, allow RFID override but log it
+                current_admin = User.query.get(get_jwt_identity())
+                if current_admin and current_admin.role == "admin":
+                    # Log the RFID override - simplified to avoid errors
+                    try:
+                        log_action(
+                            "admin_action",
+                            user_id=get_jwt_identity(),
+                            details=f"RFID override: {user.username} RFID changed to {data['rfid_tag']} (was {user.rfid_tag})",
+                            ip_address=request.remote_addr,
+                            user_agent=request.headers.get("User-Agent"),
+                        )
+                    except Exception as log_error:
+                        logger.warning(f"Failed to log RFID override: {log_error}")
+                else:
+                    return jsonify({"error": "RFID tag already exists"}), 400
 
         # Update user fields
         if "username" in data:

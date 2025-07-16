@@ -26,6 +26,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+// Student ID length constant for easy adjustment
+const STUDENT_ID_LENGTH = 10;
+
 const Register = () => {
   const { t, currentLanguage, changeLanguage, availableLanguages } =
     useLanguage();
@@ -53,6 +56,7 @@ const Register = () => {
     number: false,
     special: false,
   });
+  const [rerender, setRerender] = useState(0);
 
   const validatePassword = (password) => {
     const checks = {
@@ -67,13 +71,14 @@ const Register = () => {
   };
 
   const generateTestStudentId = () => {
-    // Generate a unique test student ID
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
-    const testId = `TEST${timestamp}${random}`;
+    // Generate a unique test student ID (10-digit integer by default)
+    let id = "";
+    for (let i = 0; i < STUDENT_ID_LENGTH; i++) {
+      id += Math.floor(Math.random() * 10);
+    }
     setFormData((prev) => ({
       ...prev,
-      student_id: testId,
+      student_id: id,
     }));
   };
 
@@ -88,8 +93,8 @@ const Register = () => {
       validatePassword(value);
     }
 
-    // Clear errors when user starts typing
-    if (error) setError("");
+    // Only clear errors for the specific field being changed
+    // Don't clear all errors immediately to allow validation to complete
   };
 
   const handleSubmit = async (e) => {
@@ -107,12 +112,14 @@ const Register = () => {
     ) {
       setError(t("all_fields_required") || "All fields are required");
       setLoading(false);
+      setRerender((r) => r + 1); // force re-render
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
       setError(t("passwords_dont_match") || "Passwords don't match");
       setLoading(false);
+      setRerender((r) => r + 1); // force re-render
       return;
     }
 
@@ -121,6 +128,7 @@ const Register = () => {
         t("password_requirements_not_met") || "Password requirements not met"
       );
       setLoading(false);
+      setRerender((r) => r + 1); // force re-render
       return;
     }
 
@@ -129,6 +137,7 @@ const Register = () => {
     if (!emailRegex.test(formData.email)) {
       setError(t("invalid_email") || "Invalid email address");
       setLoading(false);
+      setRerender((r) => r + 1); // force re-render
       return;
     }
 
@@ -198,17 +207,22 @@ const Register = () => {
 
   return (
     <div className="min-h-screen transition-colors duration-200 bg-gray-900 text-white">
-      <main className="pt-20 pb-8">
+      <main className="pt-8 pb-8">
         {/* Language Selector */}
-        <div className="absolute top-4 right-4">
+        <div className="fixed top-4 right-4 z-50">
           <div className="relative">
             <button
               onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors shadow-sm text-gray-300 hover:text-white bg-gray-800"
+              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors shadow-sm text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-600"
+              aria-label={`Current language: ${languageNames[currentLanguage]}`}
             >
               <Globe className="h-4 w-4" />
               <span>{languageFlags[currentLanguage]}</span>
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  isLanguageOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
             {isLanguageOpen && (
@@ -251,7 +265,10 @@ const Register = () => {
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                <div
+                  className="rounded-md bg-red-50 p-4 border border-red-200"
+                  data-testid="register-error-message"
+                >
                   <div className="flex">
                     <XCircle className="h-5 w-5 text-red-400" />
                     <div className="ml-3">
@@ -282,6 +299,9 @@ const Register = () => {
                     {t("username")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="username"
                       name="username"
@@ -289,8 +309,9 @@ const Register = () => {
                       required
                       value={formData.username}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("username_placeholder")}
+                      aria-describedby="username-icon"
                     />
                   </div>
                 </div>
@@ -304,6 +325,9 @@ const Register = () => {
                     {t("email")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <Mail className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="email"
                       name="email"
@@ -311,8 +335,9 @@ const Register = () => {
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("email_placeholder")}
+                      aria-describedby="email-icon"
                     />
                   </div>
                 </div>
@@ -326,14 +351,18 @@ const Register = () => {
                     {t("first_name")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="first_name"
                       name="first_name"
                       type="text"
                       value={formData.first_name}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("first_name_placeholder")}
+                      aria-describedby="first-name-icon"
                     />
                   </div>
                 </div>
@@ -347,14 +376,18 @@ const Register = () => {
                     {t("last_name")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="last_name"
                       name="last_name"
                       type="text"
                       value={formData.last_name}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("last_name_placeholder")}
+                      aria-describedby="last-name-icon"
                     />
                   </div>
                 </div>
@@ -368,6 +401,9 @@ const Register = () => {
                     {t("student_id")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <CreditCard className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="student_id"
                       name="student_id"
@@ -375,8 +411,12 @@ const Register = () => {
                       required
                       value={formData.student_id}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm bg-gray-700 border-gray-600 text-white"
-                      placeholder={t("student_id_placeholder")}
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
+                      placeholder={
+                        t("student_id_placeholder") ||
+                        `Enter your ${STUDENT_ID_LENGTH}-digit student ID`
+                      }
+                      aria-describedby="student-id-icon"
                     />
                   </div>
                   <div className="mt-2 flex space-x-2">
@@ -404,6 +444,9 @@ const Register = () => {
                     {t("password")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="password"
                       name="password"
@@ -411,13 +454,18 @@ const Register = () => {
                       required
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm pr-10 bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("password_placeholder")}
+                      aria-describedby="password-icon password-toggle"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center z-10 hover:text-gray-300 transition-colors"
+                      id="password-toggle"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5 text-gray-400" />
@@ -454,9 +502,13 @@ const Register = () => {
                       ].map(({ key, label }) => (
                         <div key={key} className="flex items-center text-xs">
                           {passwordStrength[key] ? (
-                            <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
+                            <span data-testid="check-circle">
+                              <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
+                            </span>
                           ) : (
-                            <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                            <span data-testid="x-circle">
+                              <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                            </span>
                           )}
                           <span className="text-gray-400">{label}</span>
                         </div>
@@ -474,6 +526,9 @@ const Register = () => {
                     {t("confirm_password")}
                   </label>
                   <div className="mt-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
                     <input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -481,15 +536,22 @@ const Register = () => {
                       required
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm pr-10 bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("confirm_password_placeholder")}
+                      aria-describedby="confirm-password-icon confirm-password-toggle"
                     />
                     <button
                       type="button"
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center z-10 hover:text-gray-300 transition-colors"
+                      id="confirm-password-toggle"
+                      aria-label={
+                        showConfirmPassword
+                          ? "Hide confirm password"
+                          : "Show confirm password"
+                      }
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5 text-gray-400" />

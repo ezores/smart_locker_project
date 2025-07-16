@@ -12,6 +12,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [rerender, setRerender] = useState(0);
 
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
 
@@ -37,40 +38,67 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-
     if (!username || !password) {
       setError(t("fill_all_fields"));
       setLoading(false);
+      setResult({ success: false, error: t("fill_all_fields") }); // Ensure error state is set for tests
+      setRerender((r) => r + 1); // force re-render
       return;
     }
-
+    setError("");
+    setLoading(true);
     const result = await login(username, password);
     setResult(result);
-
     if (result.success) {
       navigate("/");
     } else {
-      setError(result.error);
-    }
+      // Improved error handling with better messages
+      let errorMessage = result.error;
 
+      // Always use generic message for authentication errors
+      if (
+        result.error === "Invalid credentials" ||
+        result.error.toLowerCase().includes("invalid") ||
+        result.error.toLowerCase().includes("credentials")
+      ) {
+        errorMessage = t("invalid_credentials");
+      } else if (
+        result.error &&
+        (result.error.toLowerCase().includes("network") ||
+          result.error.toLowerCase().includes("fetch"))
+      ) {
+        errorMessage = t("network_error");
+      } else if (
+        result.error &&
+        result.error.toLowerCase().includes("server")
+      ) {
+        errorMessage = t("server_error");
+      } else if (!result.error) {
+        errorMessage = t("login_failed");
+      }
+      setError(errorMessage);
+    }
     setLoading(false);
   };
 
   return (
     <div className="min-h-screen transition-colors duration-200 bg-gray-900 text-white">
-      <main className="pt-20 pb-8">
-        {/* Language Selector */}
-        <div className="absolute top-4 right-4">
+      <main className="pt-8 pb-8">
+        {/* Language Selector - Fixed positioning */}
+        <div className="fixed top-4 right-4 z-50">
           <div className="relative">
             <button
               onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors shadow-sm text-gray-300 hover:text-white bg-gray-800"
+              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors shadow-sm text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-600"
+              aria-label={`Current language: ${languageNames[currentLanguage]}`}
             >
               <Globe className="h-4 w-4" />
               <span>{languageFlags[currentLanguage]}</span>
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  isLanguageOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
             {isLanguageOpen && (
@@ -82,11 +110,12 @@ const Login = () => {
                       changeLanguage(lang);
                       setIsLanguageOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 ${
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 transition-colors ${
                       currentLanguage === lang
                         ? "bg-gray-700 text-white"
                         : "text-gray-300 hover:bg-gray-700 hover:text-white"
                     }`}
+                    aria-label={`Switch to ${languageNames[lang]}`}
                   >
                     <span>{languageFlags[lang]}</span>
                     <span>{languageNames[lang]}</span>
@@ -112,15 +141,27 @@ const Login = () => {
             </div>
 
             <div className="card">
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    <div className="font-medium">{error}</div>
-                    {result?.details && (
-                      <div className="text-sm mt-1 text-red-600">
-                        {result.details}
-                      </div>
-                    )}
+                  <div
+                    className="bg-red-900/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg"
+                    data-testid="login-error-message"
+                    aria-live="assertive"
+                  >
+                    <div className="font-medium flex items-center">
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {error}
+                    </div>
                   </div>
                 )}
 
@@ -132,7 +173,7 @@ const Login = () => {
                     {t("username")}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <User className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -142,8 +183,9 @@ const Login = () => {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("enter_username")}
+                      aria-describedby="username-icon"
                     />
                   </div>
                 </div>
@@ -156,7 +198,7 @@ const Login = () => {
                     {t("password")}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                       <Lock className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -166,18 +208,23 @@ const Login = () => {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
+                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
                       placeholder={t("enter_password")}
+                      aria-describedby="password-icon password-toggle"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      id="password-toggle"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center z-10 hover:text-gray-300 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? (
-                        <EyeOff className="h-5 w-5 text-gray-400" />
+                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                       ) : (
-                        <Eye className="h-5 w-5 text-gray-400" />
+                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                       )}
                     </button>
                   </div>

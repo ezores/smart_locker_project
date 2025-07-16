@@ -56,14 +56,23 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Login error:", error);
       console.error("Error response:", error.response);
+
+      // Always return a generic error message for security
+      // Don't reveal whether username or password is incorrect
+      const isAuthError =
+        error.response?.status === 401 ||
+        error.response?.status === 403 ||
+        error.response?.data?.error?.toLowerCase().includes("password") ||
+        error.response?.data?.error?.toLowerCase().includes("username") ||
+        error.response?.data?.error?.toLowerCase().includes("invalid") ||
+        error.response?.data?.error?.toLowerCase().includes("credentials");
+
       return {
         success: false,
-        error:
-          error.response?.data?.error ||
-          error.response?.data?.details ||
-          error.message ||
-          "Login failed",
-        details: error.response?.data?.details || null,
+        error: isAuthError
+          ? "Invalid credentials"
+          : error.message || "Login failed",
+        details: null, // Don't expose backend details for security
       };
     }
   };

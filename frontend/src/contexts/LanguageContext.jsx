@@ -38,6 +38,12 @@ const translations = {
       "Demo credentials: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "Don't have an account?",
     sign_in: "Sign in",
+    server_error: "Server error. Please try again later.",
+    network_error: "Network error. Please check your connection.",
+    login_failed: "Login failed. Please try again.",
+    invalid_credentials: "Invalid username or password. Please try again.",
+    account_locked: "Account is locked. Please contact administrator.",
+    too_many_attempts: "Too many login attempts. Please try again later.",
 
     // Main Menu
     welcome: "Welcome",
@@ -365,6 +371,14 @@ const translations = {
       "Identifiants de démonstration: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "Vous n'avez pas de compte ?",
     sign_in: "Se connecter",
+    server_error: "Erreur du serveur. Veuillez réessayer plus tard.",
+    network_error: "Erreur de réseau. Veuillez vérifier votre connexion.",
+    login_failed: "Échec de la connexion. Veuillez réessayer.",
+    invalid_credentials:
+      "Nom d'utilisateur ou mot de passe invalide. Veuillez réessayer.",
+    account_locked: "Compte verrouillé. Veuillez contacter l'administrateur.",
+    too_many_attempts:
+      "Trop de tentatives de connexion. Veuillez réessayer plus tard.",
     welcome: "Bienvenue",
     select_option: "Veuillez sélectionner une option",
     borrow_item: "Emprunter un Article",
@@ -689,6 +703,14 @@ const translations = {
       "Credenciales de demostración: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "¿No tienes una cuenta?",
     sign_in: "Iniciar sesión",
+    server_error: "Error del servidor. Por favor intenta más tarde.",
+    network_error: "Error de red. Por favor verifica tu conexión.",
+    login_failed: "Error al iniciar sesión. Por favor intenta de nuevo.",
+    invalid_credentials:
+      "Nombre de usuario o contraseña inválidos. Por favor intenta de nuevo.",
+    account_locked: "Cuenta bloqueada. Por favor contacta al administrador.",
+    too_many_attempts:
+      "Demasiados intentos de inicio de sesión. Por favor intenta más tarde.",
     welcome: "Bienvenido",
     select_option: "Por favor seleccione una opción",
     borrow_item: "Prestar un Artículo",
@@ -1010,6 +1032,14 @@ const translations = {
       "Demo kimlik bilgileri: admin/admin123, student1/student123, manager/manager123, supervisor/supervisor123",
     dont_have_account: "Hesabınız yok mu?",
     sign_in: "Giriş yap",
+    server_error: "Sunucu hatası. Lütfen daha sonra tekrar deneyin.",
+    network_error: "Ağ hatası. Lütfen bağlantınızı kontrol edin.",
+    login_failed: "Giriş başarısız. Lütfen tekrar deneyin.",
+    invalid_credentials:
+      "Geçersiz kullanıcı adı veya şifre. Lütfen tekrar deneyin.",
+    account_locked: "Hesap kilitli. Lütfen yönetici ile iletişime geçin.",
+    too_many_attempts:
+      "Çok fazla giriş denemesi. Lütfen daha sonra tekrar deneyin.",
     welcome: "Hoş Geldiniz",
     select_option: "Lütfen bir seçenek seçin",
     borrow_item: "Eşya Ödünç Al",

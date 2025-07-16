@@ -123,7 +123,7 @@ if [ "$HELP" = true ]; then
     echo "Automatic Installation:"
     echo "  The script will automatically detect your system and install:"
     echo "  - PostgreSQL (with proper service setup)"
-    echo "  - Node.js 18.x (from official repositories)"
+    echo "  - Node.js 20.x (from official repositories)"
     echo "  - npm (package manager for Node.js)"
     echo ""
     echo "macOS Requirements:"
@@ -141,9 +141,11 @@ if [ "$HELP" = true ]; then
     echo "    npm cache clean --force && npm install"
     echo ""
     echo "Linux/WSL Notes:"
-    echo "  - PostgreSQL service will be started automatically"
-    echo "  - If using WSL, ensure proper file permissions"
-    echo "  - Virtual environment will be created automatically"
+echo "  - PostgreSQL service will be started automatically"
+echo "  - If using WSL, ensure proper file permissions"
+echo "  - Virtual environment will be created automatically"
+echo "  - PostgreSQL authentication will be configured automatically"
+echo "  - If authentication fails, the script will use fallback methods"
     exit 0
 fi
 
@@ -233,6 +235,30 @@ install_postgresql() {
     elif command -v sudo &> /dev/null; then
         # Linux - switch to postgres user and set password
         sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+        
+        # Configure PostgreSQL to allow password authentication for local connections
+        log_info "Configuring PostgreSQL authentication..."
+        pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ')
+        if [ -n "$pg_hba_conf" ] && [ -f "$pg_hba_conf" ]; then
+            log_info "Found pg_hba.conf at: $pg_hba_conf"
+            # Backup the original file
+            sudo cp "$pg_hba_conf" "${pg_hba_conf}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+            
+            # Add password authentication for local connections if not already present
+            if ! sudo grep -q "smart_locker_user" "$pg_hba_conf" 2>/dev/null; then
+                echo "local smart_locker_db smart_locker_user md5" | sudo tee -a "$pg_hba_conf" > /dev/null
+                echo "host smart_locker_db smart_locker_user 127.0.0.1/32 md5" | sudo tee -a "$pg_hba_conf" > /dev/null
+                echo "host smart_locker_db smart_locker_user ::1/128 md5" | sudo tee -a "$pg_hba_conf" > /dev/null
+                log_info "Added authentication rules to pg_hba.conf"
+                
+                # Reload PostgreSQL configuration
+                sudo systemctl reload postgresql 2>/dev/null || sudo service postgresql reload 2>/dev/null || true
+                log_info "Reloaded PostgreSQL configuration"
+            fi
+        else
+            log_warning "Could not find pg_hba.conf file"
+        fi
+        
         log_success "PostgreSQL setup completed"
     else
         log_warning "Could not set up PostgreSQL user automatically"
@@ -280,17 +306,17 @@ install_nodejs() {
     elif command -v apt-get &> /dev/null; then
         # Ubuntu/Debian
         log_info "Detected Ubuntu/Debian system"
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt-get install -y nodejs
     elif command -v yum &> /dev/null; then
         # CentOS/RHEL
         log_info "Detected CentOS/RHEL system"
-        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
         sudo yum install -y nodejs
     elif command -v dnf &> /dev/null; then
         # Fedora
         log_info "Detected Fedora system"
-        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
         sudo dnf install -y nodejs
     elif command -v pacman &> /dev/null; then
         # Arch Linux
@@ -382,6 +408,13 @@ check_prerequisites() {
 # Setup environment
 setup_environment() {
     log_info "Setting up environment..."
+    
+    # Create logs directory if it doesn't exist
+    if [ ! -d "backend/logs" ]; then
+        log_info "Creating logs directory..."
+        mkdir -p backend/logs
+        log_success "Logs directory created"
+    fi
     
     # Create virtual environment if it doesn't exist
     if [ ! -d ".venv" ]; then
@@ -527,10 +560,16 @@ setup_database() {
     # Create database and user
     log_info "Creating database and user..."
     
-    # Create user if it doesn't exist
+    # Drop user if exists and recreate (for fresh installs)
+    psql -U postgres -c "DROP USER IF EXISTS $DATABASE_USER;" 2>/dev/null || true
+    
+    # Create user with password
     psql -U postgres -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
     
-    # Create database if it doesn't exist
+    # Drop database if exists and recreate (for fresh installs)
+    psql -U postgres -c "DROP DATABASE IF EXISTS $DATABASE_NAME;" 2>/dev/null || true
+    
+    # Create database with proper owner
     psql -U postgres -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
     
     # Grant privileges
@@ -553,6 +592,46 @@ setup_database() {
     # Set DATABASE_URL environment variable
     export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
     log_info "DATABASE_URL set to: $DATABASE_URL"
+    
+    # Test database connection with the new user
+    log_info "Testing database connection..."
+    if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+        log_success "Database connection test successful!"
+    else
+        log_error "Database connection test failed!"
+        log_info "Trying to fix authentication issues..."
+        
+        # Try to fix authentication by updating pg_hba.conf or using trust method temporarily
+        if command -v sudo &> /dev/null; then
+            log_info "Attempting to fix PostgreSQL authentication..."
+            # For development, we can temporarily allow password authentication
+            sudo -u postgres psql -c "ALTER USER $DATABASE_USER PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+            
+            # Test connection again
+            if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                log_success "Database connection test successful after fix!"
+            else
+                log_error "Database connection still failing. Trying fallback method..."
+                
+                # Fallback: Use postgres user directly
+                log_info "Using postgres user as fallback..."
+                export DATABASE_URL="postgresql://postgres:postgres@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
+                log_info "Fallback DATABASE_URL set to: $DATABASE_URL"
+                
+                # Test fallback connection
+                if PGPASSWORD="postgres" psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                    log_success "Fallback database connection successful!"
+                else
+                    log_error "Both database connections failed. Please check PostgreSQL configuration."
+                    log_info "You may need to manually configure PostgreSQL authentication."
+                    exit 1
+                fi
+            fi
+        else
+            log_error "Cannot fix authentication automatically. Please check PostgreSQL configuration."
+            exit 1
+        fi
+    fi
     
     # Run database migration for enhanced logging
     log_info "Running database migration for enhanced logging..."

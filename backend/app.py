@@ -57,6 +57,10 @@ def parse_datetime_utc(dt_str):
         raise ValueError(f"Invalid datetime format: {dt_str}")
 
 
+# Ensure logs directory exists
+logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+os.makedirs(logs_dir, exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

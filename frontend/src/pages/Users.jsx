@@ -64,7 +64,8 @@ const Users = () => {
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("/api/admin/users", formData);
+      const response = await axios.post("/api/admin/users", formData);
+      console.log("User created successfully:", response.data);
       setShowAddModal(false);
       setFormData({
         username: "",
@@ -73,16 +74,22 @@ const Users = () => {
         rfid_tag: "",
       });
       fetchUsers();
+      alert("User created successfully!");
     } catch (error) {
       console.error("Error adding user:", error);
-      alert(t("failed_add_user"));
+      const errorMessage = error.response?.data?.error || "Failed to add user";
+      alert(`Error: ${errorMessage}`);
     }
   };
 
   const handleEditUser = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`/api/admin/users/${editingUser.id}`, formData);
+      const response = await axios.put(
+        `/api/admin/users/${editingUser.id}`,
+        formData
+      );
+      console.log("User updated successfully:", response.data);
       setEditingUser(null);
       setFormData({
         username: "",
@@ -91,9 +98,12 @@ const Users = () => {
         rfid_tag: "",
       });
       fetchUsers();
+      alert("User updated successfully!");
     } catch (error) {
       console.error("Error updating user:", error);
-      alert(t("failed_update_user"));
+      const errorMessage =
+        error.response?.data?.error || "Failed to update user";
+      alert(`Error: ${errorMessage}`);
     }
   };
 

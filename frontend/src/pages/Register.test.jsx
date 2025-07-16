@@ -219,7 +219,7 @@ describe("Register Component", () => {
       renderRegister();
 
       const passwordInput = screen.getByLabelText(/^password$/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const confirmPasswordInput = screen.getByLabelText("Confirm Password");
       const submitButton = screen.getByRole("button", { name: /register/i });
 
       fireEvent.change(passwordInput, { target: { value: "Password123!" } });
@@ -353,7 +353,7 @@ describe("Register Component", () => {
     test("toggles confirm password visibility", () => {
       renderRegister();
 
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+      const confirmPasswordInput = screen.getByLabelText("Confirm Password");
       const confirmPasswordToggle = screen.getByLabelText(
         "Show confirm password"
       );
@@ -407,7 +407,7 @@ describe("Register Component", () => {
       fireEvent.change(screen.getByLabelText(/^password$/i), {
         target: { value: "StrongPassword123!" },
       });
-      fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      fireEvent.change(screen.getByLabelText("Confirm Password"), {
         target: { value: "StrongPassword123!" },
       });
 
@@ -454,7 +454,7 @@ describe("Register Component", () => {
       fireEvent.change(screen.getByLabelText(/^password$/i), {
         target: { value: "StrongPassword123!" },
       });
-      fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      fireEvent.change(screen.getByLabelText("Confirm Password"), {
         target: { value: "StrongPassword123!" },
       });
 
@@ -505,7 +505,7 @@ describe("Register Component", () => {
       fireEvent.change(screen.getByLabelText(/^password$/i), {
         target: { value: "StrongPassword123!" },
       });
-      fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      fireEvent.change(screen.getByLabelText("Confirm Password"), {
         target: { value: "StrongPassword123!" },
       });
 
@@ -547,7 +547,7 @@ describe("Register Component", () => {
       fireEvent.change(screen.getByLabelText(/^password$/i), {
         target: { value: "StrongPassword123!" },
       });
-      fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      fireEvent.change(screen.getByLabelText("Confirm Password"), {
         target: { value: "StrongPassword123!" },
       });
 
@@ -592,7 +592,7 @@ describe("Register Component", () => {
         "aria-describedby",
         "password-icon password-toggle"
       );
-      expect(screen.getByLabelText(/confirm password/i)).toHaveAttribute(
+      expect(screen.getByLabelText("Confirm Password")).toHaveAttribute(
         "aria-describedby",
         "confirm-password-icon confirm-password-toggle"
       );
@@ -664,7 +664,7 @@ describe("Register Component", () => {
       fireEvent.change(screen.getByLabelText(/^password$/i), {
         target: { value: "StrongPassword123!" },
       });
-      fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      fireEvent.change(screen.getByLabelText("Confirm Password"), {
         target: { value: "StrongPassword123!" },
       });
 

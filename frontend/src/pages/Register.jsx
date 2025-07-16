@@ -264,19 +264,10 @@ const Register = () => {
             </div>
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div
-                  className="rounded-md bg-red-50 p-4 border border-red-200"
-                  data-testid="register-error-message"
-                >
-                  <div className="flex">
-                    <XCircle className="h-5 w-5 text-red-400" />
-                    <div className="ml-3">
-                      <p className="text-sm text-red-800">{error}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Error message */}
+              <div data-testid="register-error-message">
+                {error ? error : null}
+              </div>
 
               {success && (
                 <div className="rounded-md bg-green-50 p-4 border border-green-200">
@@ -518,48 +509,36 @@ const Register = () => {
                 </div>
 
                 {/* Confirm Password */}
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-300"
+                <div className="relative">
+                  <input
+                    aria-label="Confirm Password"
+                    aria-describedby="confirm-password-icon confirm-password-toggle"
+                    className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder={t("confirm_password_placeholder")}
+                    required
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                  />
+                  <button
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center z-10 hover:text-gray-300 transition-colors"
+                    id="confirm-password-toggle"
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
                   >
-                    {t("confirm_password")}
-                  </label>
-                  <div className="mt-1 relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
-                      <Lock className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      required
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="appearance-none relative block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
-                      placeholder={t("confirm_password_placeholder")}
-                      aria-describedby="confirm-password-icon confirm-password-toggle"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center z-10 hover:text-gray-300 transition-colors"
-                      id="confirm-password-toggle"
-                      aria-label={
-                        showConfirmPassword
-                          ? "Hide confirm password"
-                          : "Show confirm password"
-                      }
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5 text-gray-400" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
                 </div>
               </div>
 

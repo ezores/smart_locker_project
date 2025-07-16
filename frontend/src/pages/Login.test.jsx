@@ -73,7 +73,7 @@ describe("Login Page", () => {
       renderLogin();
 
       // Language selector should be visible without scrolling
-      const languageButton = screen.getByRole("button", { name: /🇺🇸/ });
+      const languageButton = screen.getByLabelText(/Current language/i);
       expect(languageButton).toBeInTheDocument();
 
       // Check that it's positioned at the top
@@ -167,7 +167,7 @@ describe("Login Page", () => {
     test("opens language dropdown when clicked", () => {
       renderLogin();
 
-      const languageButton = screen.getByRole("button", { name: /🇺🇸/ });
+      const languageButton = screen.getByLabelText(/Current language/i);
 
       // Initially dropdown should be closed
       expect(screen.queryByText("Français")).not.toBeInTheDocument();
@@ -184,7 +184,7 @@ describe("Login Page", () => {
     test("changes language when different option is selected", () => {
       renderLogin();
 
-      const languageButton = screen.getByLabelText(/current language/i);
+      const languageButton = screen.getByLabelText(/Current language/i);
       fireEvent.click(languageButton);
 
       const frenchOption = screen.getByText("Français");
@@ -201,12 +201,10 @@ describe("Login Page", () => {
       const submitButton = screen.getByRole("button", { name: "Sign In" });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        expect(screen.getByTestId("login-error-message")).toBeInTheDocument();
+        expect(
+          screen.getByText(/fill all fields|all fields are required/i)
+        ).toBeInTheDocument();
       });
-      const errorDiv = screen.getByTestId("login-error-message");
-      expect(errorDiv.textContent.toLowerCase()).toMatch(
-        /fill all fields|all fields are required/
-      );
     });
 
     test("shows error when only username is provided", async () => {
@@ -216,12 +214,10 @@ describe("Login Page", () => {
       const submitButton = screen.getByRole("button", { name: "Sign In" });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        expect(screen.getByTestId("login-error-message")).toBeInTheDocument();
+        expect(
+          screen.getByText(/fill all fields|all fields are required/i)
+        ).toBeInTheDocument();
       });
-      const errorDiv = screen.getByTestId("login-error-message");
-      expect(errorDiv.textContent.toLowerCase()).toMatch(
-        /fill all fields|all fields are required/
-      );
     });
 
     test("shows error when only password is provided", async () => {
@@ -231,12 +227,10 @@ describe("Login Page", () => {
       const submitButton = screen.getByRole("button", { name: "Sign In" });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        expect(screen.getByTestId("login-error-message")).toBeInTheDocument();
+        expect(
+          screen.getByText(/fill all fields|all fields are required/i)
+        ).toBeInTheDocument();
       });
-      const errorDiv = screen.getByTestId("login-error-message");
-      expect(errorDiv.textContent.toLowerCase()).toMatch(
-        /fill all fields|all fields are required/
-      );
     });
   });
 
@@ -259,11 +253,7 @@ describe("Login Page", () => {
       const submitButton = screen.getByRole("button", { name: "Sign In" });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        const errorElements = screen.getAllByText((content) =>
-          content.includes(en.invalid_credentials)
-        );
-        expect(errorElements.length).toBeGreaterThan(0);
-        expect(errorElements[0]).toBeInTheDocument();
+        expect(screen.getByText(en.invalid_credentials)).toBeInTheDocument();
       });
     });
 
@@ -280,11 +270,7 @@ describe("Login Page", () => {
       const submitButton = screen.getByRole("button", { name: "Sign In" });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        const errorElements = screen.getAllByText((content) =>
-          content.includes(en.network_error)
-        );
-        expect(errorElements.length).toBeGreaterThan(0);
-        expect(errorElements[0]).toBeInTheDocument();
+        expect(screen.getByText(en.network_error)).toBeInTheDocument();
       });
     });
 
@@ -299,9 +285,7 @@ describe("Login Page", () => {
       const submitButton = screen.getByRole("button", { name: "Sign In" });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        expect(screen.getByTestId("login-error-message")).toBeInTheDocument();
-        const errorMessage = screen.getByTestId("login-error-message");
-        expect(errorMessage.textContent).toMatch(/login failed|failed/i);
+        expect(screen.getByText(/login failed|failed/i)).toBeInTheDocument();
       });
     });
   });

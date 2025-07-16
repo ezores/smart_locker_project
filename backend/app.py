@@ -1361,12 +1361,12 @@ def update_admin_user(user_id):
 
         # Check if username already exists (if being changed)
         if "username" in data and data["username"] != user.username:
-            if User.query.filter_by(username=data["username"]).first():
+            if User.query.filter(User.username == data["username"], User.id != user_id).first():
                 return jsonify({"error": "Username already exists"}), 400
 
         # Check if RFID tag already exists (if being changed)
         if "rfid_tag" in data and data["rfid_tag"] != user.rfid_tag:
-            if data["rfid_tag"] and User.query.filter_by(rfid_tag=data["rfid_tag"]).first():
+            if data["rfid_tag"] and User.query.filter(User.rfid_tag == data["rfid_tag"], User.id != user_id).first():
                 return jsonify({"error": "RFID tag already exists"}), 400
 
         # Update user fields

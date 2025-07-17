@@ -77,6 +77,58 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithRFID = async (rfidTag) => {
+    try {
+      console.log("Attempting RFID login with tag:", rfidTag);
+      const response = await axios.post("/api/auth/login", {
+        rfid_tag: rfidTag,
+      });
+
+      console.log("RFID Login response:", response.data);
+      const { token, user: userData } = response.data;
+      localStorage.setItem("token", token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setUser(userData);
+      return { success: true, loginMethod: response.data.login_method };
+    } catch (error) {
+      console.error("RFID Login error:", error);
+      console.error("Error response:", error.response);
+
+      return {
+        success: false,
+        error: error.response?.data?.error || "RFID login failed",
+        details: error.response?.data?.details || null,
+      };
+    }
+  };
+
+  const simulateRFIDLogin = async () => {
+    try {
+      console.log("Attempting simulated RFID login");
+      const response = await axios.post("/api/auth/simulate-rfid");
+
+      console.log("Simulated RFID Login response:", response.data);
+      const { token, user: userData } = response.data;
+      localStorage.setItem("token", token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setUser(userData);
+      return {
+        success: true,
+        loginMethod: response.data.login_method,
+        message: response.data.message,
+      };
+    } catch (error) {
+      console.error("Simulated RFID Login error:", error);
+      console.error("Error response:", error.response);
+
+      return {
+        success: false,
+        error: error.response?.data?.error || "RFID simulation failed",
+        details: error.response?.data?.details || null,
+      };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     delete axios.defaults.headers.common["Authorization"];
@@ -86,6 +138,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    loginWithRFID,
+    simulateRFIDLogin,
     logout,
     loading,
   };

@@ -296,21 +296,74 @@ def login():
         try:
             username = request.form.get("username")
             password = request.form.get("password")
+            rfid_tag = request.form.get("rfid_tag")
 
+            # Check if RFID card login
+            if rfid_tag:
+                if not rfid_tag.strip():
+                    return jsonify({"error": "RFID tag cannot be empty"}), 400
+                
+                user = User.query.filter_by(rfid_tag=rfid_tag.strip()).first()
+                
+                if user and user.is_active:
+                    access_token = create_access_token(identity=user.id)
+                    
+                    # Log the RFID login
+                    log_action(
+                        "login", 
+                        user.id, 
+                        details=f"User {user.username} logged in via RFID card",
+                        ip_address=request.remote_addr,
+                        user_agent=request.headers.get('User-Agent')
+                    )
+                    
+                    return jsonify({
+                        "access_token": access_token, 
+                        "user": user.to_dict(),
+                        "login_method": "rfid"
+                    })
+                else:
+                    # Log failed RFID login attempt
+                    log_action(
+                        "login_failed",
+                        details=f"Failed RFID login attempt with tag: {rfid_tag[:8]}...",
+                        ip_address=request.remote_addr,
+                        user_agent=request.headers.get('User-Agent')
+                    )
+                    return jsonify({"error": "Invalid RFID card or inactive user"}), 401
+            
+            # Traditional username/password login
             if not username or not password:
-                return jsonify({"error": "Username and password required"}), 400
+                return jsonify({"error": "Username and password required, or provide RFID tag"}), 400
 
             user = User.query.filter_by(username=username).first()
 
-            if user and user.check_password(password):
+            if user and user.check_password(password) and user.is_active:
                 access_token = create_access_token(identity=user.id)
 
                 # Log the login
-                log_action("login", user.id, details=f"User {username} logged in")
+                log_action(
+                    "login", 
+                    user.id, 
+                    details=f"User {username} logged in via username/password",
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
 
-                return jsonify({"access_token": access_token, "user": user.to_dict()})
+                return jsonify({
+                    "access_token": access_token, 
+                    "user": user.to_dict(),
+                    "login_method": "password"
+                })
             else:
-                return jsonify({"error": "Invalid credentials"}), 401
+                # Log failed login attempt
+                log_action(
+                    "login_failed",
+                    details=f"Failed login attempt for username: {username}",
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                return jsonify({"error": "Invalid credentials or inactive user"}), 401
         except Exception as e:
             logger.error(f"Login error: {e}")
             return jsonify({"error": "Internal server error"}), 500
@@ -333,6 +386,87 @@ def api_logout():
     return jsonify({"message": "Logged out successfully"}), 200
 
 
+@app.route("/api/auth/simulate-rfid", methods=["POST"])
+def simulate_rfid_login():
+    """Simulate RFID card login for demo purposes - logs in as demo admin"""
+    try:
+        # Use the demo admin RFID tag
+        demo_admin_rfid = "RFID_DEMO_ADMIN"
+        
+        user = User.query.filter_by(rfid_tag=demo_admin_rfid).first()
+        
+        if user and user.is_active:
+            access_token = create_access_token(identity=user.id)
+            
+            # Log the simulated RFID login
+            log_action(
+                "login", 
+                user.id, 
+                details=f"User {user.username} logged in via SIMULATED RFID card (DEMO)",
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
+            
+            return jsonify({
+                "token": access_token,
+                "user": user.to_dict(),
+                "login_method": "rfid_simulation",
+                "message": "Demo RFID login successful"
+            })
+        else:
+            # If demo admin doesn't exist, create it with RFID tag
+            if not user:
+                demo_admin = User(
+                    username="demo_admin",
+                    email="demo_admin@ets.com",
+                    first_name="Demo Admin",
+                    last_name="User",
+                    role="admin",
+                    rfid_tag=demo_admin_rfid,
+                    qr_code="QR_DEMO_ADMIN",
+                    is_active=True
+                )
+                demo_admin.set_password("admin123")
+                
+                db.session.add(demo_admin)
+                db.session.commit()
+                
+                access_token = create_access_token(identity=demo_admin.id)
+                
+                # Log the creation and login
+                log_action(
+                    "register",
+                    demo_admin.id,
+                    details="Demo admin user created for RFID simulation",
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                
+                log_action(
+                    "login", 
+                    demo_admin.id, 
+                    details=f"User {demo_admin.username} logged in via SIMULATED RFID card (DEMO - FIRST TIME)",
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                
+                return jsonify({
+                    "token": access_token,
+                    "user": demo_admin.to_dict(),
+                    "login_method": "rfid_simulation",
+                    "message": "Demo admin created and RFID login successful"
+                })
+            else:
+                return jsonify({
+                    "error": "Demo admin account is inactive",
+                    "details": "Please contact administrator"
+                }), 401
+                
+    except Exception as e:
+        logger.error(f"Simulate RFID login error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
 @app.route("/api/lockers/borrow", methods=["POST"])
 @jwt_required()
 def api_borrow_item():
@@ -349,11 +483,51 @@ def api_login():
         data = request.get_json(force=True, silent=True)
         if not data:
             return jsonify({"error": "Malformed JSON"}), 400
+        
         username = data.get("username")
         password = data.get("password")
+        rfid_tag = data.get("rfid_tag")
 
+        # Check if RFID card login
+        if rfid_tag:
+            if not rfid_tag.strip():
+                return jsonify({"error": "RFID tag cannot be empty"}), 400
+            
+            user = User.query.filter_by(rfid_tag=rfid_tag.strip()).first()
+            
+            if user and user.is_active:
+                access_token = create_access_token(identity=user.id)
+                
+                # Log the RFID login
+                log_action(
+                    "login", 
+                    user.id, 
+                    details=f"User {user.username} logged in via RFID card (API)",
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                
+                return jsonify({
+                    "token": access_token,
+                    "user": user.to_dict(),
+                    "login_method": "rfid"
+                })
+            else:
+                # Log failed RFID login attempt
+                log_action(
+                    "login_failed",
+                    details=f"Failed RFID login attempt with tag: {rfid_tag[:8]}... (API)",
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                return jsonify({
+                    "error": "Invalid RFID card or inactive user",
+                    "details": "RFID card not found or user account is inactive"
+                }), 401
+
+        # Traditional username/password login
         if not username or not password:
-            return jsonify({"error": "Username and password required"}), 400
+            return jsonify({"error": "Username and password required, or provide RFID tag"}), 400
 
         user = User.query.filter_by(username=username).first()
 
@@ -361,7 +535,7 @@ def api_login():
             # Log failed login attempt - user not found
             log_action(
                 "login_failed", 
-                details=f"Failed login attempt for username '{username}' - User not found",
+                details=f"Failed login attempt for username '{username}' - User not found (API)",
                 ip_address=request.remote_addr,
                 user_agent=request.headers.get('User-Agent')
             )
@@ -380,7 +554,7 @@ def api_login():
             log_action(
                 "login_failed", 
                 user_id=user.id,
-                details=f"Failed login attempt for user '{username}' - Invalid password",
+                details=f"Failed login attempt for user '{username}' - Invalid password (API)",
                 ip_address=request.remote_addr,
                 user_agent=request.headers.get('User-Agent')
             )
@@ -394,12 +568,31 @@ def api_login():
                 401,
             )
 
+        if not user.is_active:
+            # Log failed login attempt - inactive user
+            log_action(
+                "login_failed", 
+                user_id=user.id,
+                details=f"Failed login attempt for user '{username}' - User account inactive (API)",
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Account inactive",
+                        "details": "Your account has been deactivated",
+                    }
+                ),
+                401,
+            )
+
         access_token = create_access_token(identity=user.id)
         # Log successful login
         log_action(
             "login", 
             user.id, 
-            details=f"User '{username}' logged in successfully",
+            details=f"User '{username}' logged in successfully (API)",
             ip_address=request.remote_addr,
             user_agent=request.headers.get('User-Agent')
         )
@@ -407,6 +600,7 @@ def api_login():
             {
                 "token": access_token,  # Frontend expects 'token' not 'access_token'
                 "user": user.to_dict(),
+                "login_method": "password"
             }
         )
     except Exception as e:

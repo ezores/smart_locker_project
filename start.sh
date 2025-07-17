@@ -237,7 +237,13 @@ install_postgresql() {
     # Initialize PostgreSQL database cluster if needed (for fresh installs)
     if command -v sudo &> /dev/null; then
         # Check if PostgreSQL data directory exists
-        pg_data_dir=$(sudo -u postgres psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        if command -v brew &> /dev/null; then
+            # macOS - use current user
+            pg_data_dir=$(psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        else
+            # Linux - use postgres user
+            pg_data_dir=$(sudo -u postgres psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        fi
         if [ -z "$pg_data_dir" ]; then
             log_info "PostgreSQL data directory not found. Initializing database cluster..."
             sudo -u postgres initdb -D /var/lib/postgresql/data 2>/dev/null || sudo -u postgres initdb 2>/dev/null || true
@@ -257,22 +263,40 @@ install_postgresql() {
         # Linux - configure for automatic operation without password prompts
         
         # Set password for postgres user
-        sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
-        
-        # Configure PostgreSQL to allow trust authentication for local connections
-        log_info "Configuring PostgreSQL authentication for local connections..."
-        pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        if command -v brew &> /dev/null; then
+            # macOS - use current user
+            psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+            
+            # Configure PostgreSQL to allow trust authentication for local connections
+            log_info "Configuring PostgreSQL authentication for local connections..."
+            pg_hba_conf=$(psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        else
+            # Linux - use postgres user
+            sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+            
+            # Configure PostgreSQL to allow trust authentication for local connections
+            log_info "Configuring PostgreSQL authentication for local connections..."
+            pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+        fi
         
         if [ -n "$pg_hba_conf" ] && [ -f "$pg_hba_conf" ]; then
             log_info "Found pg_hba.conf at: $pg_hba_conf"
             # Backup the original file
-            sudo cp "$pg_hba_conf" "${pg_hba_conf}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+            if command -v brew &> /dev/null; then
+                # macOS - use current user to backup the file (Homebrew runs as current user)
+                cp "$pg_hba_conf" "${pg_hba_conf}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+            else
+                # Linux - use sudo cp
+                sudo cp "$pg_hba_conf" "${pg_hba_conf}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+            fi
             
             # Configure for automatic operation - allow trust for local connections
             log_info "Configuring pg_hba.conf for automatic operation..."
             
             # Create a new pg_hba.conf with proper authentication
-            sudo tee "$pg_hba_conf" > /dev/null << 'EOF'
+            if command -v brew &> /dev/null; then
+                # macOS - use current user to write the file (Homebrew runs as current user)
+                tee "$pg_hba_conf" > /dev/null << 'EOF'
 # PostgreSQL Client Authentication Configuration File
 # ===============================================
 
@@ -293,6 +317,30 @@ local   replication     all                                     trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
 EOF
+            else
+                # Linux - use sudo tee
+                sudo tee "$pg_hba_conf" > /dev/null << 'EOF'
+# PostgreSQL Client Authentication Configuration File
+# ===============================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+EOF
+            fi
             
             log_info "Configured pg_hba.conf for automatic operation"
             
@@ -318,10 +366,18 @@ EOF
                     if [ -f "$file" ]; then
                         log_info "Found pg_hba.conf at: $file"
                         # Backup and configure
-                        sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                        if command -v brew &> /dev/null; then
+                            # macOS - use current user to backup the file (Homebrew runs as current user)
+                            cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                        else
+                            # Linux - use sudo cp
+                            sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                        fi
                         
                         # Configure for automatic operation
-                        sudo tee "$file" > /dev/null << 'EOF'
+                        if command -v brew &> /dev/null; then
+                            # macOS - use current user to write the file (Homebrew runs as current user)
+                            tee "$file" > /dev/null << 'EOF'
 # PostgreSQL Client Authentication Configuration File
 # ===============================================
 
@@ -342,6 +398,30 @@ local   replication     all                                     trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
 EOF
+                        else
+                            # Linux - use sudo tee
+                            sudo tee "$file" > /dev/null << 'EOF'
+# PostgreSQL Client Authentication Configuration File
+# ===============================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+EOF
+                        fi
                         
                         log_info "Configured pg_hba.conf at $file for automatic operation"
                         sudo systemctl reload postgresql 2>/dev/null || sudo service postgresql reload 2>/dev/null || true
@@ -477,11 +557,22 @@ ensure_postgresql_auto_config() {
                 pg_hba_found=true
                 
                 # Backup the original file
-                sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                if command -v brew &> /dev/null; then
+                    # macOS - use current user to backup the file (Homebrew runs as current user)
+                    cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                else
+                    # Linux - use sudo cp
+                    sudo cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+                fi
                 
                 # Configure for automatic operation with trust authentication
                 log_info "Configuring $file for automatic operation..."
-                sudo tee "$file" > /dev/null << 'EOF'
+                
+                # Use different approach for macOS vs Linux
+                if command -v brew &> /dev/null; then
+                    # macOS - use current user to write the file (Homebrew runs as current user)
+                    log_info "Using current user to configure pg_hba.conf on macOS..."
+                    tee "$file" > /dev/null << 'EOF'
 # PostgreSQL Client Authentication Configuration File
 # ===============================================
 
@@ -502,6 +593,30 @@ local   replication     all                                     trust
 host    replication     all             127.0.0.1/32            trust
 host    replication     all             ::1/128                 trust
 EOF
+                else
+                    # Linux - use sudo tee
+                    sudo tee "$file" > /dev/null << 'EOF'
+# PostgreSQL Client Authentication Configuration File
+# ===============================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     trust
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+# IPv6 local connections:
+host    all             all             ::1/128                 trust
+
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+EOF
+                fi
                 
                 log_info "Configured $file for automatic operation"
                 
@@ -510,6 +625,9 @@ EOF
                     sudo systemctl reload postgresql 2>/dev/null || sudo systemctl reload postgresql@14 2>/dev/null || true
                 elif command -v service &> /dev/null; then
                     sudo service postgresql reload 2>/dev/null || true
+                elif command -v brew &> /dev/null; then
+                    # macOS - restart PostgreSQL service
+                    brew services restart postgresql@14 2>/dev/null || brew services restart postgresql 2>/dev/null || true
                 fi
                 
                 # Wait for configuration to take effect
@@ -527,10 +645,20 @@ EOF
     fi
     
     # Test the configuration
-    if sudo -u postgres psql -c "SELECT 1;" > /dev/null 2>&1; then
-        log_success "PostgreSQL trust authentication is working"
+    if command -v brew &> /dev/null; then
+        # macOS - test with current user
+        if psql -c "SELECT 1;" > /dev/null 2>&1; then
+            log_success "PostgreSQL trust authentication is working"
+        else
+            log_warning "PostgreSQL trust authentication may not be working properly"
+        fi
     else
-        log_warning "PostgreSQL trust authentication may not be working properly"
+        # Linux - test with postgres user
+        if sudo -u postgres psql -c "SELECT 1;" > /dev/null 2>&1; then
+            log_success "PostgreSQL trust authentication is working"
+        else
+            log_warning "PostgreSQL trust authentication may not be working properly"
+        fi
     fi
 }
 
@@ -738,17 +866,29 @@ setup_database() {
     # Ensure PostgreSQL is properly configured for automatic operation
     ensure_postgresql_auto_config
     
-    # Try to connect as postgres user to verify basic setup
-    if ! sudo -u postgres psql -c "SELECT version();" > /dev/null 2>&1; then
+            # Try to connect as postgres user to verify basic setup
+        if command -v brew &> /dev/null; then
+            # macOS - test with current user
+            if ! psql -c "SELECT version();" > /dev/null 2>&1; then
+        else
+            # Linux - test with postgres user
+            if ! sudo -u postgres psql -c "SELECT version();" > /dev/null 2>&1; then
+        fi
         log_warning "Cannot connect as postgres user. This might indicate a PostgreSQL configuration issue."
         log_info "Attempting to fix basic PostgreSQL setup..."
         
         # Try to initialize PostgreSQL if it's not properly set up
         if command -v initdb &> /dev/null; then
             log_info "Initializing PostgreSQL database cluster..."
-            sudo -u postgres initdb -D /var/lib/postgresql/data 2>/dev/null || sudo -u postgres initdb 2>/dev/null || true
-            sudo systemctl restart postgresql 2>/dev/null || true
-            sleep 3
+            if command -v brew &> /dev/null; then
+                # macOS - Homebrew PostgreSQL doesn't need manual initialization
+                log_info "Homebrew PostgreSQL is already initialized, skipping initdb..."
+            else
+                # Linux - use sudo -u postgres
+                sudo -u postgres initdb -D /var/lib/postgresql/data 2>/dev/null || sudo -u postgres initdb 2>/dev/null || true
+                sudo systemctl restart postgresql 2>/dev/null || true
+                sleep 3
+            fi
         fi
     else
         log_success "Basic PostgreSQL connectivity verified"
@@ -822,43 +962,78 @@ setup_database() {
     # Create database and user
     log_info "Creating database and user..."
     
-    # Drop user if exists and recreate (for fresh installs)
-    sudo -u postgres psql -c "DROP USER IF EXISTS $DATABASE_USER;" 2>/dev/null || true
-    
-    # Create user with password
-    sudo -u postgres psql -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
-    
-    # Drop database if exists and recreate (for fresh installs)
-    sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DATABASE_NAME;" 2>/dev/null || true
-    
-    # Create database with proper owner
-    sudo -u postgres psql -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
-    
-    # Grant privileges
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
-    sudo -u postgres psql -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
-    
-    # Grant table and sequence privileges
-    sudo -u postgres psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
-    sudo -u postgres psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
-    sudo -u postgres psql -d $DATABASE_NAME -c "GRANT CREATE ON SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
-    sudo -u postgres psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DATABASE_USER;" 2>/dev/null || true
-    sudo -u postgres psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DATABASE_USER;" 2>/dev/null || true
-    
-    # Grant table ownership for existing tables
-    sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LOOP EXECUTE 'ALTER TABLE ' || quote_ident(r.table_name) || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
-    
-    # Grant sequence ownership for existing sequences
-    sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP EXECUTE 'ALTER SEQUENCE ' || r.sequence_name || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+    if command -v brew &> /dev/null; then
+        # macOS - use current user for database operations
+        log_info "Using current user for database operations on macOS..."
+        
+        # Drop user if exists and recreate (for fresh installs)
+        psql -c "DROP USER IF EXISTS $DATABASE_USER;" 2>/dev/null || true
+        
+        # Create user with password
+        psql -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+        
+        # Drop database if exists and recreate (for fresh installs)
+        psql -c "DROP DATABASE IF EXISTS $DATABASE_NAME;" 2>/dev/null || true
+        
+        # Create database with proper owner
+        psql -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
+        
+        # Grant privileges
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
+        psql -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
+        
+        # Grant table and sequence privileges
+        psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+        psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+        psql -d $DATABASE_NAME -c "GRANT CREATE ON SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+        psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DATABASE_USER;" 2>/dev/null || true
+        psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DATABASE_USER;" 2>/dev/null || true
+        
+        # Grant table ownership for existing tables
+        psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LOOP EXECUTE 'ALTER TABLE ' || quote_ident(r.table_name) || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+        
+        # Grant sequence ownership for existing sequences
+        psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP EXECUTE 'ALTER SEQUENCE ' || r.sequence_name || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+    else
+        # Linux - use sudo -u postgres
+        # Drop user if exists and recreate (for fresh installs)
+        sudo -u postgres psql -c "DROP USER IF EXISTS $DATABASE_USER;" 2>/dev/null || true
+        
+        # Create user with password
+        sudo -u postgres psql -c "CREATE USER $DATABASE_USER WITH PASSWORD '$DATABASE_PASSWORD';" 2>/dev/null || true
+        
+        # Drop database if exists and recreate (for fresh installs)
+        sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DATABASE_NAME;" 2>/dev/null || true
+        
+        # Create database with proper owner
+        sudo -u postgres psql -c "CREATE DATABASE $DATABASE_NAME OWNER $DATABASE_USER;" 2>/dev/null || true
+        
+        # Grant privileges
+        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;" 2>/dev/null || true
+        sudo -u postgres psql -c "ALTER USER $DATABASE_USER CREATEDB;" 2>/dev/null || true
+        
+        # Grant table and sequence privileges
+        sudo -u postgres psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+        sudo -u postgres psql -d $DATABASE_NAME -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+        sudo -u postgres psql -d $DATABASE_NAME -c "GRANT CREATE ON SCHEMA public TO $DATABASE_USER;" 2>/dev/null || true
+        sudo -u postgres psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DATABASE_USER;" 2>/dev/null || true
+        sudo -u postgres psql -d $DATABASE_NAME -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DATABASE_USER;" 2>/dev/null || true
+        
+        # Grant table ownership for existing tables
+        sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LOOP EXECUTE 'ALTER TABLE ' || quote_ident(r.table_name) || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+        
+        # Grant sequence ownership for existing sequences
+        sudo -u postgres psql -d $DATABASE_NAME -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP EXECUTE 'ALTER SEQUENCE ' || r.sequence_name || ' OWNER TO $DATABASE_USER;'; END LOOP; END \$\$;" 2>/dev/null || true
+    fi
     
     # Set DATABASE_URL environment variable based on successful connection method
     # We'll set this after testing the connection
     log_info "Testing database connection to determine best DATABASE_URL..."
     
-    # Test database connection with multiple methods
-    log_info "Testing database connection..."
+    # Test database connection with trust authentication
+    log_info "Testing database connection with trust authentication..."
     
-    # Method 1: Try with postgres user (using trust authentication) - this should work
+    # Method 1: Try with postgres user (using trust authentication)
     log_info "Testing connection with postgres user..."
     if psql -h $DATABASE_HOST -p $DATABASE_PORT -U postgres -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
         log_success "Database connection successful with postgres user!"
@@ -875,19 +1050,30 @@ setup_database() {
         else
             log_warning "local socket connection failed, trying sudo -u postgres..."
             
-            # Method 3: Try with sudo -u postgres (fallback)
-            if sudo -u postgres psql -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                log_success "Database connection successful with sudo -u postgres!"
-                export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
-                log_info "Using sudo postgres connection: $DATABASE_URL"
+            # Method 3: Try with sudo -u postgres (final fallback)
+            if command -v brew &> /dev/null; then
+                # macOS - try with current user
+                if psql -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                    log_success "Database connection successful with current user!"
+                    export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
+                    log_info "Using current user connection: $DATABASE_URL"
+                else
+                    log_error "All database connection methods failed!"
+                    log_info "PostgreSQL troubleshooting information:"
+                    log_info "1. Check if PostgreSQL is running: brew services list | grep postgresql"
+                    log_info "2. Check PostgreSQL logs: tail -f /opt/homebrew/var/log/postgresql@14.log"
+                    log_info "3. Try connecting manually: psql"
+                    log_info "4. Check pg_hba.conf configuration"
+                    log_info "5. Check if trust authentication is properly configured"
+                    log_info "6. Try: brew services restart postgresql@14"
+                    exit 1
+                fi
             else
-                log_warning "sudo postgres connection failed, trying smart_locker_user with password..."
-                
-                # Method 4: Try with smart_locker_user and password (last resort)
-                if PGPASSWORD="$DATABASE_PASSWORD" psql -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
-                    log_success "Database connection successful with smart_locker_user and password!"
-                    export DATABASE_URL="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
-                    log_info "Using smart_locker_user with password: $DATABASE_URL"
+                # Linux - try with sudo -u postgres
+                if sudo -u postgres psql -d $DATABASE_NAME -c "SELECT 1;" > /dev/null 2>&1; then
+                    log_success "Database connection successful with sudo -u postgres!"
+                    export DATABASE_URL="postgresql://postgres@localhost:$DATABASE_PORT/$DATABASE_NAME"
+                    log_info "Using sudo postgres connection: $DATABASE_URL"
                 else
                     log_error "All database connection methods failed!"
                     log_info "PostgreSQL troubleshooting information:"
@@ -896,8 +1082,20 @@ setup_database() {
                     log_info "3. Try connecting manually: sudo -u postgres psql"
                     log_info "4. Check pg_hba.conf configuration"
                     log_info "5. Check if trust authentication is properly configured"
+                    log_info "6. Try: sudo systemctl restart postgresql"
                     exit 1
                 fi
+            fi
+            else
+                log_error "All database connection methods failed!"
+                log_info "PostgreSQL troubleshooting information:"
+                log_info "1. Check if PostgreSQL is running: sudo systemctl status postgresql"
+                log_info "2. Check PostgreSQL logs: sudo journalctl -u postgresql"
+                log_info "3. Try connecting manually: sudo -u postgres psql"
+                log_info "4. Check pg_hba.conf configuration"
+                log_info "5. Check if trust authentication is properly configured"
+                log_info "6. Try: sudo systemctl restart postgresql"
+                exit 1
             fi
         fi
     fi

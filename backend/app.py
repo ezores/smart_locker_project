@@ -2172,13 +2172,8 @@ if __name__ == "__main__":
     # Create logs directory if it doesn't exist
     os.makedirs("logs", exist_ok=True)
 
-    # Only do this in dev/demo/test/minimal mode
-    if (
-        "--demo" in sys.argv
-        or "--reset-db" in sys.argv
-        or "--test" in sys.argv
-        or "--minimal" in sys.argv
-    ):
+    # Only reset database if explicitly requested with --reset-db
+    if "--reset-db" in sys.argv:
         with app.app_context():
             db.drop_all()
             db.create_all()
@@ -2218,7 +2213,7 @@ if __name__ == "__main__":
                 db.session.commit()
                 print(f"Created 40 empty lockers for minimal mode")
             else:
-                generate_dummy_data()
+                generate_dummy_data(force_regenerate=args.reset_db)
         print("Database initialization complete!")
     elif args.demo:
         print("Loading demo data...")
@@ -2237,7 +2232,7 @@ if __name__ == "__main__":
                 db.session.add(admin)
                 db.session.commit()
                 print("Created admin user")
-            generate_dummy_data()
+            generate_dummy_data(force_regenerate=False)
         print("Demo data loaded!")
     elif args.minimal:
         print("Minimal mode: only admin user and empty lockers.")

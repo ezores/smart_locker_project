@@ -70,7 +70,7 @@ class RS485Controller:
                 frame = generate_rs485_frame(address, locker_number)
             else:
                 # Fallback to simple mapping if no address/numbers provided
-                address = (locker_id - 1) % 32
+                address = ((locker_id - 1) % 32) + 1  # Dipswitch starts at 1
                 locker_number = ((locker_id - 1) % 24) + 1
                 frame = generate_rs485_frame(address, locker_number)
 
@@ -123,7 +123,7 @@ class RS485Controller:
                 frame = generate_rs485_frame(address, locker_number)
             else:
                 # Fallback to simple mapping if no address/numbers provided
-                address = (locker_id - 1) % 32
+                address = ((locker_id - 1) % 32) + 1  # Dipswitch starts at 1
                 locker_number = ((locker_id - 1) % 24) + 1
                 frame = generate_rs485_frame(address, locker_number)
 
@@ -262,7 +262,7 @@ def access_reservation_locker(
             frame = generate_rs485_frame(address, locker_number)
         else:
             # Fallback to simple mapping if no address/numbers provided
-            address = (locker_id - 1) % 32
+            address = ((locker_id - 1) % 32) + 1  # Dipswitch starts at 1
             locker_number = ((locker_id - 1) % 24) + 1
             frame = generate_rs485_frame(address, locker_number)
 
@@ -312,7 +312,7 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
     Protocol: 5A5A 00 [ADDRESS] 00 04 00 01 [LOCKER_NUMBER] [CHECKSUM]
 
     Args:
-        address: Address card (0-31 dipswitch)
+        address: Address card (1-32 dipswitch, where 1 is the first dipswitch)
         locker_number: Number of locker (1-24)
 
     Returns:
@@ -321,7 +321,7 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
     # Protocol structure:
     # Start frame: 5A5A (fixed)
     # Reserved: 00 (fixed)
-    # Address card: [ADDRESS] (0-31)
+    # Address card: [ADDRESS] (1-32, where 1 is the first dipswitch)
     # Reserved: 00 (fixed)
     # Reserved: 04 (fixed)
     # Reserved: 00 (fixed)
@@ -330,8 +330,8 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
     # Checksum: XOR of all previous octets
 
     # Validate inputs
-    if not (0 <= address <= 31):
-        raise ValueError("Address must be between 0 and 31")
+    if not (1 <= address <= 32):
+        raise ValueError("Address must be between 1 and 32 (dipswitch numbering starts at 1)")
     if not (1 <= locker_number <= 24):
         raise ValueError("Locker number must be between 1 and 24")
 
@@ -340,7 +340,7 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
         0x5A,  # Start frame high byte
         0x5A,  # Start frame low byte
         0x00,  # Reserved
-        address,  # Address card (0-31)
+        address,  # Address card (1-32)
         0x00,  # Reserved
         0x04,  # Reserved
         0x00,  # Reserved
@@ -360,7 +360,7 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
     frame_hex = "".join([f"{octet:02X}" for octet in frame_octets])
 
     logger.info(
-        f"Generated RS485 frame: {frame_hex} (Address: {address}, Locker: {locker_number})"
+        f"Generated RS485 frame: {frame_hex} (Address: {address}, Locker: {locker_number}, Checksum: {checksum:02X})"
     )
 
     return frame_hex
@@ -379,7 +379,7 @@ def generate_locker_command_frame(locker_id: int, action: str = "open") -> str:
     """
     # For now, we'll use a simple mapping
     # In a real implementation, you'd get the RS485 address and locker number from the database
-    address = (locker_id - 1) % 32  # Simple mapping to 0-31 range
+    address = ((locker_id - 1) % 32) + 1  # Dipswitch starts at 1
     locker_number = ((locker_id - 1) % 24) + 1  # Simple mapping to 1-24 range
 
     frame = generate_rs485_frame(address, locker_number)
@@ -387,3 +387,16 @@ def generate_locker_command_frame(locker_id: int, action: str = "open") -> str:
     logger.info(f"Generated {action} command for locker {locker_id}: {frame}")
 
     return frame
+
+
+def _test_rs485_frame_generation():
+    # Locker 14, should produce: 5A5A0001000400010E0A
+    address = 1
+    locker_number = 14
+    expected_frame = "5A5A0001000400010E0A"
+    frame = generate_rs485_frame(address, locker_number)
+    assert frame == expected_frame, f"Expected {expected_frame}, got {frame}"
+    print(f"Test passed: {frame} == {expected_frame}")
+
+if __name__ == "__main__":
+    _test_rs485_frame_generation()

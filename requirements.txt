@@ -17,6 +17,4 @@ reportlab==4.4.2
 pyinstaller==6.3.0
 pyserial==3.5
 pytz==2023.3
-python-dateutil==2.8.2
-# Additional dependencies for RS485 diagnostics and testing
-serial-tools==0.1.0 
+python-dateutil==2.8.2 

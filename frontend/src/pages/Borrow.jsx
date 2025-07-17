@@ -10,6 +10,7 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 import { getItems, getLockers, borrowItem } from "../utils/api";
 
@@ -29,6 +30,8 @@ const Borrow = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
+  const [lockerSearchTerm, setLockerSearchTerm] = useState("");
 
   useEffect(() => {
     fetchItems();
@@ -273,7 +276,10 @@ const Borrow = () => {
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   placeholder={t("enter_user_id")}
-                  className={`flex-1 px-3 py-2 border rounded-md ${
+                  autoComplete="off"
+                  inputMode="text"
+                  enterKeyHint="done"
+                  className={`flex-1 px-3 py-2 border rounded-md touch-manipulation ${
                     isDarkMode
                       ? "bg-gray-700 border-gray-600 text-white"
                       : "bg-white border-gray-300 text-gray-900"
@@ -307,39 +313,87 @@ const Borrow = () => {
               {t("choose_item_borrow")}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleItemSelect(item)}
-                className={`p-4 border rounded-lg transition-colors text-left ${
+
+          {/* Search Input */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t("search_items")}
+                value={itemSearchTerm}
+                onChange={(e) => setItemSearchTerm(e.target.value)}
+                autoComplete="off"
+                inputMode="text"
+                enterKeyHint="search"
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg touch-manipulation ${
                   isDarkMode
-                    ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
-                    : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                }`}
+              />
+            </div>
+          </div>
+
+          {(() => {
+            const filteredItems = items.filter(
+              (item) =>
+                item.name
+                  .toLowerCase()
+                  .includes(itemSearchTerm.toLowerCase()) ||
+                item.description
+                  .toLowerCase()
+                  .includes(itemSearchTerm.toLowerCase())
+            );
+
+            return filteredItems.length === 0 && itemSearchTerm ? (
+              <div
+                className={`text-center py-8 ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <Package className="h-6 w-6 text-primary-600" />
-                  <div>
-                    <h3
-                      className={`font-medium ${
-                        isDarkMode ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      {item.name}
-                    </h3>
-                    <p
-                      className={`text-sm ${
-                        isDarkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">
+                  {t("no_items_found")}
+                </p>
+                <p className="text-sm">{t("try_different_search")}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleItemSelect(item)}
+                    className={`p-4 border rounded-lg transition-colors text-left ${
+                      isDarkMode
+                        ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
+                        : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Package className="h-6 w-6 text-primary-600" />
+                      <div>
+                        <h3
+                          className={`font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {item.name}
+                        </h3>
+                        <p
+                          className={`text-sm ${
+                            isDarkMode ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -359,6 +413,27 @@ const Borrow = () => {
             </p>
           </div>
 
+          {/* Search Input */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t("search_lockers")}
+                value={lockerSearchTerm}
+                onChange={(e) => setLockerSearchTerm(e.target.value)}
+                autoComplete="off"
+                inputMode="text"
+                enterKeyHint="search"
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg touch-manipulation ${
+                  isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                }`}
+              />
+            </div>
+          </div>
+
           {/* Locker with Selected Item */}
           {selectedItem && selectedItem.locker_id && (
             <div className="mb-8">
@@ -374,7 +449,13 @@ const Borrow = () => {
                   .filter(
                     (locker) =>
                       locker.id === selectedItem.locker_id &&
-                      locker.status === "active"
+                      locker.status === "active" &&
+                      (locker.number
+                        .toLowerCase()
+                        .includes(lockerSearchTerm.toLowerCase()) ||
+                        locker.location
+                          .toLowerCase()
+                          .includes(lockerSearchTerm.toLowerCase()))
                   )
                   .map((locker) => (
                     <button
@@ -441,7 +522,13 @@ const Borrow = () => {
                   .filter(
                     (locker) =>
                       locker.status === "active" &&
-                      locker.id !== selectedItem?.locker_id
+                      locker.id !== selectedItem?.locker_id &&
+                      (locker.number
+                        .toLowerCase()
+                        .includes(lockerSearchTerm.toLowerCase()) ||
+                        locker.location
+                          .toLowerCase()
+                          .includes(lockerSearchTerm.toLowerCase()))
                   )
                   .map((locker) => (
                     <div
@@ -517,37 +604,47 @@ const Borrow = () => {
                   {t(`${status}_lockers`)} ({statusLockers.length})
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {statusLockers.map((locker) => (
-                    <div
-                      key={locker.id}
-                      className={`p-4 border rounded-lg text-left opacity-60 cursor-not-allowed ${colors.border} ${colors.bg}`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <MapPin className={`h-6 w-6 ${colors.icon}`} />
-                        <div>
-                          <h3
-                            className={`font-medium ${
-                              isDarkMode ? "text-gray-300" : "text-gray-700"
-                            }`}
-                          >
-                            {t("locker")} {locker.number}
-                          </h3>
-                          <p
-                            className={`text-sm ${
-                              isDarkMode ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            {locker.location}
-                          </p>
-                          <span
-                            className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full ${colors.badge}`}
-                          >
-                            {t(status)}
-                          </span>
+                  {statusLockers
+                    .filter(
+                      (locker) =>
+                        locker.number
+                          .toLowerCase()
+                          .includes(lockerSearchTerm.toLowerCase()) ||
+                        locker.location
+                          .toLowerCase()
+                          .includes(lockerSearchTerm.toLowerCase())
+                    )
+                    .map((locker) => (
+                      <div
+                        key={locker.id}
+                        className={`p-4 border rounded-lg text-left opacity-60 cursor-not-allowed ${colors.border} ${colors.bg}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <MapPin className={`h-6 w-6 ${colors.icon}`} />
+                          <div>
+                            <h3
+                              className={`font-medium ${
+                                isDarkMode ? "text-gray-300" : "text-gray-700"
+                              }`}
+                            >
+                              {t("locker")} {locker.number}
+                            </h3>
+                            <p
+                              className={`text-sm ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              {locker.location}
+                            </p>
+                            <span
+                              className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full ${colors.badge}`}
+                            >
+                              {t(status)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             );

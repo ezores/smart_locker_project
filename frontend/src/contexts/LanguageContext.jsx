@@ -104,6 +104,9 @@ const translations = {
     items_management_description:
       "Manage equipment and tools in the locker system",
     search_items: "Search items...",
+    search_borrowed_items: "Search borrowed items...",
+    no_items_found: "No items found",
+    try_different_search: "Try a different search term",
     all_lockers: "All Lockers",
     add_item: "Add Item",
     edit_item: "Edit Item",
@@ -459,6 +462,9 @@ const translations = {
     items_management_description:
       "Gérer les équipements et outils dans le système de casiers",
     search_items: "Rechercher des articles...",
+    search_borrowed_items: "Rechercher des articles empruntés...",
+    no_items_found: "Aucun article trouvé",
+    try_different_search: "Essayez un terme de recherche différent",
     all_lockers: "Tous les Casiers",
     confirm_delete_item: "Êtes-vous sûr de vouloir supprimer cet article ?",
     failed_add_item: "Échec de l'ajout de l'article",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -6,11 +6,10 @@ import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   CreditCard,
   Package,
-  MapPin,
   CheckCircle,
   AlertCircle,
-  User,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 import { getBorrows, returnItem } from "../utils/api";
 
@@ -20,14 +19,13 @@ const Return = () => {
   const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [rfidCard, setRfidCard] = useState("");
   const [userId, setUserId] = useState("");
-  const [useUserId, setUseUserId] = useState(false);
   const [borrowedItems, setBorrowedItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
 
   // Don't auto-fetch on load, wait for user interaction like in Borrow page
   // useEffect(() => {
@@ -39,17 +37,12 @@ const Return = () => {
 
   const handleRfidScan = () => {
     // Simulate RFID scan for UX flow, but use authenticated user
-    const mockRfid =
-      "RFID_" + Math.random().toString(36).substr(2, 9).toUpperCase();
-    setRfidCard(mockRfid);
-    setUseUserId(false);
     fetchBorrowedItems();
     setStep(2);
   };
 
   const handleUserIdSubmit = () => {
     if (userId.trim()) {
-      setUseUserId(true);
       fetchBorrowedItems();
       setStep(2);
     }
@@ -112,7 +105,6 @@ const Return = () => {
 
   const resetProcess = () => {
     setStep(1);
-    setRfidCard("");
     setUserId("");
     setSelectedItem(null);
     setError("");
@@ -246,7 +238,10 @@ const Return = () => {
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   placeholder={t("enter_user_id")}
-                  className={`flex-1 px-3 py-2 border rounded-md ${
+                  autoComplete="off"
+                  inputMode="text"
+                  enterKeyHint="done"
+                  className={`flex-1 px-3 py-2 border rounded-md touch-manipulation ${
                     isDarkMode
                       ? "bg-gray-700 border-gray-600 text-white"
                       : "bg-white border-gray-300 text-gray-900"
@@ -280,6 +275,29 @@ const Return = () => {
               {t("choose_item_return")}
             </p>
           </div>
+
+          {/* Search Input */}
+          {borrowedItems.length > 0 && (
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={t("search_borrowed_items")}
+                  value={itemSearchTerm}
+                  onChange={(e) => setItemSearchTerm(e.target.value)}
+                  autoComplete="off"
+                  inputMode="text"
+                  enterKeyHint="search"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg touch-manipulation ${
+                    isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                  }`}
+                />
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
@@ -302,47 +320,73 @@ const Return = () => {
               <p className="text-sm">{t("no_borrowed_items_desc")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {borrowedItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemSelect(item)}
-                  className={`p-4 border rounded-lg transition-colors text-left ${
-                    isDarkMode
-                      ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
-                      : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+            (() => {
+              const filteredItems = borrowedItems.filter(
+                (item) =>
+                  (item.item_name || "")
+                    .toLowerCase()
+                    .includes(itemSearchTerm.toLowerCase()) ||
+                  (item.locker_name || "")
+                    .toLowerCase()
+                    .includes(itemSearchTerm.toLowerCase())
+              );
+
+              return filteredItems.length === 0 && itemSearchTerm ? (
+                <div
+                  className={`text-center py-8 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <Package className="h-6 w-6 text-primary-600" />
-                    <div>
-                      <h3
-                        className={`font-medium ${
-                          isDarkMode ? "text-white" : "text-gray-900"
-                        }`}
-                      >
-                        {item.item_name}
-                      </h3>
-                      <p
-                        className={`text-sm ${
-                          isDarkMode ? "text-gray-300" : "text-gray-600"
-                        }`}
-                      >
-                        {t("locker")} {item.locker_name}
-                      </p>
-                      <p
-                        className={`text-xs ${
-                          isDarkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        {t("borrowed_on")}:{" "}
-                        {new Date(item.borrowed_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">
+                    {t("no_items_found")}
+                  </p>
+                  <p className="text-sm">{t("try_different_search")}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleItemSelect(item)}
+                      className={`p-4 border rounded-lg transition-colors text-left ${
+                        isDarkMode
+                          ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
+                          : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Package className="h-6 w-6 text-primary-600" />
+                        <div>
+                          <h3
+                            className={`font-medium ${
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {item.item_name}
+                          </h3>
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? "text-gray-300" : "text-gray-600"
+                            }`}
+                          >
+                            {t("locker")} {item.locker_name}
+                          </p>
+                          <p
+                            className={`text-xs ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {t("borrowed_on")}:{" "}
+                            {new Date(item.borrowed_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()
           )}
         </div>
       )}

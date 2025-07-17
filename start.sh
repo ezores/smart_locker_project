@@ -808,22 +808,53 @@ setup_environment() {
         log_info "Clearing npm cache..."
         npm cache clean --force 2>/dev/null || log_warning "npm cache clean failed, continuing..."
         
-        # Install dependencies with retry logic
+        # Install dependencies with retry logic and macOS-specific handling
         local npm_retries=3
         local npm_success=false
         
+        # macOS-specific npm configuration
+        if command -v brew &> /dev/null; then
+            log_info "Configuring npm for macOS..."
+            npm config set registry https://registry.npmjs.org/ 2>/dev/null || true
+            npm config set fetch-retries 3 2>/dev/null || true
+            npm config set fetch-retry-mintimeout 5000 2>/dev/null || true
+            npm config set fetch-retry-maxtimeout 60000 2>/dev/null || true
+        fi
+        
         for ((i=1; i<=npm_retries; i++)); do
             log_info "Installing Node.js dependencies (attempt $i/$npm_retries)..."
-            if timeout 300 npm install $npm_force_flag; then
-                npm_success=true
-                break
+            
+            # Kill any stuck npm processes before starting
+            pkill -f "npm install" 2>/dev/null || true
+            
+            # Use shorter timeout on macOS and add force flags
+            if command -v brew &> /dev/null; then
+                # macOS: shorter timeout, force flags, no audit
+                if timeout 180 npm install --force --no-audit --no-fund $npm_force_flag; then
+                    npm_success=true
+                    break
+                else
+                    log_warning "npm install failed (attempt $i/$npm_retries)"
+                    if [ $i -lt $npm_retries ]; then
+                        log_info "Cleaning and retrying..."
+                        rm -rf node_modules package-lock.json
+                        npm cache clean --force 2>/dev/null || true
+                        sleep 3
+                    fi
+                fi
             else
-                log_warning "npm install failed (attempt $i/$npm_retries)"
-                if [ $i -lt $npm_retries ]; then
-                    log_info "Cleaning and retrying..."
-                    rm -rf node_modules package-lock.json
-                    npm cache clean --force 2>/dev/null || true
-                    sleep 2
+                # Linux: original timeout
+                if timeout 300 npm install $npm_force_flag; then
+                    npm_success=true
+                    break
+                else
+                    log_warning "npm install failed (attempt $i/$npm_retries)"
+                    if [ $i -lt $npm_retries ]; then
+                        log_info "Cleaning and retrying..."
+                        rm -rf node_modules package-lock.json
+                        npm cache clean --force 2>/dev/null || true
+                        sleep 2
+                    fi
                 fi
             fi
         done

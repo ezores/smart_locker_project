@@ -152,8 +152,8 @@ export const getUserProfile = async () => {
   return response.data;
 };
 
-export const getBorrows = async () => {
-  const response = await api.get("/borrows");
+export const getBorrows = async (params = {}) => {
+  const response = await api.get("/borrows", { params });
   return response.data;
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {
@@ -11,9 +12,10 @@ import {
   User,
   ArrowLeft,
 } from "lucide-react";
-import axios from "axios";
+import { getBorrows, returnItem } from "../utils/api";
 
 const Return = () => {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
@@ -27,31 +29,54 @@ const Return = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Don't auto-fetch on load, wait for user interaction like in Borrow page
+  // useEffect(() => {
+  //   if (user) {
+  //     fetchBorrowedItems();
+  //     setStep(2);
+  //   }
+  // }, [user]);
+
   const handleRfidScan = () => {
-    // Simulate RFID scan
+    // Simulate RFID scan for UX flow, but use authenticated user
     const mockRfid =
       "RFID_" + Math.random().toString(36).substr(2, 9).toUpperCase();
     setRfidCard(mockRfid);
     setUseUserId(false);
-    fetchBorrowedItems(mockRfid);
+    fetchBorrowedItems();
     setStep(2);
   };
 
   const handleUserIdSubmit = () => {
     if (userId.trim()) {
       setUseUserId(true);
-      fetchBorrowedItems(userId);
+      fetchBorrowedItems();
       setStep(2);
     }
   };
 
-  const fetchBorrowedItems = async (identifier) => {
+  const fetchBorrowedItems = async () => {
+    setLoading(true);
+    setError("");
     try {
-      const response = await axios.get(`/api/borrowed-items/${identifier}`);
-      setBorrowedItems(response.data);
+      console.log("Fetching borrowed items for user:", user.id);
+
+      // Use API filtering instead of frontend filtering for better performance
+      const response = await getBorrows({
+        user_id: user.id,
+        status: "borrowed",
+        per_page: 100, // Get more items to avoid pagination issues
+      });
+
+      console.log("API response:", response);
+      console.log("Borrowed items found:", response.borrows?.length || 0);
+
+      setBorrowedItems(response.borrows || []);
     } catch (error) {
       console.error("Error fetching borrowed items:", error);
       setError(t("error_fetching_items"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,24 +90,19 @@ const Return = () => {
     setError("");
 
     try {
-      await axios.post("/api/return", {
-        rfid_card: useUserId ? userId : rfidCard,
-        item_id: selectedItem.id,
-        locker_id: selectedItem.locker.id,
+      await returnItem(selectedItem.id, {
+        condition: "good", // Default condition
+        notes: "Returned via web interface",
       });
 
       setSuccess(t("return_success"));
 
       // Refresh borrowed items after successful return
-      if (useUserId) {
-        await fetchBorrowedItems(userId);
-      } else {
-        await fetchBorrowedItems(rfidCard);
-      }
+      await fetchBorrowedItems();
 
       setTimeout(() => {
         navigate("/");
-      }, 2000);
+      }, 500);
     } catch (error) {
       setError(error.response?.data?.message || t("return_error"));
     } finally {
@@ -260,48 +280,70 @@ const Return = () => {
               {t("choose_item_return")}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {borrowedItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleItemSelect(item)}
-                className={`p-4 border rounded-lg transition-colors text-left ${
-                  isDarkMode
-                    ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
-                    : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
-                }`}
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p
+                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
               >
-                <div className="flex items-center space-x-3">
-                  <Package className="h-6 w-6 text-primary-600" />
-                  <div>
-                    <h3
-                      className={`font-medium ${
-                        isDarkMode ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      {item.name}
-                    </h3>
-                    <p
-                      className={`text-sm ${
-                        isDarkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      {t("locker")} {item.locker.number} -{" "}
-                      {item.locker.location}
-                    </p>
-                    <p
-                      className={`text-xs ${
-                        isDarkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      {t("borrowed_on")}:{" "}
-                      {new Date(item.borrowed_at).toLocaleDateString()}
-                    </p>
+                {t("loading")}...
+              </p>
+            </div>
+          ) : borrowedItems.length === 0 ? (
+            <div
+              className={`text-center py-8 ${
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">
+                {t("no_borrowed_items")}
+              </p>
+              <p className="text-sm">{t("no_borrowed_items_desc")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {borrowedItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemSelect(item)}
+                  className={`p-4 border rounded-lg transition-colors text-left ${
+                    isDarkMode
+                      ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
+                      : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Package className="h-6 w-6 text-primary-600" />
+                    <div>
+                      <h3
+                        className={`font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {item.item_name}
+                      </h3>
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-600"
+                        }`}
+                      >
+                        {t("locker")} {item.locker_name}
+                      </p>
+                      <p
+                        className={`text-xs ${
+                          isDarkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        {t("borrowed_on")}:{" "}
+                        {new Date(item.borrowed_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -333,14 +375,14 @@ const Return = () => {
                     isDarkMode ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
-                  {useUserId ? t("user_id") : t("rfid_card")}:
+                  {t("user")}:
                 </span>
                 <span
                   className={`font-medium ${
                     isDarkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  {useUserId ? userId : rfidCard}
+                  {user?.first_name} {user?.last_name} ({user?.username})
                 </span>
               </div>
               <div className="flex justify-between">
@@ -356,7 +398,7 @@ const Return = () => {
                     isDarkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  {selectedItem?.name}
+                  {selectedItem?.item_name}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -372,7 +414,7 @@ const Return = () => {
                     isDarkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  {t("locker")} {selectedItem?.locker.number}
+                  {selectedItem?.locker_name}
                 </span>
               </div>
             </div>

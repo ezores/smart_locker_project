@@ -268,6 +268,9 @@ const translations = {
     item_locker_unavailable: "Item's Locker Unavailable",
     item_locker_unavailable_desc:
       "The locker containing this item is currently unavailable (maintenance, reserved, or inactive).",
+    no_borrowed_items: "No Borrowed Items",
+    no_borrowed_items_desc:
+      "You don't have any items currently borrowed. Visit the Borrow page to borrow items.",
     lockers_management_description: "Manage locker locations and status",
     search_lockers: "Search lockers...",
     all_status: "All Status",
@@ -612,6 +615,9 @@ const translations = {
     item_locker_unavailable: "Casier de l'Article Indisponible",
     item_locker_unavailable_desc:
       "Le casier contenant cet article est actuellement indisponible (maintenance, réservé, ou inactif).",
+    no_borrowed_items: "Aucun Article Emprunté",
+    no_borrowed_items_desc:
+      "Vous n'avez actuellement aucun article emprunté. Visitez la page Emprunter pour emprunter des articles.",
     no_lockers_found: "Aucun casier trouvé",
     get_started_adding_locker: "Commencez par ajouter votre premier casier",
     rs485_configuration: "Configuration RS485",
@@ -959,6 +965,9 @@ const translations = {
     item_locker_unavailable: "Casillero del Artículo No Disponible",
     item_locker_unavailable_desc:
       "El casillero que contiene este artículo está actualmente no disponible (mantenimiento, reservado, o inactivo).",
+    no_borrowed_items: "No Hay Artículos Prestados",
+    no_borrowed_items_desc:
+      "Actualmente no tienes artículos prestados. Visita la página Prestar para prestar artículos.",
     no_lockers_found: "No se encontraron casilleros",
     get_started_adding_locker: "Comienza agregando tu primer casillero",
     rs485_configuration: "Configuración RS485",

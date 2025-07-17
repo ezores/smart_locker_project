@@ -129,7 +129,7 @@ const Borrow = () => {
 
       setTimeout(() => {
         navigate("/");
-      }, 1000);
+      }, 500);
     } catch (error) {
       setError(error.response?.data?.message || t("borrow_error"));
     } finally {

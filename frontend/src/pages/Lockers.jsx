@@ -154,15 +154,28 @@ const Lockers = () => {
     });
   };
 
-  const filteredLockers = lockers.filter((locker) => {
-    const lockerName = locker.name || locker.number || "";
-    const matchesSearch = lockerName
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || locker.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredLockers = lockers
+    .filter((locker) => {
+      const lockerName = locker.name || locker.number || "";
+      const matchesSearch = lockerName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || locker.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by name first, then by number if names are equal
+      const nameA = a.name || "";
+      const nameB = b.name || "";
+      if (nameA !== nameB) {
+        return nameA.localeCompare(nameB);
+      }
+      // If names are equal, sort by number
+      const numA = parseInt(a.number?.replace(/\D/g, "") || "0");
+      const numB = parseInt(b.number?.replace(/\D/g, "") || "0");
+      return numA - numB;
+    });
 
   // Pagination logic
   const totalPages =

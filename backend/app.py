@@ -264,7 +264,7 @@ def admin_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        user = db.session.get(User, current_user_id)
         if not user or user.role != "admin":
             return jsonify({"error": "Admin access required"}), 403
         return fn(*args, **kwargs)
@@ -521,7 +521,8 @@ def get_user(user_id):
 @jwt_required()
 def get_lockers():
     try:
-        lockers = Locker.query.all()
+        # Sort lockers by name to maintain consistent order
+        lockers = Locker.query.order_by(Locker.name).all()
         logger.info(f"Found {len(lockers)} lockers")
 
         # Get current time for checking active reservations
@@ -1502,7 +1503,7 @@ def get_user_profile():
     """Get current user profile"""
     try:
         current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        user = db.session.get(User, current_user_id)
 
         if not user:
             return jsonify({"error": "User not found"}), 404
@@ -1619,7 +1620,7 @@ def get_reservations():
     """Get reservations with optional filtering"""
     try:
         current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        user = db.session.get(User, current_user_id)
 
         if not user:
             return jsonify({"error": "User not found"}), 404
@@ -1668,7 +1669,7 @@ def create_reservation():
     """Create a new reservation"""
     try:
         current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        user = db.session.get(User, current_user_id)
 
         if not user:
             return jsonify({"error": "User not found"}), 404

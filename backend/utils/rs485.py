@@ -71,7 +71,7 @@ class RS485Controller:
             else:
                 # Fallback to simple mapping if no address/numbers provided
                 address = (locker_id - 1) % 32  # Dipswitch 0-31
-                locker_number = (locker_id - 1) % 25  # Locker 0-24
+                locker_number = ((locker_id - 1) % 24) + 1  # Locker 1-24
                 frame = generate_rs485_frame(address, locker_number)
 
             # Send the frame
@@ -124,7 +124,7 @@ class RS485Controller:
             else:
                 # Fallback to simple mapping if no address/numbers provided
                 address = (locker_id - 1) % 32  # Dipswitch 0-31
-                locker_number = (locker_id - 1) % 25  # Locker 0-24
+                locker_number = ((locker_id - 1) % 24) + 1  # Locker 1-24
                 frame = generate_rs485_frame(address, locker_number)
 
             # Send the frame
@@ -263,7 +263,7 @@ def access_reservation_locker(
         else:
             # Fallback to simple mapping if no address/numbers provided
             address = (locker_id - 1) % 32  # Dipswitch 0-31
-            locker_number = (locker_id - 1) % 25  # Locker 0-24
+            locker_number = ((locker_id - 1) % 24) + 1  # Locker 1-24
             frame = generate_rs485_frame(address, locker_number)
 
         # Send the frame
@@ -313,7 +313,7 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
 
     Args:
         address: Address card (0-31 dipswitch)
-        locker_number: Number of locker (0-24)
+        locker_number: Number of locker (1-24)
 
     Returns:
         Hex string representing the complete frame
@@ -326,14 +326,14 @@ def generate_rs485_frame(address: int, locker_number: int) -> str:
     # Reserved: 04 (fixed)
     # Reserved: 00 (fixed)
     # Reserved: 01 (fixed)
-    # Number of locker: [LOCKER_NUMBER] (0-24)
+    # Number of locker: [LOCKER_NUMBER] (1-24)
     # Checksum: XOR of all previous octets
 
     # Validate inputs
     if not (0 <= address <= 31):
         raise ValueError("Address must be between 0 and 31")
-    if not (0 <= locker_number <= 24):
-        raise ValueError("Locker number must be between 0 and 24")
+    if not (1 <= locker_number <= 24):
+        raise ValueError("Locker number must be between 1 and 24")
 
     # Build frame octets
     frame_octets = [
@@ -380,7 +380,7 @@ def generate_locker_command_frame(locker_id: int, action: str = "open") -> str:
     # For now, we'll use a simple mapping
     # In a real implementation, you'd get the RS485 address and locker number from the database
     address = (locker_id - 1) % 32  # Dipswitch 0-31
-    locker_number = (locker_id - 1) % 25  # Locker 0-24
+    locker_number = ((locker_id - 1) % 24) + 1  # Locker 1-24
 
     frame = generate_rs485_frame(address, locker_number)
 

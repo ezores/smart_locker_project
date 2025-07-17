@@ -54,6 +54,7 @@ VERBOSE=false
 MINIMAL=false
 TEST_MODE=false
 HELP=false
+RS485_REAL_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -75,6 +76,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --test)
             TEST_MODE=true
+            shift
+            ;;
+        --rs485-real)
+            RS485_REAL_MODE=true
             shift
             ;;
         --help|-h)
@@ -102,6 +107,7 @@ if [ "$HELP" = true ]; then
     echo "  --verbose       Enable verbose logging"
     echo "  --minimal       Minimal mode (admin user only, empty lockers)"
     echo "  --test          Run comprehensive test suite after startup"
+    echo "  --rs485-real    Force real RS485 hardware mode (default is real hardware)"
     echo "  --help, -h      Show this help message"
     echo ""
     echo "Examples:"
@@ -114,6 +120,7 @@ if [ "$HELP" = true ]; then
     echo "  - Starts frontend on port $FRONTEND_PORT"
     echo "  - Uses PostgreSQL database (required)"
     echo "  - Loads minimal admin user if no data exists"
+    echo "  - Uses real RS485 hardware by default"
     echo ""
     echo "Prerequisites:"
     echo "  - Python 3.8+ (required, will exit if not found)"
@@ -1199,6 +1206,20 @@ start_backend() {
     
     if [ "$MINIMAL" = true ]; then
         cmd="$cmd --minimal"
+    fi
+    
+    if [ "$RS485_REAL_MODE" = true ]; then
+        cmd="$cmd --rs485-real"
+    fi
+    
+    # Set RS485 mode - default is real hardware
+    if [ "$RS485_REAL_MODE" = true ]; then
+        export RS485_MOCK_MODE="false"
+        log_info "RS485 real hardware mode enabled"
+    else
+        # Default to real hardware mode
+        export RS485_MOCK_MODE="false"
+        log_info "RS485 real hardware mode enabled (default)"
     fi
     
     # Start backend in background

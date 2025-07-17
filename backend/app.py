@@ -89,7 +89,7 @@ app = Flask(__name__)
 # Configuration
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", os.urandom(32).hex())
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", os.urandom(32).hex())
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "smart-locker-jwt-secret-key-2024")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 
 
@@ -790,37 +790,78 @@ def export_logs():
 @admin_required
 def open_locker_endpoint(locker_id):
     """Open a locker using RS485"""
+    logger.info("=== BACKEND LOCKER OPEN REQUEST ===")
+    logger.info(f"Timestamp: {datetime.now().isoformat()}")
+    logger.info(f"Locker ID: {locker_id}")
+    logger.info(f"User ID: {get_jwt_identity()}")
+    logger.info(f"Request Method: {request.method}")
+    logger.info(f"Request URL: {request.url}")
+    logger.info(f"Request Headers: {dict(request.headers)}")
+    logger.info(f"Request Remote Addr: {request.remote_addr}")
+    logger.info(f"Request User Agent: {request.headers.get('User-Agent')}")
+    
     try:
         # Check if locker exists
+        logger.info("Checking if locker exists...")
         locker = Locker.query.get_or_404(locker_id)
-
+        
+        logger.info("=== LOCKER DETAILS ===")
+        logger.info(f"Locker ID: {locker.id}")
+        logger.info(f"Locker Name: {locker.name}")
+        logger.info(f"Locker Number: {locker.number}")
+        logger.info(f"Locker Status: {locker.status}")
+        logger.info(f"RS485 Address: {locker.rs485_address}")
+        logger.info(f"RS485 Locker Number: {locker.rs485_locker_number}")
+        logger.info(f"Locker Location: {locker.location}")
+        logger.info(f"Locker Description: {locker.description}")
+        
+        logger.info("=== CALLING RS485 OPEN FUNCTION ===")
         # Open locker using RS485 with locker's configuration
         result = open_locker(
             locker_id,
             address=locker.rs485_address,
             locker_number=locker.rs485_locker_number,
         )
+        
+        logger.info("=== RS485 RESULT ===")
+        logger.info(f"Result: {result}")
+        logger.info(f"Success: {result.get('success', 'Not specified')}")
+        logger.info(f"Message: {result.get('message', 'Not specified')}")
+        logger.info(f"Frame: {result.get('frame', 'Not specified')}")
+        logger.info(f"Error: {result.get('error', 'None')}")
 
         # Log the action
+        logger.info("=== LOGGING ACTION ===")
         log_action(
             "open_locker",
             get_jwt_identity(),
             locker_id=locker_id,
-            details=f"Locker {locker.name} opened via RS485",
+            details=f"Locker {locker.name} opened via RS485 - Result: {result.get('success', 'Unknown')}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
         )
 
-        return jsonify(
-            {
-                "message": "Locker opening command sent",
-                "locker_id": locker_id,
-                "locker_name": locker.name,
-                "rs485_result": result,
-            }
-        )
+        logger.info("=== SENDING RESPONSE ===")
+        response_data = {
+            "message": "Locker opening command sent",
+            "locker_id": locker_id,
+            "locker_name": locker.name,
+            "success": result.get('success', False),
+            "rs485_result": result,
+        }
+        logger.info(f"Response Data: {response_data}")
+        
+        return jsonify(response_data)
 
     except Exception as e:
-        logger.error(f"Open locker error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+        logger.error("=== LOCKER OPEN ERROR ===")
+        logger.error(f"Error Type: {type(e).__name__}")
+        logger.error(f"Error Message: {str(e)}")
+        logger.error(f"Error Args: {e.args}")
+        import traceback
+        logger.error(f"Error Traceback: {traceback.format_exc()}")
+        
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 
 @app.route("/api/lockers/<int:locker_id>/close", methods=["POST"])
@@ -2160,6 +2201,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--verbose", action="store_true", help="Enable verbose (DEBUG) logging"
     )
+    parser.add_argument(
+        "--rs485-real", action="store_true", help="Enable real RS485 hardware mode (disable mock mode)"
+    )
 
     args = parser.parse_args()
 
@@ -2169,6 +2213,15 @@ if __name__ == "__main__":
         for handler in logger.handlers:
             handler.setLevel(logging.DEBUG)
         logging.getLogger().setLevel(logging.DEBUG)
+
+    # Set RS485 mode - default is real hardware
+    if args.rs485_real:
+        os.environ['RS485_MOCK_MODE'] = 'false'
+        logger.info("RS485 real hardware mode enabled")
+    else:
+        # Default to real hardware mode
+        os.environ['RS485_MOCK_MODE'] = 'false'
+        logger.info("RS485 real hardware mode enabled (default)")
 
     # Create logs directory if it doesn't exist
     os.makedirs("logs", exist_ok=True)

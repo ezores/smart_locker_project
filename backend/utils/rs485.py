@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from typing import Any, Dict, Optional
 
@@ -6,8 +7,10 @@ import serial
 
 logger = logging.getLogger(__name__)
 
-# Mock mode for development
-MOCK_MODE = False
+# Mock mode for development - set to True if no physical RS485 hardware is available
+# Can be overridden with environment variable RS485_MOCK_MODE
+# Default is real hardware mode - set RS485_MOCK_MODE=true for mock mode
+MOCK_MODE = os.environ.get("RS485_MOCK_MODE", "False").lower() == "true"
 
 
 class RS485Controller:
@@ -41,6 +44,7 @@ class RS485Controller:
         """Send command to RS485 device"""
         if MOCK_MODE:
             logger.info(f"[MOCK] RS485 Command: {command}")
+            logger.info(f"[MOCK] Command bytes: {[hex(ord(c)) for c in command]}")
             time.sleep(0.1)  # Simulate hardware delay
             return True
 
@@ -49,12 +53,36 @@ class RS485Controller:
             return False
 
         try:
-            self.serial_connection.write(command.encode())
+            logger.info(f"=== REAL RS485 COMMAND EXECUTION ===")
+            logger.info(f"Port: {self.port}")
+            logger.info(f"Baudrate: {self.baudrate}")
+            logger.info(f"Command (hex): {command}")
+            logger.info(f"Command (bytes): {[hex(ord(c)) for c in command]}")
+            logger.info(f"Command length: {len(command)} bytes")
+            
+            # Send the command
+            bytes_written = self.serial_connection.write(command.encode())
+            logger.info(f"Bytes written to serial: {bytes_written}")
+            
+            # Wait for response
+            logger.info("Waiting for RS485 response...")
             response = self.serial_connection.readline().decode().strip()
             logger.info(f"RS485 Response: {response}")
+            logger.info(f"Response length: {len(response)} characters")
+            
+            # Log additional serial port info
+            logger.info(f"Serial port in_waiting: {self.serial_connection.in_waiting}")
+            logger.info(f"Serial port out_waiting: {self.serial_connection.out_waiting}")
+            
+            logger.info(f"=== RS485 COMMAND COMPLETED ===")
             return True
         except Exception as e:
-            logger.error(f"RS485 communication error: {e}")
+            logger.error(f"=== RS485 COMMUNICATION ERROR ===")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error message: {e}")
+            logger.error(f"Port: {self.port}")
+            logger.error(f"Connected: {self.connected}")
+            logger.error(f"Serial connection: {self.serial_connection}")
             return False
 
     def open_locker(
@@ -64,15 +92,27 @@ class RS485Controller:
         locker_number: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Open a specific locker using RS485 protocol"""
+        logger.info(f"=== LOCKER OPEN REQUEST ===")
+        logger.info(f"Locker ID: {locker_id}")
+        logger.info(f"Provided Address: {address}")
+        logger.info(f"Provided Locker Number: {locker_number}")
+        logger.info(f"Mock Mode: {MOCK_MODE}")
+        logger.info(f"RS485 Connected: {self.connected}")
+        
         try:
             # Generate RS485 frame
             if address is not None and locker_number is not None:
+                logger.info(f"Using provided address ({address}) and locker number ({locker_number})")
                 frame = generate_rs485_frame(address, locker_number)
             else:
                 # Fallback to simple mapping if no address/numbers provided
                 address = (locker_id - 1) % 32  # Dipswitch 0-31
                 locker_number = ((locker_id - 1) % 24) + 1  # Locker 1-24
+                logger.info(f"Using calculated address ({address}) and locker number ({locker_number})")
                 frame = generate_rs485_frame(address, locker_number)
+
+            logger.info(f"Generated frame: {frame}")
+            logger.info(f"Frame length: {len(frame)} characters")
 
             # Send the frame
             success = self._send_command(frame)
@@ -91,16 +131,21 @@ class RS485Controller:
             }
 
             if success:
-                logger.info(
-                    f"Locker {locker_id} opened successfully with frame: {frame}"
-                )
+                logger.info(f"=== LOCKER OPEN SUCCESS ===")
+                logger.info(f"Locker {locker_id} opened successfully with frame: {frame}")
+                logger.info(f"Address: {address}, Locker Number: {locker_number}")
             else:
+                logger.error(f"=== LOCKER OPEN FAILED ===")
                 logger.error(f"Failed to open locker {locker_id}")
+                logger.error(f"Frame sent: {frame}")
+                logger.error(f"Address: {address}, Locker Number: {locker_number}")
 
             return result
 
         except Exception as e:
+            logger.error(f"=== LOCKER OPEN ERROR ===")
             logger.error(f"Error opening locker {locker_id}: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
             return {
                 "success": False,
                 "locker_id": locker_id,

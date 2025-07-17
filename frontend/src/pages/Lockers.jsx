@@ -110,23 +110,102 @@ const Lockers = () => {
   };
 
   const handleOpenLocker = async (lockerId) => {
+    console.log("=== LOCKER OPEN REQUEST (ALERT) ===");
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    console.log(`Locker ID: ${lockerId}`);
+    console.log(`Request URL: /api/lockers/${lockerId}/open`);
+    console.log(`Request Method: POST`);
+
     try {
+      console.log("Sending locker open request...");
       const response = await axios.post(`/api/lockers/${lockerId}/open`);
+
+      console.log("=== LOCKER OPEN RESPONSE (ALERT) ===");
+      console.log(`Response Status: ${response.status}`);
+      console.log(`Response Data:`, response.data);
+      console.log(`Response Headers:`, response.headers);
+
       alert(`Locker opening command sent: ${response.data.message}`);
     } catch (error) {
-      console.error("Error opening locker:", error);
+      console.error("=== LOCKER OPEN ERROR (ALERT) ===");
+      console.error(`Error Type: ${error.name}`);
+      console.error(`Error Message: ${error.message}`);
+      console.error(`Error Stack: ${error.stack}`);
+      console.error(`Error Response:`, error.response);
+      console.error(`Error Request:`, error.request);
+      console.error(`Error Config:`, error.config);
+
       alert("Failed to open locker");
     }
   };
 
   const handleRealOpenLocker = async (lockerId) => {
+    console.log("=== LOCKER OPEN REQUEST (REAL) ===");
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    console.log(`Locker ID: ${lockerId}`);
+    console.log(`Request URL: /api/lockers/${lockerId}/open`);
+    console.log(`Request Method: POST`);
+
+    // Get locker details for logging
+    const locker = lockers.find((l) => l.id === lockerId);
+    if (locker) {
+      console.log(`Locker Name: ${locker.name}`);
+      console.log(`Locker Number: ${locker.number}`);
+      console.log(`Locker Status: ${locker.status}`);
+      console.log(`RS485 Address: ${locker.rs485_address}`);
+      console.log(`RS485 Locker Number: ${locker.rs485_locker_number}`);
+    }
+
     try {
+      console.log("Sending locker open request...");
+      const startTime = Date.now();
       const response = await axios.post(`/api/lockers/${lockerId}/open`);
+      const endTime = Date.now();
+
+      console.log("=== LOCKER OPEN RESPONSE (REAL) ===");
+      console.log(`Response Time: ${endTime - startTime}ms`);
+      console.log(`Response Status: ${response.status}`);
+      console.log(`Response Status Text: ${response.statusText}`);
+      console.log(`Response Data:`, response.data);
+      console.log(`Response Headers:`, response.headers);
+      console.log(`Response Config:`, response.config);
+
+      // Log success details
+      if (response.data) {
+        console.log(`Success: ${response.data.success}`);
+        console.log(`Message: ${response.data.message}`);
+        console.log(`Frame Used: ${response.data.frame}`);
+        console.log(`RS485 Address Used: ${response.data.rs485_address}`);
+        console.log(
+          `RS485 Locker Number Used: ${response.data.rs485_locker_number}`
+        );
+        console.log(`Timestamp: ${response.data.timestamp}`);
+      }
+
       toast.success(
         `Locker opening command sent: ${response.data.message || "Success"}`
       );
     } catch (error) {
-      console.error("Error opening locker:", error);
+      console.error("=== LOCKER OPEN ERROR (REAL) ===");
+      console.error(`Error Type: ${error.name}`);
+      console.error(`Error Message: ${error.message}`);
+      console.error(`Error Stack: ${error.stack}`);
+
+      if (error.response) {
+        console.error(`Error Response Status: ${error.response.status}`);
+        console.error(
+          `Error Response Status Text: ${error.response.statusText}`
+        );
+        console.error(`Error Response Data:`, error.response.data);
+        console.error(`Error Response Headers:`, error.response.headers);
+      }
+
+      if (error.request) {
+        console.error(`Error Request:`, error.request);
+      }
+
+      console.error(`Error Config:`, error.config);
+
       toast.error("Failed to open locker");
     }
   };

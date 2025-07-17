@@ -334,12 +334,51 @@ def init_models(db):
         # If force_regenerate is True, clear existing demo data first
         if force_regenerate:
             print("Force regenerating demo data...")
-            # Clear existing demo data
+            # Clear existing demo data in correct order to avoid foreign key violations
+            # First clear dependent tables
+            Log.query.filter(Log.user_id.in_(
+                db.session.query(User.id).filter(User.username.like('demo_%'))
+            )).delete(synchronize_session=False)
+            Borrow.query.filter(Borrow.user_id.in_(
+                db.session.query(User.id).filter(User.username.like('demo_%'))
+            )).delete(synchronize_session=False)
+            Reservation.query.filter(Reservation.user_id.in_(
+                db.session.query(User.id).filter(User.username.like('demo_%'))
+            )).delete(synchronize_session=False)
+            
+            # Clear items and their dependencies
+            Log.query.filter(Log.item_id.in_(
+                db.session.query(Item.id).filter(Item.serial_number.like('demo_%'))
+            )).delete(synchronize_session=False)
+            Borrow.query.filter(Borrow.item_id.in_(
+                db.session.query(Item.id).filter(Item.serial_number.like('demo_%'))
+            )).delete(synchronize_session=False)
+            
+            # Clear lockers and their dependencies
+            Log.query.filter(Log.locker_id.in_(
+                db.session.query(Locker.id).filter(Locker.name.like('demo_%'))
+            )).delete(synchronize_session=False)
+            Borrow.query.filter(Borrow.locker_id.in_(
+                db.session.query(Locker.id).filter(Locker.name.like('demo_%'))
+            )).delete(synchronize_session=False)
+            Reservation.query.filter(Reservation.locker_id.in_(
+                db.session.query(Locker.id).filter(Locker.name.like('demo_%'))
+            )).delete(synchronize_session=False)
+            
+            # Now clear the main tables
             User.query.filter(User.username.like('demo_%')).delete()
             Item.query.filter(Item.serial_number.like('demo_%')).delete()
             Locker.query.filter(Locker.name.like('demo_%')).delete()
+            
             # Also clear items without demo_ prefix to ensure clean slate
+            Log.query.filter(Log.item_id.in_(
+                db.session.query(Item.id)
+            )).delete(synchronize_session=False)
+            Borrow.query.filter(Borrow.item_id.in_(
+                db.session.query(Item.id)
+            )).delete(synchronize_session=False)
             Item.query.delete()
+            
             db.session.commit()
 
         # Create users - much more comprehensive

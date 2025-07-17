@@ -7,7 +7,7 @@ import serial
 logger = logging.getLogger(__name__)
 
 # Mock mode for development
-MOCK_MODE = True
+MOCK_MODE = False
 
 
 class RS485Controller:

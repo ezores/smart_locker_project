@@ -536,8 +536,23 @@ install_npm() {
 ensure_postgresql_auto_config() {
     log_info "Ensuring PostgreSQL is configured for automatic operation..."
     
-    # Always configure pg_hba.conf for trust authentication to ensure it works
-    log_info "Configuring PostgreSQL authentication for automatic operation..."
+    # First, test if PostgreSQL is already working without configuration
+    if command -v brew &> /dev/null; then
+        # macOS - test with current user
+        if psql -c "SELECT 1;" > /dev/null 2>&1; then
+            log_success "PostgreSQL is already working without additional configuration"
+            return 0
+        fi
+    else
+        # Linux - test with postgres user
+        if sudo -u postgres psql -c "SELECT 1;" > /dev/null 2>&1; then
+            log_success "PostgreSQL is already working without additional configuration"
+            return 0
+        fi
+    fi
+    
+    # Only configure pg_hba.conf if PostgreSQL is not working
+    log_info "PostgreSQL needs configuration. Attempting to configure pg_hba.conf..."
     
     # Try to find and configure pg_hba.conf
     pg_hba_locations=(
@@ -775,8 +790,8 @@ setup_environment() {
     NODE_VERSION=$(node --version | cut -d'v' -f2)
     NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
     
-    # Clean node_modules if Node.js was upgraded or if --reset-db is specified
-    if [ "$RESET_DB" = true ] || [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ] || [ "$NODE_MAJOR" -ge 22 ]; then
+    # Clean node_modules only if necessary
+    if [ "$RESET_DB" = true ] || [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
         if [ -d "node_modules" ]; then
             log_info "Cleaning existing node_modules (Node.js version: $NODE_VERSION)..."
             rm -rf node_modules package-lock.json
@@ -792,7 +807,7 @@ setup_environment() {
         
         for ((i=1; i<=npm_retries; i++)); do
             log_info "Installing Node.js dependencies (attempt $i/$npm_retries)..."
-            if npm install $npm_force_flag; then
+            if timeout 300 npm install $npm_force_flag; then
                 npm_success=true
                 break
             else
@@ -866,33 +881,37 @@ setup_database() {
     # Ensure PostgreSQL is properly configured for automatic operation
     ensure_postgresql_auto_config
     
-            # Try to connect as postgres user to verify basic setup
-        if command -v brew &> /dev/null; then
-            # macOS - test with current user
-            if ! psql -c "SELECT version();" > /dev/null 2>&1; then
-        else
-            # Linux - test with postgres user
-            if ! sudo -u postgres psql -c "SELECT version();" > /dev/null 2>&1; then
-        fi
-        log_warning "Cannot connect as postgres user. This might indicate a PostgreSQL configuration issue."
-        log_info "Attempting to fix basic PostgreSQL setup..."
-        
-        # Try to initialize PostgreSQL if it's not properly set up
-        if command -v initdb &> /dev/null; then
-            log_info "Initializing PostgreSQL database cluster..."
-            if command -v brew &> /dev/null; then
-                # macOS - Homebrew PostgreSQL doesn't need manual initialization
+    # Try to connect as postgres user to verify basic setup
+    if command -v brew &> /dev/null; then
+        # macOS - test with current user
+        if ! psql -c "SELECT version();" > /dev/null 2>&1; then
+            log_warning "Cannot connect as postgres user. This might indicate a PostgreSQL configuration issue."
+            log_info "Attempting to fix basic PostgreSQL setup..."
+            
+            # Try to initialize PostgreSQL if it's not properly set up
+            if command -v initdb &> /dev/null; then
+                log_info "Initializing PostgreSQL database cluster..."
                 log_info "Homebrew PostgreSQL is already initialized, skipping initdb..."
-            else
+            fi
+        fi
+    else
+        # Linux - test with postgres user
+        if ! sudo -u postgres psql -c "SELECT version();" > /dev/null 2>&1; then
+            log_warning "Cannot connect as postgres user. This might indicate a PostgreSQL configuration issue."
+            log_info "Attempting to fix basic PostgreSQL setup..."
+            
+            # Try to initialize PostgreSQL if it's not properly set up
+            if command -v initdb &> /dev/null; then
+                log_info "Initializing PostgreSQL database cluster..."
                 # Linux - use sudo -u postgres
                 sudo -u postgres initdb -D /var/lib/postgresql/data 2>/dev/null || sudo -u postgres initdb 2>/dev/null || true
                 sudo systemctl restart postgresql 2>/dev/null || true
                 sleep 3
             fi
         fi
-    else
-        log_success "Basic PostgreSQL connectivity verified"
     fi
+    
+    log_success "Basic PostgreSQL connectivity verified"
     
     # Start PostgreSQL service based on OS
     if command -v brew &> /dev/null; then
@@ -1085,17 +1104,6 @@ setup_database() {
                     log_info "6. Try: sudo systemctl restart postgresql"
                     exit 1
                 fi
-            fi
-            else
-                log_error "All database connection methods failed!"
-                log_info "PostgreSQL troubleshooting information:"
-                log_info "1. Check if PostgreSQL is running: sudo systemctl status postgresql"
-                log_info "2. Check PostgreSQL logs: sudo journalctl -u postgresql"
-                log_info "3. Try connecting manually: sudo -u postgres psql"
-                log_info "4. Check pg_hba.conf configuration"
-                log_info "5. Check if trust authentication is properly configured"
-                log_info "6. Try: sudo systemctl restart postgresql"
-                exit 1
             fi
         fi
     fi

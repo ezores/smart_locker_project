@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {
@@ -10,9 +11,10 @@ import {
   AlertCircle,
   ArrowLeft,
 } from "lucide-react";
-import axios from "axios";
+import { getItems, getLockers, borrowItem } from "../utils/api";
 
 const Borrow = () => {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
@@ -35,8 +37,27 @@ const Borrow = () => {
 
   const fetchItems = async () => {
     try {
-      const response = await axios.get("/api/items");
-      setItems(response.data);
+      const [itemsData, lockersData] = await Promise.all([
+        getItems(),
+        getLockers(),
+      ]);
+
+      // Filter items to only show those that are:
+      // 1. Available (status = "available")
+      // 2. In a locker (has locker_id)
+      // 3. In an active locker (locker status = "active")
+      const borrowableItems = itemsData.filter((item) => {
+        if (item.status !== "available" || !item.locker_id) {
+          return false;
+        }
+
+        const itemLocker = lockersData.find(
+          (locker) => locker.id === item.locker_id
+        );
+        return itemLocker && itemLocker.status === "active";
+      });
+
+      setItems(borrowableItems);
     } catch (error) {
       console.error("Error fetching items:", error);
     }
@@ -44,10 +65,20 @@ const Borrow = () => {
 
   const fetchLockers = async () => {
     try {
-      const response = await axios.get("/api/lockers");
-      setLockers(
-        response.data.filter((locker) => locker.status === "available")
-      );
+      const data = await getLockers();
+      // Sort lockers: active first, then by status groups
+      const sortedLockers = data.sort((a, b) => {
+        // Active lockers first
+        if (a.status === "active" && b.status !== "active") return -1;
+        if (b.status === "active" && a.status !== "active") return 1;
+
+        // Then sort by status alphabetically within groups
+        if (a.status !== b.status) return a.status.localeCompare(b.status);
+
+        // Finally sort by locker number
+        return a.number.localeCompare(b.number);
+      });
+      setLockers(sortedLockers);
     } catch (error) {
       console.error("Error fetching lockers:", error);
     }
@@ -84,8 +115,8 @@ const Borrow = () => {
     setError("");
 
     try {
-      await axios.post("/api/borrow", {
-        rfid_card: rfidCard,
+      await borrowItem({
+        user_id: user.id,
         item_id: selectedItem.id,
         locker_id: selectedLocker.id,
       });
@@ -98,7 +129,7 @@ const Borrow = () => {
 
       setTimeout(() => {
         navigate("/");
-      }, 2000);
+      }, 1000);
     } catch (error) {
       setError(error.response?.data?.message || t("borrow_error"));
     } finally {
@@ -327,39 +358,236 @@ const Borrow = () => {
               {t("select_available_locker")}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {lockers.map((locker) => (
-              <button
-                key={locker.id}
-                onClick={() => handleLockerSelect(locker)}
-                className={`p-4 border rounded-lg transition-colors text-left ${
-                  isDarkMode
-                    ? "border-gray-600 hover:border-primary-400 hover:bg-gray-700"
-                    : "border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+
+          {/* Locker with Selected Item */}
+          {selectedItem && selectedItem.locker_id && (
+            <div className="mb-8">
+              <h3
+                className={`text-lg font-medium mb-4 text-green-600 ${
+                  isDarkMode ? "text-green-400" : "text-green-600"
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-6 w-6 text-primary-600" />
-                  <div>
-                    <h3
-                      className={`font-medium ${
-                        isDarkMode ? "text-white" : "text-gray-900"
+                {t("locker_with_item")} (1)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {lockers
+                  .filter(
+                    (locker) =>
+                      locker.id === selectedItem.locker_id &&
+                      locker.status === "active"
+                  )
+                  .map((locker) => (
+                    <button
+                      key={locker.id}
+                      onClick={() => handleLockerSelect(locker)}
+                      className={`p-4 border-2 border-green-300 rounded-lg transition-colors text-left hover:border-green-500 hover:shadow-md ${
+                        isDarkMode
+                          ? "bg-green-900/20 hover:bg-green-800/30"
+                          : "bg-green-50 hover:bg-green-100"
                       }`}
                     >
-                      {t("locker")} {locker.number}
-                    </h3>
-                    <p
-                      className={`text-sm ${
-                        isDarkMode ? "text-gray-300" : "text-gray-600"
+                      <div className="flex items-center space-x-3">
+                        <MapPin className="h-6 w-6 text-green-600" />
+                        <div>
+                          <h3
+                            className={`font-medium ${
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {t("locker")} {locker.number}
+                          </h3>
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? "text-gray-300" : "text-gray-600"
+                            }`}
+                          >
+                            {locker.location}
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                            {t("contains_item")}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty Active Lockers Section */}
+          {lockers.filter(
+            (locker) =>
+              locker.status === "active" &&
+              locker.id !== selectedItem?.locker_id
+          ).length > 0 && (
+            <div className="mb-8">
+              <h3
+                className={`text-lg font-medium mb-4 ${
+                  isDarkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                {t("empty_lockers")} (
+                {
+                  lockers.filter(
+                    (locker) =>
+                      locker.status === "active" &&
+                      locker.id !== selectedItem?.locker_id
+                  ).length
+                }
+                )
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {lockers
+                  .filter(
+                    (locker) =>
+                      locker.status === "active" &&
+                      locker.id !== selectedItem?.locker_id
+                  )
+                  .map((locker) => (
+                    <div
+                      key={locker.id}
+                      className={`p-4 border rounded-lg text-left opacity-60 cursor-not-allowed border-gray-300 ${
+                        isDarkMode ? "bg-gray-800/50" : "bg-gray-50"
                       }`}
                     >
-                      {locker.location}
-                    </p>
-                  </div>
+                      <div className="flex items-center space-x-3">
+                        <MapPin className="h-6 w-6 text-gray-500" />
+                        <div>
+                          <h3
+                            className={`font-medium ${
+                              isDarkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            {t("locker")} {locker.number}
+                          </h3>
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {locker.location}
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                            {t("no_item")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Unavailable Lockers Sections */}
+          {["reserved", "maintenance", "inactive"].map((status) => {
+            const statusLockers = lockers.filter(
+              (locker) => locker.status === status
+            );
+            if (statusLockers.length === 0) return null;
+
+            const statusColors = {
+              reserved: {
+                border: "border-yellow-300",
+                bg: isDarkMode ? "bg-yellow-900/20" : "bg-yellow-50",
+                icon: "text-yellow-600",
+                badge: "bg-yellow-100 text-yellow-800",
+                title: isDarkMode ? "text-yellow-400" : "text-yellow-600",
+              },
+              maintenance: {
+                border: "border-orange-300",
+                bg: isDarkMode ? "bg-orange-900/20" : "bg-orange-50",
+                icon: "text-orange-600",
+                badge: "bg-orange-100 text-orange-800",
+                title: isDarkMode ? "text-orange-400" : "text-orange-600",
+              },
+              inactive: {
+                border: "border-gray-300",
+                bg: isDarkMode ? "bg-gray-800/50" : "bg-gray-50",
+                icon: "text-gray-500",
+                badge: "bg-gray-100 text-gray-800",
+                title: isDarkMode ? "text-gray-400" : "text-gray-600",
+              },
+            };
+
+            const colors = statusColors[status];
+
+            return (
+              <div key={status} className="mb-6">
+                <h3 className={`text-lg font-medium mb-4 ${colors.title}`}>
+                  {t(`${status}_lockers`)} ({statusLockers.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {statusLockers.map((locker) => (
+                    <div
+                      key={locker.id}
+                      className={`p-4 border rounded-lg text-left opacity-60 cursor-not-allowed ${colors.border} ${colors.bg}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <MapPin className={`h-6 w-6 ${colors.icon}`} />
+                        <div>
+                          <h3
+                            className={`font-medium ${
+                              isDarkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            {t("locker")} {locker.number}
+                          </h3>
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {locker.location}
+                          </p>
+                          <span
+                            className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full ${colors.badge}`}
+                          >
+                            {t(status)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </button>
-            ))}
-          </div>
+              </div>
+            );
+          })}
+
+          {/* No Available Lockers Message */}
+          {selectedItem &&
+            selectedItem.locker_id &&
+            !lockers.find(
+              (locker) =>
+                locker.id === selectedItem.locker_id &&
+                locker.status === "active"
+            ) && (
+              <div
+                className={`text-center py-8 ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">
+                  {t("item_locker_unavailable")}
+                </p>
+                <p className="text-sm">{t("item_locker_unavailable_desc")}</p>
+              </div>
+            )}
+
+          {/* General No Lockers Message */}
+          {lockers.length === 0 && (
+            <div
+              className={`text-center py-8 ${
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">
+                {t("no_available_lockers")}
+              </p>
+              <p className="text-sm">{t("all_lockers_occupied")}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -391,14 +619,14 @@ const Borrow = () => {
                     isDarkMode ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
-                  {useUserId ? t("user_id") : t("rfid_card")}:
+                  {t("user")}:
                 </span>
                 <span
                   className={`font-medium ${
                     isDarkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  {useUserId ? userId : rfidCard}
+                  {user?.first_name} {user?.last_name} ({user?.username})
                 </span>
               </div>
               <div className="flex justify-between">

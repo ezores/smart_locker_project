@@ -697,10 +697,10 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 For technical support or integration questions:
 
-- Email: support@smartlocker.com
-- Documentation: https://docs.smartlocker.com
+- Email: 
+- Documentation: 
 - GitHub Issues: https://github.com/smartlocker/issues
 
 ---
 
-_This documentation is maintained by the Smart Locker development team. Last updated: January 2024_
+_This documentation is maintained by Alp Alpdogan. Last updated: July 2025_

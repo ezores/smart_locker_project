@@ -23,6 +23,7 @@ import {
   X,
   Box,
   ArrowLeft,
+  FileText,
 } from "lucide-react";
 import axios from "axios";
 
@@ -116,6 +117,34 @@ const Items = () => {
     setShowAddModal(false);
     setEditingItem(null);
     setFormData({ name: "", locker_id: "", description: "" });
+  };
+
+  const exportItems = async (format) => {
+    try {
+      const response = await axios.get(`/admin/export/items?format=${format}`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const fileExtensions = {
+        csv: "csv",
+        excel: "xlsx",
+        pdf: "pdf",
+      };
+      const extension = fileExtensions[format] || format;
+      link.setAttribute(
+        "download",
+        `items_${new Date().toISOString().split("T")[0]}.${extension}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error exporting items:", error);
+      alert("Failed to export items");
+    }
   };
 
   const filteredItems = items.filter((item) => {
@@ -247,6 +276,31 @@ const Items = () => {
         >
           <Plus className="h-4 w-4" />
           <span>{t("add_item")}</span>
+        </button>
+      </div>
+
+      {/* Export Buttons */}
+      <div className="mb-6 flex justify-end space-x-2">
+        <button
+          onClick={() => exportItems("csv")}
+          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export as CSV</span>
+        </button>
+        <button
+          onClick={() => exportItems("excel")}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export as Excel</span>
+        </button>
+        <button
+          onClick={() => exportItems("pdf")}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export as PDF</span>
         </button>
       </div>
 

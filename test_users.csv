@@ -1,0 +1,55 @@
+ID,Username,Name,Email,Student ID,Role,Department,Balance,Status,Created,RFID Tag
+1,admin,Admin User,admin@smartlocker.com,,admin,IT,$0.00,Active,2025-07-18 02:45:42,Not assigned
+2,demo_admin,Demo Admin User,demo_admin@ets.com,,admin,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_ADMIN
+3,demo_manager,Demo Manager User,demo_manager@ets.com,,admin,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_MANAGER
+4,demo_supervisor,Demo Supervisor User,demo_supervisor@ets.com,,admin,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_SUPERVISOR
+5,demo_student1,Demo John Doe,demo_student1@ets.com,demo_2024001,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT1
+6,demo_student2,Demo Jane Smith,demo_student2@ets.com,demo_2024002,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT2
+7,demo_student3,Demo Mike Johnson,demo_student3@ets.com,demo_2024003,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT3
+8,demo_student4,Demo Sarah Wilson,demo_student4@ets.com,demo_2024004,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT4
+9,demo_student5,Demo David Brown,demo_student5@ets.com,demo_2024005,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT5
+10,demo_student6,Demo Emily Davis,demo_student6@ets.com,demo_2024006,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT6
+11,demo_student7,Demo Alex Miller,demo_student7@ets.com,demo_2024007,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT7
+12,demo_student8,Demo Lisa Garcia,demo_student8@ets.com,demo_2024008,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT8
+13,demo_student9,Demo Tom Martinez,demo_student9@ets.com,demo_2024009,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT9
+14,demo_student10,Demo Anna Rodriguez,demo_student10@ets.com,demo_2024010,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT10
+15,demo_student11,James Taylor,demo_student11@ets.com,demo_2024011,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT11
+16,demo_student12,Maria Anderson,demo_student12@ets.com,demo_2024012,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT12
+17,demo_student13,Robert Thomas,demo_student13@ets.com,demo_2024013,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT13
+18,demo_student14,Jennifer Jackson,demo_student14@ets.com,demo_2024014,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT14
+19,demo_student15,William White,demo_student15@ets.com,demo_2024015,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT15
+20,demo_student16,Linda Harris,demo_student16@ets.com,demo_2024016,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT16
+21,demo_student17,Michael Clark,demo_student17@ets.com,demo_2024017,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT17
+22,demo_student18,Barbara Lewis,demo_student18@ets.com,demo_2024018,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT18
+23,demo_student19,Richard Lee,demo_student19@ets.com,demo_2024019,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT19
+24,demo_student20,Susan Walker,demo_student20@ets.com,demo_2024020,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT20
+25,demo_student21,Joseph Hall,demo_student21@ets.com,demo_2024021,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT21
+26,demo_student22,Jessica Allen,demo_student22@ets.com,demo_2024022,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT22
+27,demo_student23,Christopher Young,demo_student23@ets.com,demo_2024023,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT23
+28,demo_student24,Amanda King,demo_student24@ets.com,demo_2024024,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT24
+29,demo_student25,Daniel Wright,demo_student25@ets.com,demo_2024025,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT25
+30,demo_student26,Melissa Lopez,demo_student26@ets.com,demo_2024026,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT26
+31,demo_student27,Matthew Hill,demo_student27@ets.com,demo_2024027,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT27
+32,demo_student28,Nicole Scott,demo_student28@ets.com,demo_2024028,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT28
+33,demo_student29,Anthony Green,demo_student29@ets.com,demo_2024029,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT29
+34,demo_student30,Stephanie Adams,demo_student30@ets.com,demo_2024030,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT30
+35,demo_student31,Mark Baker,demo_student31@ets.com,demo_2024031,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT31
+36,demo_student32,Laura Gonzalez,demo_student32@ets.com,demo_2024032,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT32
+37,demo_student33,Donald Nelson,demo_student33@ets.com,demo_2024033,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT33
+38,demo_student34,Michelle Carter,demo_student34@ets.com,demo_2024034,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT34
+39,demo_student35,Steven Mitchell,demo_student35@ets.com,demo_2024035,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT35
+40,demo_student36,Kimberly Perez,demo_student36@ets.com,demo_2024036,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT36
+41,demo_student37,Paul Roberts,demo_student37@ets.com,demo_2024037,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT37
+42,demo_student38,Deborah Turner,demo_student38@ets.com,demo_2024038,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT38
+43,demo_student39,Andrew Phillips,demo_student39@ets.com,demo_2024039,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT39
+44,demo_student40,Dorothy Campbell,demo_student40@ets.com,demo_2024040,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT40
+45,demo_student41,Joshua Parker,demo_student41@ets.com,demo_2024041,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT41
+46,demo_student42,Helen Evans,demo_student42@ets.com,demo_2024042,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT42
+47,demo_student43,Kenneth Edwards,demo_student43@ets.com,demo_2024043,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT43
+48,demo_student44,Sandra Collins,demo_student44@ets.com,demo_2024044,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT44
+49,demo_student45,Kevin Stewart,demo_student45@ets.com,demo_2024045,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT45
+50,demo_student46,Donna Sanchez,demo_student46@ets.com,demo_2024046,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT46
+51,demo_student47,Brian Morris,demo_student47@ets.com,demo_2024047,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT47
+52,demo_student48,Carol Rogers,demo_student48@ets.com,demo_2024048,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT48
+53,demo_student49,George Reed,demo_student49@ets.com,demo_2024049,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT49
+54,demo_student50,Ruth Cook,demo_student50@ets.com,demo_2024050,student,,$0.00,Active,2025-07-18 02:45:45,RFID_DEMO_STUDENT50

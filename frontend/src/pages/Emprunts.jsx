@@ -141,12 +141,9 @@ const Emprunts = () => {
 
   const exportBorrows = async (format) => {
     try {
-      const response = await api.get(
-        `/api/admin/export/borrows?format=${format}`,
-        {
-          responseType: "blob",
-        }
-      );
+      const response = await api.get(`/admin/export/borrows?format=${format}`, {
+        responseType: "blob",
+      });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

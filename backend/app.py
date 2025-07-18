@@ -272,6 +272,50 @@ def admin_required(fn):
     return wrapper
 
 
+def common_export(data_type, query_func, data_formatter):
+    """Common export function for all data types"""
+    try:
+        format_type = request.args.get("format", "csv").lower()
+        
+        # Get the data using the provided query function
+        raw_data = query_func()
+        
+        # Format the data using the provided formatter
+        formatted_data = data_formatter(raw_data)
+        
+        # Generate filename
+        filename_base = f"{data_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        if format_type == "csv":
+            csv_content = export_data_csv(formatted_data)
+            return Response(
+                csv_content,
+                mimetype="text/csv",
+                headers={"Content-Disposition": f"attachment; filename={filename_base}.csv"},
+            )
+        elif format_type == "excel":
+            excel_content = export_data_excel(formatted_data)
+            return Response(
+                excel_content,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename={filename_base}.xlsx"},
+            )
+        elif format_type == "pdf":
+            sections = [{"title": f"{data_type.title()} Report", "content": formatted_data}]
+            pdf_content = export_data_pdf(f"Smart Locker {data_type.title()} Report", sections)
+            return Response(
+                pdf_content,
+                mimetype="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={filename_base}.pdf"},
+            )
+        else:
+            return jsonify({"error": "Unsupported format. Use csv, excel, or pdf"}), 400
+
+    except Exception as e:
+        logger.error(f"Export {data_type} error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
 # Routes
 @app.before_request
 def before_request():
@@ -939,129 +983,10 @@ def get_stats():
         return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route("/api/admin/export/logs", methods=["GET"])
-@jwt_required()
-@admin_required
-def export_logs():
-    try:
-        logs = Log.query.order_by(Log.timestamp.desc()).all()
-
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(
-            ["ID", "User", "Item", "Locker", "Action", "Details", "IP", "Timestamp"]
-        )
-
-        for log in logs:
-            writer.writerow(
-                [
-                    log.id,
-                    f"{log.user.first_name} {log.user.last_name}" if log.user else "",
-                    log.item.name if log.item else "",
-                    log.locker.name if log.locker else "",
-                    log.action_type,
-                    log.notes,
-                    log.ip_address,
-                    log.timestamp,
-                ]
-            )
-
-        output.seek(0)
-
-        return Response(
-            output.getvalue(),
-            mimetype="text/csv",
-            headers={"Content-Disposition": "attachment; filename=logs.csv"},
-        )
-    except Exception as e:
-        logger.error(f"Export logs error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route("/api/admin/logs/export", methods=["GET"])
-@jwt_required()
-@admin_required
-def export_logs_alt():
-    """Alternative endpoint for logs export with format parameter"""
-    try:
-        format_type = request.args.get("format", "csv").lower()
-        logs = Log.query.order_by(Log.timestamp.desc()).all()
 
-        if format_type == "excel":
-            # Convert logs to list of dictionaries for Excel export
-            logs_data = []
-            for log in logs:
-                logs_data.append({
-                    "ID": log.id,
-                    "User": f"{log.user.first_name} {log.user.last_name}" if log.user else "",
-                    "Item": log.item.name if log.item else "",
-                    "Locker": log.locker.name if log.locker else "",
-                    "Action": log.action_type,
-                    "Details": log.notes,
-                    "IP": log.ip_address,
-                    "Timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else ""
-                })
-            return Response(
-                export_data_excel(logs_data),
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": "attachment; filename=logs.xlsx"}
-            )
-        elif format_type == "pdf":
-            # Convert logs to sections for PDF export
-            logs_data = []
-            for log in logs:
-                logs_data.append({
-                    "ID": log.id,
-                    "User": f"{log.user.first_name} {log.user.last_name}" if log.user else "",
-                    "Item": log.item.name if log.item else "",
-                    "Locker": log.locker.name if log.locker else "",
-                    "Action": log.action_type,
-                    "Details": log.notes,
-                    "IP": log.ip_address,
-                    "Timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else ""
-                })
-            
-            sections = [{
-                "title": "System Logs",
-                "content": logs_data
-            }]
-            
-            return Response(
-                export_data_pdf("Smart Locker System Logs", sections),
-                mimetype="application/pdf",
-                headers={"Content-Disposition": "attachment; filename=logs.pdf"}
-            )
-        else:
-            # Default to CSV
-            output = io.StringIO()
-            writer = csv.writer(output)
-            writer.writerow(
-                ["ID", "User", "Item", "Locker", "Action", "Details", "IP", "Timestamp"]
-            )
-
-            for log in logs:
-                writer.writerow(
-                    [
-                        log.id,
-                        f"{log.user.first_name} {log.user.last_name}" if log.user else "",
-                        log.item.name if log.item else "",
-                        log.locker.name if log.locker else "",
-                        log.action_type,
-                        log.notes,
-                        log.ip_address,
-                        log.timestamp,
-                    ]
-                )
-
-            output.seek(0)
-            return Response(
-                output.getvalue(),
-                mimetype="text/csv",
-                headers={"Content-Disposition": "attachment; filename=logs.csv"},
-            )
-    except Exception as e:
-        logger.error(f"Export logs error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+# Removed duplicate export_logs_alt endpoint - using the one below with common_export
 
 
 # RS485 Locker Control Endpoints
@@ -1377,85 +1302,10 @@ def delete_locker(locker_id):
         return jsonify({"error": "Internal server error"}), 500
 
 
-# Export Endpoints
-@app.route("/api/admin/export/users", methods=["GET"])
-@jwt_required()
-@admin_required
-def export_users():
-    """Export users data in various formats"""
-    try:
-        format_type = request.args.get("format", "csv")
-        users = User.query.all()
-        user_data = [user.to_dict() for user in users]
-
-        if format_type == "csv":
-            csv_content = export_data_csv(user_data)
-            return Response(
-                csv_content,
-                mimetype="text/csv",
-                headers={"Content-Disposition": "attachment; filename=users.csv"},
-            )
-        elif format_type == "excel":
-            excel_content = export_data_excel(user_data)
-            return Response(
-                excel_content,
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": "attachment; filename=users.xlsx"},
-            )
-        elif format_type == "pdf":
-            sections = [{"title": "Users", "content": user_data}]
-            pdf_content = export_data_pdf("Users Report", sections)
-            return Response(
-                pdf_content,
-                mimetype="application/pdf",
-                headers={"Content-Disposition": "attachment; filename=users.pdf"},
-            )
-        else:
-            return jsonify({"error": "Unsupported format"}), 400
-
-    except Exception as e:
-        logger.error(f"Export users error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+# Old export endpoints removed - using common_export function now
 
 
-@app.route("/api/admin/export/borrows", methods=["GET"])
-@jwt_required()
-@admin_required
-def export_borrows():
-    """Export borrows data in various formats"""
-    try:
-        format_type = request.args.get("format", "csv")
-        borrows = Borrow.query.all()
-        borrow_data = [borrow.to_dict() for borrow in borrows]
-
-        if format_type == "csv":
-            csv_content = export_data_csv(borrow_data)
-            return Response(
-                csv_content,
-                mimetype="text/csv",
-                headers={"Content-Disposition": "attachment; filename=borrows.csv"},
-            )
-        elif format_type == "excel":
-            excel_content = export_data_excel(borrow_data)
-            return Response(
-                excel_content,
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": "attachment; filename=borrows.xlsx"},
-            )
-        elif format_type == "pdf":
-            sections = [{"title": "Borrows", "content": borrow_data}]
-            pdf_content = export_data_pdf("Borrows Report", sections)
-            return Response(
-                pdf_content,
-                mimetype="application/pdf",
-                headers={"Content-Disposition": "attachment; filename=borrows.pdf"},
-            )
-        else:
-            return jsonify({"error": "Unsupported format"}), 400
-
-    except Exception as e:
-        logger.error(f"Export borrows error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+# Removed duplicate export_borrows endpoint - using the one below with common_export
 
 
 @app.route("/api/admin/export/system", methods=["GET"])
@@ -2718,11 +2568,10 @@ def rfid_access_reservation(rfid_tag):
 @admin_required
 def export_payments():
     """Export payments data in various formats"""
-    try:
-        format_type = request.args.get("format", "csv")
-        payments = Payment.query.all()
-        
-        # Convert payments to exportable format
+    def get_payments_data():
+        return Payment.query.all()
+    
+    def format_payments_data(payments):
         payment_data = []
         for payment in payments:
             payment_data.append({
@@ -2734,111 +2583,182 @@ def export_payments():
                 "Date": payment.timestamp.strftime("%Y-%m-%d %H:%M:%S") if payment.timestamp else "",
                 "Payment Method": payment.method or "Unknown"
             })
+        return payment_data
+    
+    return common_export("payments", get_payments_data, format_payments_data)
 
-        if format_type == "csv":
-            csv_content = export_data_csv(payment_data)
-            return Response(
-                csv_content,
-                mimetype="text/csv",
-                headers={"Content-Disposition": "attachment; filename=payments.csv"},
-            )
-        elif format_type == "excel":
-            excel_content = export_data_excel(payment_data)
-            return Response(
-                excel_content,
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": "attachment; filename=payments.xlsx"},
-            )
-        elif format_type == "pdf":
-            sections = [{"title": "Payments Report", "content": payment_data}]
-            pdf_content = export_data_pdf("Smart Locker Payments Report", sections)
-            return Response(
-                pdf_content,
-                mimetype="application/pdf",
-                headers={"Content-Disposition": "attachment; filename=payments.pdf"},
-            )
-        else:
-            return jsonify({"error": "Unsupported format"}), 400
 
-    except Exception as e:
-        logger.error(f"Export payments error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+@app.route("/api/admin/export/users", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_users():
+    """Export users data in various formats"""
+    def get_users_data():
+        return User.query.all()
+    
+    def format_users_data(users):
+        users_data = []
+        for user in users:
+            users_data.append({
+                "ID": user.id,
+                "Username": user.username,
+                "Name": f"{user.first_name} {user.last_name}",
+                "Email": user.email,
+                "Student ID": user.student_id,
+                "Role": user.role,
+                "Department": user.department,
+                "Balance": f"${user.balance:.2f}",
+                "Status": "Active" if user.is_active else "Inactive",
+                "Created": user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else "",
+                "RFID Tag": user.rfid_tag or "Not assigned"
+            })
+        return users_data
+    
+    return common_export("users", get_users_data, format_users_data)
+
+
+@app.route("/api/admin/export/items", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_items():
+    """Export items data in various formats"""
+    def get_items_data():
+        return Item.query.all()
+    
+    def format_items_data(items):
+        items_data = []
+        for item in items:
+            items_data.append({
+                "ID": item.id,
+                "Name": item.name,
+                "Description": item.description,
+                "Category": item.category,
+                "Status": item.status,
+                "Locker": item.locker.name if item.locker else "No locker",
+                "Created": item.created_at.strftime("%Y-%m-%d %H:%M:%S") if item.created_at else "",
+                "Active": "Yes" if item.is_active else "No"
+            })
+        return items_data
+    
+    return common_export("items", get_items_data, format_items_data)
+
+
+@app.route("/api/admin/export/lockers", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_lockers():
+    """Export lockers data in various formats"""
+    def get_lockers_data():
+        return Locker.query.all()
+    
+    def format_lockers_data(lockers):
+        lockers_data = []
+        for locker in lockers:
+            lockers_data.append({
+                "ID": locker.id,
+                "Name": locker.name,
+                "Number": locker.number,
+                "Location": locker.location,
+                "Status": locker.status,
+                "Capacity": locker.capacity,
+                "Current Occupancy": locker.current_occupancy,
+                "RS485 Address": locker.rs485_address,
+                "RS485 Locker Number": locker.rs485_locker_number,
+                "Active": "Yes" if locker.is_active else "No",
+                "Created": locker.created_at.strftime("%Y-%m-%d %H:%M:%S") if locker.created_at else ""
+            })
+        return lockers_data
+    
+    return common_export("lockers", get_lockers_data, format_lockers_data)
+
+
+@app.route("/api/admin/export/borrows", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_borrows():
+    """Export borrows data in various formats"""
+    def get_borrows_data():
+        return Borrow.query.all()
+    
+    def format_borrows_data(borrows):
+        borrows_data = []
+        for borrow in borrows:
+            borrows_data.append({
+                "ID": borrow.id,
+                "User": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
+                "Item": borrow.item.name if borrow.item else "Unknown",
+                "Locker": borrow.locker.name if borrow.locker else "Unknown",
+                "Status": borrow.status,
+                "Borrowed At": borrow.borrowed_at.strftime("%Y-%m-%d %H:%M:%S") if borrow.borrowed_at else "",
+                "Due Date": borrow.due_date.strftime("%Y-%m-%d %H:%M:%S") if borrow.due_date else "",
+                "Returned At": borrow.returned_at.strftime("%Y-%m-%d %H:%M:%S") if borrow.returned_at else "",
+                "Notes": borrow.notes or ""
+            })
+        return borrows_data
+    
+    return common_export("borrows", get_borrows_data, format_borrows_data)
 
 
 @app.route("/api/admin/export/reservations", methods=["GET"])
 @jwt_required()
 @admin_required
 def export_reservations():
-    """Export reservations data"""
-    try:
-        format_type = request.args.get("format", "csv")
+    """Export reservations data in various formats"""
+    def get_reservations_data():
         status_filter = request.args.get("status", None)
-
-        # Get reservations with optional status filter
         query = Reservation.query
         if status_filter:
             query = query.filter_by(status=status_filter)
-
-        reservations = query.all()
-
-        # Prepare data for export
-        data = []
+        return query.all()
+    
+    def format_reservations_data(reservations):
+        reservations_data = []
         for reservation in reservations:
-            user = User.query.get(reservation.user_id)
-            locker = Locker.query.get(reservation.locker_id)
-            data.append(
-                {
-                    "Reservation Code": reservation.reservation_code,
-                    "User": (
-                        f"{user.first_name} {user.last_name}" if user else "Unknown"
-                    ),
-                    "Username": user.username if user else "Unknown",
-                    "Locker": locker.name if locker else "Unknown",
-                    "Locker Number": locker.number if locker else "Unknown",
-                    "Start Time": (
-                        reservation.start_time.strftime("%Y-%m-%d %H:%M:%S")
-                        if reservation.start_time
-                        else ""
-                    ),
-                    "End Time": (
-                        reservation.end_time.strftime("%Y-%m-%d %H:%M:%S")
-                        if reservation.end_time
-                        else ""
-                    ),
-                    "Status": reservation.status,
-                    "Access Code": reservation.access_code,
-                    "Notes": reservation.notes or "",
-                    "Created At": (
-                        reservation.created_at.strftime("%Y-%m-%d %H:%M:%S")
-                        if reservation.created_at
-                        else ""
-                    ),
-                    "Cancelled At": (
-                        reservation.cancelled_at.strftime("%Y-%m-%d %H:%M:%S")
-                        if reservation.cancelled_at
-                        else ""
-                    ),
-                    "Modified At": (
-                        reservation.modified_at.strftime("%Y-%m-%d %H:%M:%S")
-                        if reservation.modified_at
-                        else ""
-                    ),
-                }
-            )
+            reservations_data.append({
+                "ID": reservation.id,
+                "User": f"{reservation.user.first_name} {reservation.user.last_name}" if reservation.user else "Unknown",
+                "Locker": reservation.locker.name if reservation.locker else "Unknown",
+                "Status": reservation.status,
+                "Start Time": reservation.start_time.strftime("%Y-%m-%d %H:%M:%S") if reservation.start_time else "",
+                "End Time": reservation.end_time.strftime("%Y-%m-%d %H:%M:%S") if reservation.end_time else "",
+                "Notes": reservation.notes or "",
+                "Created": reservation.created_at.strftime("%Y-%m-%d %H:%M:%S") if reservation.created_at else "",
+                "Modified By": f"{reservation.modified_by_user.first_name} {reservation.modified_by_user.last_name}" if reservation.modified_by_user else "",
+                "Cancelled By": f"{reservation.cancelled_by_user.first_name} {reservation.cancelled_by_user.last_name}" if reservation.cancelled_by_user else ""
+            })
+        return reservations_data
+    
+    return common_export("reservations", get_reservations_data, format_reservations_data)
 
-        if format_type == "csv":
-            return export_data_csv(data, "reservations")
-        elif format_type == "excel":
-            return export_data_excel(data, "reservations")
-        elif format_type == "pdf":
-            sections = [{"title": "Reservations", "content": data}]
-            return export_data_pdf("Reservations Report", sections, "reservations")
-        else:
-            return jsonify({"error": "Unsupported format"}), 400
 
-    except Exception as e:
-        logger.error(f"Export reservations error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+@app.route("/api/admin/export/logs", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_logs_new():
+    """Export logs data in various formats using common function"""
+    def get_logs_data():
+        return Log.query.order_by(Log.timestamp.desc()).all()
+    
+    def format_logs_data(logs):
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                "ID": log.id,
+                "User": f"{log.user.first_name} {log.user.last_name}" if log.user else "",
+                "Item": log.item.name if log.item else "",
+                "Locker": log.locker.name if log.locker else "",
+                "Action": log.action_type,
+                "Details": log.notes,
+                "IP Address": log.ip_address,
+                "User Agent": log.user_agent,
+                "Timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else ""
+            })
+        return logs_data
+    
+    return common_export("logs", get_logs_data, format_logs_data)
+
+
+
 
 
 if __name__ == "__main__":

@@ -123,7 +123,7 @@ const Payments = () => {
   const exportPayments = async (format) => {
     try {
       const response = await api.get(
-        `/api/admin/export/payments?format=${format}`,
+        `/admin/export/payments?format=${format}`,
         {
           responseType: "blob",
         }

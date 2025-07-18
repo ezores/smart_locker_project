@@ -268,7 +268,7 @@ const Reservations = () => {
       }
 
       const response = await api.get(
-        `/api/admin/export/reservations?${params.toString()}`,
+        `/admin/export/reservations?${params.toString()}`,
         {
           responseType: "blob",
         }

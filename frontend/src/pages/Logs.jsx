@@ -176,12 +176,9 @@ const Logs = () => {
 
   const exportLogs = async (format) => {
     try {
-      const response = await axios.get(
-        `/api/admin/logs/export?format=${format}`,
-        {
-          responseType: "blob",
-        }
-      );
+      const response = await axios.get(`/admin/export/logs?format=${format}`, {
+        responseType: "blob",
+      });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

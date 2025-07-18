@@ -24,6 +24,7 @@ import {
   Unlock,
   ArrowLeft,
   Zap,
+  FileText,
 } from "lucide-react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -233,6 +234,37 @@ const Lockers = () => {
     });
   };
 
+  const exportLockers = async (format) => {
+    try {
+      const response = await axios.get(
+        `/admin/export/lockers?format=${format}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const fileExtensions = {
+        csv: "csv",
+        excel: "xlsx",
+        pdf: "pdf",
+      };
+      const extension = fileExtensions[format] || format;
+      link.setAttribute(
+        "download",
+        `lockers_${new Date().toISOString().split("T")[0]}.${extension}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error exporting lockers:", error);
+      alert("Failed to export lockers");
+    }
+  };
+
   const filteredLockers = lockers
     .filter((locker) => {
       const lockerName = locker.name || locker.number || "";
@@ -392,6 +424,31 @@ const Lockers = () => {
         >
           <Plus className="h-4 w-4" />
           <span>{t("add_locker")}</span>
+        </button>
+      </div>
+
+      {/* Export Buttons */}
+      <div className="mb-6 flex justify-end space-x-2">
+        <button
+          onClick={() => exportLockers("csv")}
+          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export as CSV</span>
+        </button>
+        <button
+          onClick={() => exportLockers("excel")}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export as Excel</span>
+        </button>
+        <button
+          onClick={() => exportLockers("pdf")}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Export as PDF</span>
         </button>
       </div>
 

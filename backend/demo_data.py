@@ -13,7 +13,7 @@ from werkzeug.security import generate_password_hash
 
 
 def create_demo_data(
-    db, User, Locker, Item, Log, Borrow, Return, Payment, Notification, SystemSetting
+    db, User, Locker, Item, Log, Borrow, Payment, Notification, SystemSetting
 ):
     """Create comprehensive demo data for testing the system"""
 
@@ -21,7 +21,6 @@ def create_demo_data(
 
     # Clear ALL existing data
     Log.query.delete()
-    Return.query.delete()
     Borrow.query.delete()
     Payment.query.delete()
     Notification.query.delete()
@@ -130,19 +129,6 @@ def create_demo_data(
         )
         db.session.add(borrow)
     db.session.commit()
-    for borrow in Borrow.query.all():  # Use Borrow.query.all() to get all borrows
-        if borrow.status == "returned":
-            return_record = Return(
-                borrow_id=borrow.id,
-                user_id=borrow.user_id,
-                item_id=borrow.item_id,
-                locker_id=borrow.locker_id,
-                returned_at=borrow.returned_at,
-                condition_returned=random.choice(["same", "damaged", "missing_parts"]),
-                notes="Auto-generated return",
-            )
-            db.session.add(return_record)
-    db.session.commit()
     # Create more payments (increased from 10-20 to 30-50 per user)
     for user in User.query.all()[1:]:  # Use User.query.all() to get all users
         for _ in range(random.randint(30, 50)):
@@ -237,7 +223,7 @@ def create_demo_data(
         db.session.add(log)
     db.session.commit()
     print(
-        f"Demo data created: {len(User.query.all())} users, {len(Locker.query.all())} lockers, {len(Item.query.all())} items, {len(Borrow.query.all())} borrows, {len(Return.query.all())} returns, {len(Payment.query.all())} payments, {len(Notification.query.all())} notifications, {len(Log.query.all())} logs."
+        f"Demo data created: {len(User.query.all())} users, {len(Locker.query.all())} lockers, {len(Item.query.all())} items, {len(Borrow.query.all())} borrows, {len(Payment.query.all())} payments, {len(Notification.query.all())} notifications, {len(Log.query.all())} logs."
     )
     print("\nDemo credentials:")
     print("Username: admin, Password: admin123 (Admin)")
@@ -353,12 +339,11 @@ def load_simple_demo_data(db):
     print("✓ Simple demo data loaded successfully!")
 
 
-def clear_demo_data(db, User, Locker, Item, Log, Borrow, Return, Payment, Notification):
+def clear_demo_data(db, User, Locker, Item, Log, Borrow, Payment, Notification):
     """Clear all demo data from the database"""
     print("Clearing demo data...")
 
     Log.query.delete()
-    Return.query.delete()
     Borrow.query.delete()
     Payment.query.delete()
     Notification.query.delete()

@@ -69,34 +69,8 @@ const Reports = () => {
       setReportData(response.data);
     } catch (error) {
       console.error("Error generating report:", error);
-      // Mock data for demo
-      setReportData({
-        summary: {
-          total_transactions: 45,
-          borrows: 28,
-          returns: 17,
-          unique_users: 12,
-          unique_items: 15,
-        },
-        transactions: [
-          {
-            id: 1,
-            user: "john.doe",
-            item: "Laptop",
-            action: "borrow",
-            timestamp: "2024-12-01T10:30:00Z",
-            locker: "A1",
-          },
-          {
-            id: 2,
-            user: "jane.smith",
-            item: "Projector",
-            action: "return",
-            timestamp: "2024-12-01T14:20:00Z",
-            locker: "B3",
-          },
-        ],
-      });
+      alert("Failed to generate report. Please try again.");
+      setReportData(null);
     } finally {
       setLoading(false);
     }
@@ -121,8 +95,8 @@ const Reports = () => {
       // Map format to correct file extension
       const fileExtensions = {
         csv: "csv",
-        excel: "xlsx",
-        xlsx: "xlsx", // Keep xlsx as xlsx
+        excel: "xls",
+        xlsx: "xls", // Use .xls as preferred
         pdf: "pdf",
       };
       const extension = fileExtensions[format] || format;

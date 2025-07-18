@@ -1373,18 +1373,18 @@ def get_reports():
             # Get borrows and returns
             query = Borrow.query
             if start_date:
-                query = query.filter(Borrow.borrow_date >= start_date)
+                query = query.filter(Borrow.borrowed_at >= start_date)
             if end_date:
-                query = query.filter(Borrow.borrow_date <= end_date)
+                query = query.filter(Borrow.borrowed_at <= end_date)
             
             borrows = query.all()
             
             # Get returns
-            returns_query = Borrow.query.filter(Borrow.return_date.isnot(None))
+            returns_query = Borrow.query.filter(Borrow.returned_at.isnot(None))
             if start_date:
-                returns_query = returns_query.filter(Borrow.return_date >= start_date)
+                returns_query = returns_query.filter(Borrow.returned_at >= start_date)
             if end_date:
-                returns_query = returns_query.filter(Borrow.return_date <= end_date)
+                returns_query = returns_query.filter(Borrow.returned_at <= end_date)
             
             returns = returns_query.all()
             
@@ -1396,7 +1396,7 @@ def get_reports():
                     "user": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
                     "item": borrow.item.name if borrow.item else "Unknown",
                     "action": "borrow",
-                    "timestamp": borrow.borrow_date.isoformat() if borrow.borrow_date else "",
+                    "timestamp": borrow.borrowed_at.isoformat() if borrow.borrowed_at else "",
                     "locker": borrow.locker.name if borrow.locker else "Unknown"
                 })
             
@@ -1406,7 +1406,7 @@ def get_reports():
                     "user": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
                     "item": borrow.item.name if borrow.item else "Unknown",
                     "action": "return",
-                    "timestamp": borrow.return_date.isoformat() if borrow.return_date else "",
+                    "timestamp": borrow.returned_at.isoformat() if borrow.returned_at else "",
                     "locker": borrow.locker.name if borrow.locker else "Unknown"
                 })
             
@@ -1512,18 +1512,18 @@ def export_report():
             # Get borrows and returns
             query = Borrow.query
             if start_date:
-                query = query.filter(Borrow.borrow_date >= start_date)
+                query = query.filter(Borrow.borrowed_at >= start_date)
             if end_date:
-                query = query.filter(Borrow.borrow_date <= end_date)
+                query = query.filter(Borrow.borrowed_at <= end_date)
             
             borrows = query.all()
             
             # Get returns
-            returns_query = Borrow.query.filter(Borrow.return_date.isnot(None))
+            returns_query = Borrow.query.filter(Borrow.returned_at.isnot(None))
             if start_date:
-                returns_query = returns_query.filter(Borrow.return_date >= start_date)
+                returns_query = returns_query.filter(Borrow.returned_at >= start_date)
             if end_date:
-                returns_query = returns_query.filter(Borrow.return_date <= end_date)
+                returns_query = returns_query.filter(Borrow.returned_at <= end_date)
             
             returns = returns_query.all()
             
@@ -1535,7 +1535,7 @@ def export_report():
                     "User": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
                     "Item": borrow.item.name if borrow.item else "Unknown",
                     "Action": "Borrow",
-                    "Date": borrow.borrow_date.strftime("%Y-%m-%d %H:%M:%S") if borrow.borrow_date else "",
+                    "Date": borrow.borrowed_at.strftime("%Y-%m-%d %H:%M:%S") if borrow.borrowed_at else "",
                     "Locker": borrow.locker.name if borrow.locker else "Unknown"
                 })
             
@@ -1545,7 +1545,7 @@ def export_report():
                     "User": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
                     "Item": borrow.item.name if borrow.item else "Unknown",
                     "Action": "Return",
-                    "Date": borrow.return_date.strftime("%Y-%m-%d %H:%M:%S") if borrow.return_date else "",
+                    "Date": borrow.returned_at.strftime("%Y-%m-%d %H:%M:%S") if borrow.returned_at else "",
                     "Locker": borrow.locker.name if borrow.locker else "Unknown"
                 })
             

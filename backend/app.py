@@ -1370,24 +1370,39 @@ def get_reports():
 
         # Generate report data based on type
         if report_type == "transactions":
-            # Get borrows and returns
+            # Get all borrows that have either borrow_date or return_date within the range
             query = Borrow.query
-            if start_date:
-                query = query.filter(Borrow.borrowed_at >= start_date)
-            if end_date:
-                query = query.filter(Borrow.borrowed_at <= end_date)
-            
-            borrows = query.all()
-            
-            # Get returns
-            returns_query = Borrow.query.filter(Borrow.returned_at.isnot(None))
-            if start_date:
-                returns_query = returns_query.filter(Borrow.returned_at >= start_date)
-            if end_date:
-                returns_query = returns_query.filter(Borrow.returned_at <= end_date)
-            
-            returns = returns_query.all()
-            
+            if start_date and end_date:
+                # Include transactions where either borrow_date or return_date is within range
+                query = query.filter(
+                    db.or_(
+                        db.and_(Borrow.borrowed_at >= start_date, Borrow.borrowed_at <= end_date),
+                        db.and_(Borrow.returned_at >= start_date, Borrow.returned_at <= end_date)
+                    )
+                )
+            elif start_date:
+                query = query.filter(
+                    db.or_(
+                        Borrow.borrowed_at >= start_date,
+                        Borrow.returned_at >= start_date
+                    )
+                )
+            elif end_date:
+                query = query.filter(
+                    db.or_(
+                        Borrow.borrowed_at <= end_date,
+                        Borrow.returned_at <= end_date
+                    )
+                )
+            all_transactions = query.all()
+            # Separate into borrows and returns
+            borrows = []
+            returns = []
+            for transaction in all_transactions:
+                if transaction.returned_at is not None:
+                    returns.append(transaction)
+                else:
+                    borrows.append(transaction)
             # Prepare transaction data
             transactions = []
             for borrow in borrows:
@@ -1399,7 +1414,6 @@ def get_reports():
                     "timestamp": borrow.borrowed_at.isoformat() if borrow.borrowed_at else "",
                     "locker": borrow.locker.name if borrow.locker else "Unknown"
                 })
-            
             for borrow in returns:
                 transactions.append({
                     "id": borrow.id,
@@ -1409,10 +1423,8 @@ def get_reports():
                     "timestamp": borrow.returned_at.isoformat() if borrow.returned_at else "",
                     "locker": borrow.locker.name if borrow.locker else "Unknown"
                 })
-            
             # Sort by timestamp
             transactions.sort(key=lambda x: x["timestamp"], reverse=True)
-            
             # Calculate summary
             summary = {
                 "total_transactions": len(transactions),
@@ -1421,7 +1433,6 @@ def get_reports():
                 "unique_users": len(set(t["user"] for t in transactions)),
                 "unique_items": len(set(t["item"] for t in transactions))
             }
-            
             return jsonify({
                 "summary": summary,
                 "transactions": transactions

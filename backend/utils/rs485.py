@@ -69,12 +69,20 @@ class RS485Controller:
             logger.info(f"=== REAL RS485 COMMAND EXECUTION ===")
             logger.info(f"Port: {self.port}")
             logger.info(f"Baudrate: {self.baudrate}")
-            logger.info(f"Command (hex): {command}")
-            logger.info(f"Command (bytes): {[hex(ord(c)) for c in command]}")
-            logger.info(f"Command length: {len(command)} bytes")
+            logger.info(f"Command (hex string): {command}")
             
-            # Send the command
-            bytes_written = self.serial_connection.write(command.encode())
+            # Convert hex string to bytes
+            try:
+                command_bytes = bytes.fromhex(command)
+                logger.info(f"Command (hex bytes): {[f'{b:02X}' for b in command_bytes]}")
+                logger.info(f"Command length: {len(command_bytes)} bytes")
+            except ValueError as e:
+                logger.error(f"Invalid hex string: {command}")
+                logger.error(f"Hex conversion error: {e}")
+                return False
+            
+            # Send the command as hex bytes
+            bytes_written = self.serial_connection.write(command_bytes)
             logger.info(f"Bytes written to serial: {bytes_written}")
             
             # Wait for response

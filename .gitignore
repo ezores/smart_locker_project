@@ -108,5 +108,8 @@ test_fixes.js
 package.json
 package-lock.json
 
+# Reservations file
+backend/reservations
+
 # Compiled translation files
 *.mo

@@ -118,9 +118,17 @@ const Reports = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
+      // Map format to correct file extension
+      const fileExtensions = {
+        csv: "csv",
+        excel: "xlsx",
+        xlsx: "xlsx", // Keep xlsx as xlsx
+        pdf: "pdf",
+      };
+      const extension = fileExtensions[format] || format;
       link.setAttribute(
         "download",
-        `smart_locker_report_${reportType}_${startDate}_${endDate}.${format}`
+        `smart_locker_report_${reportType}_${startDate}_${endDate}.${extension}`
       );
       document.body.appendChild(link);
       link.click();
@@ -283,19 +291,19 @@ const Reports = () => {
               : "bg-green-600 text-white hover:bg-green-700"
           }`}
         >
-          <Download className="h-4 w-4" />
-          <span>{t("export_csv") || "Export CSV"}</span>
+          <FileText className="h-4 w-4" />
+          <span>Export as CSV</span>
         </button>
         <button
-          onClick={() => exportReport("xlsx")}
+          onClick={() => exportReport("excel")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             isDarkMode
               ? "bg-blue-600 text-white hover:bg-blue-700"
               : "bg-blue-600 text-white hover:bg-blue-700"
           }`}
         >
-          <Download className="h-4 w-4" />
-          <span>{t("export_excel") || "Export Excel"}</span>
+          <FileText className="h-4 w-4" />
+          <span>Export as Excel</span>
         </button>
         <button
           onClick={() => exportReport("pdf")}
@@ -306,7 +314,7 @@ const Reports = () => {
           }`}
         >
           <FileText className="h-4 w-4" />
-          <span>{t("export_pdf") || "Export PDF"}</span>
+          <span>Export as PDF</span>
         </button>
       </div>
 

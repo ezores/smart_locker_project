@@ -48,15 +48,19 @@ const Header = () => {
   const languageFlags = {
     en: "🇺🇸",
     fr: "🇫🇷",
-    es: "🇪🇸",
     tr: "🇹🇷",
+    az: "🇦🇿",
+    es: "🇪🇸",
+    "pt-BR": "🇧🇷",
   };
 
   const languageNames = {
     en: "English",
     fr: "Français",
-    es: "Español",
     tr: "Türkçe",
+    az: "Azərbaycan",
+    es: "Español",
+    "pt-BR": "Português (BR)",
   };
 
   const navigationItems = [

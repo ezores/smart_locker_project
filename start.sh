@@ -830,7 +830,7 @@ setup_environment() {
             # Use shorter timeout on macOS and add force flags
             if command -v brew &> /dev/null; then
                 # macOS: shorter timeout, force flags, no audit
-                if timeout 180 npm install --force --no-audit --no-fund $npm_force_flag; then
+                if npm install --force --no-audit --no-fund $npm_force_flag; then
                     npm_success=true
                     break
                 else
@@ -844,7 +844,7 @@ setup_environment() {
                 fi
             else
                 # Linux: original timeout
-                if timeout 300 npm install $npm_force_flag; then
+                if npm install $npm_force_flag; then
                     npm_success=true
                     break
                 else

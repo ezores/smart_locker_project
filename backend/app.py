@@ -978,6 +978,92 @@ def export_logs():
         return jsonify({"error": "Internal server error"}), 500
 
 
+@app.route("/api/admin/logs/export", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_logs_alt():
+    """Alternative endpoint for logs export with format parameter"""
+    try:
+        format_type = request.args.get("format", "csv").lower()
+        logs = Log.query.order_by(Log.timestamp.desc()).all()
+
+        if format_type == "excel":
+            # Convert logs to list of dictionaries for Excel export
+            logs_data = []
+            for log in logs:
+                logs_data.append({
+                    "ID": log.id,
+                    "User": f"{log.user.first_name} {log.user.last_name}" if log.user else "",
+                    "Item": log.item.name if log.item else "",
+                    "Locker": log.locker.name if log.locker else "",
+                    "Action": log.action_type,
+                    "Details": log.notes,
+                    "IP": log.ip_address,
+                    "Timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else ""
+                })
+            return Response(
+                export_data_excel(logs_data),
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment; filename=logs.xlsx"}
+            )
+        elif format_type == "pdf":
+            # Convert logs to sections for PDF export
+            logs_data = []
+            for log in logs:
+                logs_data.append({
+                    "ID": log.id,
+                    "User": f"{log.user.first_name} {log.user.last_name}" if log.user else "",
+                    "Item": log.item.name if log.item else "",
+                    "Locker": log.locker.name if log.locker else "",
+                    "Action": log.action_type,
+                    "Details": log.notes,
+                    "IP": log.ip_address,
+                    "Timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S") if log.timestamp else ""
+                })
+            
+            sections = [{
+                "title": "System Logs",
+                "content": logs_data
+            }]
+            
+            return Response(
+                export_data_pdf("Smart Locker System Logs", sections),
+                mimetype="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=logs.pdf"}
+            )
+        else:
+            # Default to CSV
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(
+                ["ID", "User", "Item", "Locker", "Action", "Details", "IP", "Timestamp"]
+            )
+
+            for log in logs:
+                writer.writerow(
+                    [
+                        log.id,
+                        f"{log.user.first_name} {log.user.last_name}" if log.user else "",
+                        log.item.name if log.item else "",
+                        log.locker.name if log.locker else "",
+                        log.action_type,
+                        log.notes,
+                        log.ip_address,
+                        log.timestamp,
+                    ]
+                )
+
+            output.seek(0)
+            return Response(
+                output.getvalue(),
+                mimetype="text/csv",
+                headers={"Content-Disposition": "attachment; filename=logs.csv"},
+            )
+    except Exception as e:
+        logger.error(f"Export logs error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
 # RS485 Locker Control Endpoints
 @app.route("/api/lockers/<int:locker_id>/open", methods=["POST"])
 @jwt_required()
@@ -1412,6 +1498,336 @@ def export_system_report():
 
     except Exception as e:
         logger.error(f"Export system report error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/reports", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_reports():
+    """Generate reports for admin dashboard"""
+    try:
+        report_type = request.args.get("type", "transactions")
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        date_range = request.args.get("range", "week")
+
+        # Parse dates
+        if start_date:
+            start_date = datetime.strptime(start_date, "%Y-%m-%d")
+        if end_date:
+            end_date = datetime.strptime(end_date, "%Y-%m-%d")
+
+        # Generate report data based on type
+        if report_type == "transactions":
+            # Get borrows and returns
+            query = Borrow.query
+            if start_date:
+                query = query.filter(Borrow.borrow_date >= start_date)
+            if end_date:
+                query = query.filter(Borrow.borrow_date <= end_date)
+            
+            borrows = query.all()
+            
+            # Get returns
+            returns_query = Borrow.query.filter(Borrow.return_date.isnot(None))
+            if start_date:
+                returns_query = returns_query.filter(Borrow.return_date >= start_date)
+            if end_date:
+                returns_query = returns_query.filter(Borrow.return_date <= end_date)
+            
+            returns = returns_query.all()
+            
+            # Prepare transaction data
+            transactions = []
+            for borrow in borrows:
+                transactions.append({
+                    "id": borrow.id,
+                    "user": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
+                    "item": borrow.item.name if borrow.item else "Unknown",
+                    "action": "borrow",
+                    "timestamp": borrow.borrow_date.isoformat() if borrow.borrow_date else "",
+                    "locker": borrow.locker.name if borrow.locker else "Unknown"
+                })
+            
+            for borrow in returns:
+                transactions.append({
+                    "id": borrow.id,
+                    "user": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
+                    "item": borrow.item.name if borrow.item else "Unknown",
+                    "action": "return",
+                    "timestamp": borrow.return_date.isoformat() if borrow.return_date else "",
+                    "locker": borrow.locker.name if borrow.locker else "Unknown"
+                })
+            
+            # Sort by timestamp
+            transactions.sort(key=lambda x: x["timestamp"], reverse=True)
+            
+            # Calculate summary
+            summary = {
+                "total_transactions": len(transactions),
+                "borrows": len(borrows),
+                "returns": len(returns),
+                "unique_users": len(set(t["user"] for t in transactions)),
+                "unique_items": len(set(t["item"] for t in transactions))
+            }
+            
+            return jsonify({
+                "summary": summary,
+                "transactions": transactions
+            })
+            
+        elif report_type == "users":
+            # Get user statistics
+            users = User.query.all()
+            user_stats = []
+            
+            for user in users:
+                borrow_count = Borrow.query.filter_by(user_id=user.id).count()
+                active_borrows = Borrow.query.filter_by(user_id=user.id, return_date=None).count()
+                
+                user_stats.append({
+                    "id": user.id,
+                    "username": user.username,
+                    "name": f"{user.first_name} {user.last_name}",
+                    "department": user.department,
+                    "total_borrows": borrow_count,
+                    "active_borrows": active_borrows,
+                    "last_activity": user.last_login.isoformat() if user.last_login else ""
+                })
+            
+            return jsonify({
+                "summary": {
+                    "total_users": len(users),
+                    "active_users": len([u for u in user_stats if u["active_borrows"] > 0])
+                },
+                "users": user_stats
+            })
+            
+        elif report_type == "items":
+            # Get item statistics
+            items = Item.query.all()
+            item_stats = []
+            
+            for item in items:
+                borrow_count = Borrow.query.filter_by(item_id=item.id).count()
+                active_borrows = Borrow.query.filter_by(item_id=item.id, return_date=None).count()
+                
+                item_stats.append({
+                    "id": item.id,
+                    "name": item.name,
+                    "category": item.category,
+                    "total_borrows": borrow_count,
+                    "active_borrows": active_borrows,
+                    "status": "Available" if active_borrows == 0 else "Borrowed"
+                })
+            
+            return jsonify({
+                "summary": {
+                    "total_items": len(items),
+                    "available_items": len([i for i in item_stats if i["active_borrows"] == 0]),
+                    "borrowed_items": len([i for i in item_stats if i["active_borrows"] > 0])
+                },
+                "items": item_stats
+            })
+        
+        else:
+            return jsonify({"error": "Unsupported report type"}), 400
+
+    except Exception as e:
+        logger.error(f"Generate report error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/export", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_report():
+    """Export reports in various formats"""
+    try:
+        report_type = request.args.get("type", "transactions")
+        format_type = request.args.get("format", "excel")
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        date_range = request.args.get("range", "week")
+
+        # Parse dates
+        if start_date:
+            start_date = datetime.strptime(start_date, "%Y-%m-%d")
+        if end_date:
+            end_date = datetime.strptime(end_date, "%Y-%m-%d")
+
+        # Generate report data based on type
+        if report_type == "transactions":
+            # Get borrows and returns
+            query = Borrow.query
+            if start_date:
+                query = query.filter(Borrow.borrow_date >= start_date)
+            if end_date:
+                query = query.filter(Borrow.borrow_date <= end_date)
+            
+            borrows = query.all()
+            
+            # Get returns
+            returns_query = Borrow.query.filter(Borrow.return_date.isnot(None))
+            if start_date:
+                returns_query = returns_query.filter(Borrow.return_date >= start_date)
+            if end_date:
+                returns_query = returns_query.filter(Borrow.return_date <= end_date)
+            
+            returns = returns_query.all()
+            
+            # Prepare transaction data
+            transactions = []
+            for borrow in borrows:
+                transactions.append({
+                    "ID": borrow.id,
+                    "User": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
+                    "Item": borrow.item.name if borrow.item else "Unknown",
+                    "Action": "Borrow",
+                    "Date": borrow.borrow_date.strftime("%Y-%m-%d %H:%M:%S") if borrow.borrow_date else "",
+                    "Locker": borrow.locker.name if borrow.locker else "Unknown"
+                })
+            
+            for borrow in returns:
+                transactions.append({
+                    "ID": borrow.id,
+                    "User": f"{borrow.user.first_name} {borrow.user.last_name}" if borrow.user else "Unknown",
+                    "Item": borrow.item.name if borrow.item else "Unknown",
+                    "Action": "Return",
+                    "Date": borrow.return_date.strftime("%Y-%m-%d %H:%M:%S") if borrow.return_date else "",
+                    "Locker": borrow.locker.name if borrow.locker else "Unknown"
+                })
+            
+            # Sort by date
+            transactions.sort(key=lambda x: x["Date"], reverse=True)
+            
+            # Generate filename with date range
+            start_str = start_date.strftime('%Y%m%d') if start_date else 'all'
+            end_str = end_date.strftime('%Y%m%d') if end_date else 'all'
+            start_display = start_date.strftime('%Y-%m-%d') if start_date else 'All'
+            end_display = end_date.strftime('%Y-%m-%d') if end_date else 'All'
+            
+            if format_type == "excel":
+                return Response(
+                    export_data_excel(transactions),
+                    mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f"attachment; filename=transactions_report_{start_str}_{end_str}.xlsx"}
+                )
+            elif format_type == "pdf":
+                sections = [{
+                    "title": f"Transactions Report ({start_display} to {end_display})",
+                    "content": transactions
+                }]
+                return Response(
+                    export_data_pdf("Smart Locker Transactions Report", sections),
+                    mimetype="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename=transactions_report_{start_str}_{end_str}.pdf"}
+                )
+            elif format_type == "csv":
+                csv_content = export_data_csv(transactions)
+                return Response(
+                    csv_content,
+                    mimetype="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename=transactions_report_{start_str}_{end_str}.csv"}
+                )
+            else:
+                return jsonify({"error": "Unsupported format"}), 400
+                
+        elif report_type == "users":
+            # Get user statistics
+            users = User.query.all()
+            user_stats = []
+            
+            for user in users:
+                borrow_count = Borrow.query.filter_by(user_id=user.id).count()
+                active_borrows = Borrow.query.filter_by(user_id=user.id, return_date=None).count()
+                
+                user_stats.append({
+                    "ID": user.id,
+                    "Username": user.username,
+                    "Name": f"{user.first_name} {user.last_name}",
+                    "Department": user.department,
+                    "Total Borrows": borrow_count,
+                    "Active Borrows": active_borrows,
+                    "Last Activity": user.last_login.strftime("%Y-%m-%d %H:%M:%S") if user.last_login else ""
+                })
+            
+            if format_type == "excel":
+                return Response(
+                    export_data_excel(user_stats),
+                    mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": "attachment; filename=users_report.xlsx"}
+                )
+            elif format_type == "pdf":
+                sections = [{
+                    "title": "Users Report",
+                    "content": user_stats
+                }]
+                return Response(
+                    export_data_pdf("Smart Locker Users Report", sections),
+                    mimetype="application/pdf",
+                    headers={"Content-Disposition": "attachment; filename=users_report.pdf"}
+                )
+            elif format_type == "csv":
+                csv_content = export_data_csv(user_stats)
+                return Response(
+                    csv_content,
+                    mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=users_report.csv"}
+                )
+            else:
+                return jsonify({"error": "Unsupported format"}), 400
+                
+        elif report_type == "items":
+            # Get item statistics
+            items = Item.query.all()
+            item_stats = []
+            
+            for item in items:
+                borrow_count = Borrow.query.filter_by(item_id=item.id).count()
+                active_borrows = Borrow.query.filter_by(item_id=item.id, return_date=None).count()
+                
+                item_stats.append({
+                    "ID": item.id,
+                    "Name": item.name,
+                    "Category": item.category,
+                    "Total Borrows": borrow_count,
+                    "Active Borrows": active_borrows,
+                    "Status": "Available" if active_borrows == 0 else "Borrowed"
+                })
+            
+            if format_type == "excel":
+                return Response(
+                    export_data_excel(item_stats),
+                    mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": "attachment; filename=items_report.xlsx"}
+                )
+            elif format_type == "pdf":
+                sections = [{
+                    "title": "Items Report",
+                    "content": item_stats
+                }]
+                return Response(
+                    export_data_pdf("Smart Locker Items Report", sections),
+                    mimetype="application/pdf",
+                    headers={"Content-Disposition": "attachment; filename=items_report.pdf"}
+                )
+            elif format_type == "csv":
+                csv_content = export_data_csv(item_stats)
+                return Response(
+                    csv_content,
+                    mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=items_report.csv"}
+                )
+            else:
+                return jsonify({"error": "Unsupported format"}), 400
+        
+        else:
+            return jsonify({"error": "Unsupported report type"}), 400
+
+    except Exception as e:
+        logger.error(f"Export report error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -2294,6 +2710,58 @@ def rfid_access_reservation(rfid_tag):
 
     except Exception as e:
         logger.error(f"RFID access reservation error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/export/payments", methods=["GET"])
+@jwt_required()
+@admin_required
+def export_payments():
+    """Export payments data in various formats"""
+    try:
+        format_type = request.args.get("format", "csv")
+        payments = Payment.query.all()
+        
+        # Convert payments to exportable format
+        payment_data = []
+        for payment in payments:
+            payment_data.append({
+                "ID": payment.id,
+                "User": f"{payment.user.first_name} {payment.user.last_name}" if payment.user else "Unknown",
+                "Amount": f"${payment.amount:.2f}",
+                "Status": payment.status,
+                "Description": payment.description,
+                "Date": payment.timestamp.strftime("%Y-%m-%d %H:%M:%S") if payment.timestamp else "",
+                "Payment Method": payment.method or "Unknown"
+            })
+
+        if format_type == "csv":
+            csv_content = export_data_csv(payment_data)
+            return Response(
+                csv_content,
+                mimetype="text/csv",
+                headers={"Content-Disposition": "attachment; filename=payments.csv"},
+            )
+        elif format_type == "excel":
+            excel_content = export_data_excel(payment_data)
+            return Response(
+                excel_content,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment; filename=payments.xlsx"},
+            )
+        elif format_type == "pdf":
+            sections = [{"title": "Payments Report", "content": payment_data}]
+            pdf_content = export_data_pdf("Smart Locker Payments Report", sections)
+            return Response(
+                pdf_content,
+                mimetype="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=payments.pdf"},
+            )
+        else:
+            return jsonify({"error": "Unsupported format"}), 400
+
+    except Exception as e:
+        logger.error(f"Export payments error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 

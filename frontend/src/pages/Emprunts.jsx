@@ -26,7 +26,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import axios from "axios";
+import { api } from "../utils/api";
 
 const Emprunts = () => {
   const { t } = useLanguage();
@@ -54,14 +54,14 @@ const Emprunts = () => {
     try {
       const [borrowsResponse, usersResponse, itemsResponse, lockersResponse] =
         await Promise.all([
-          axios.get(
-            `/api/admin/active-borrows?limit=${pageSize}&offset=${
+          api.get(
+            `/admin/active-borrows?limit=${pageSize}&offset=${
               (page - 1) * pageSize
             }`
           ),
-          axios.get("/api/admin/users"),
-          axios.get("/api/items"),
-          axios.get("/api/lockers"),
+          api.get("/admin/users"),
+          api.get("/items"),
+          api.get("/lockers"),
         ]);
       // Handle the correct API response format
       const borrowsData = borrowsResponse.data;
@@ -141,8 +141,8 @@ const Emprunts = () => {
 
   const exportBorrows = async (format) => {
     try {
-      const response = await axios.get(
-        `/api/admin/borrows/export?format=${format}`,
+      const response = await api.get(
+        `/api/admin/export/borrows?format=${format}`,
         {
           responseType: "blob",
         }
@@ -151,9 +151,19 @@ const Emprunts = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
+
+      // Map format to correct file extension
+      const fileExtensions = {
+        csv: "csv",
+        excel: "xlsx",
+        xlsx: "xlsx",
+        pdf: "pdf",
+      };
+      const extension = fileExtensions[format] || format;
+
       link.setAttribute(
         "download",
-        `active_borrows_${new Date().toISOString().split("T")[0]}.${format}`
+        `active_borrows_${new Date().toISOString().split("T")[0]}.${extension}`
       );
       document.body.appendChild(link);
       link.click();
@@ -232,21 +242,21 @@ const Emprunts = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            <span>CSV</span>
+            <span>Export as CSV</span>
           </button>
           <button
-            onClick={() => exportBorrows("xlsx")}
+            onClick={() => exportBorrows("excel")}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            <span>Excel</span>
+            <span>Export as Excel</span>
           </button>
           <button
             onClick={() => exportBorrows("pdf")}
             className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            <span>PDF</span>
+            <span>Export as PDF</span>
           </button>
         </div>
       </div>

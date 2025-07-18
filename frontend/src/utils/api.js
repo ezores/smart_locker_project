@@ -163,4 +163,5 @@ export const getPayments = async () => {
   return response.data;
 };
 
+export { api };
 export default api;

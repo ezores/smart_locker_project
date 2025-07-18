@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
-import { getPayments } from "../utils/api";
+import { getPayments, api } from "../utils/api";
 import {
   Search,
   Download,
@@ -122,9 +122,32 @@ const Payments = () => {
 
   const exportPayments = async (format) => {
     try {
-      // TODO: Implement export functionality
-      console.log(`Exporting payments in ${format} format`);
-      alert(`Export functionality will be implemented with Stripe integration`);
+      const response = await api.get(
+        `/api/admin/export/payments?format=${format}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Map format to correct file extension
+      const fileExtensions = {
+        csv: "csv",
+        excel: "xlsx",
+        pdf: "pdf",
+      };
+      const extension = fileExtensions[format] || format;
+
+      link.setAttribute(
+        "download",
+        `payments_${new Date().toISOString().split("T")[0]}.${extension}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } catch (error) {
       console.error("Error exporting payments:", error);
       alert(t("failed_export_payments") || "Failed to export payments");
@@ -263,22 +286,22 @@ const Payments = () => {
                 onClick={() => exportPayments("excel")}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                <Download className="h-4 w-4" />
-                <span>{t("download_excel") || "Excel"}</span>
+                <FileText className="h-4 w-4" />
+                <span>Export as Excel</span>
               </button>
               <button
                 onClick={() => exportPayments("csv")}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <Download className="h-4 w-4" />
-                <span>CSV</span>
+                <FileText className="h-4 w-4" />
+                <span>Export as CSV</span>
               </button>
               <button
                 onClick={() => exportPayments("pdf")}
                 className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 <FileText className="h-4 w-4" />
-                <span>PDF</span>
+                <span>Export as PDF</span>
               </button>
             </>
           )}

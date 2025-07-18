@@ -168,10 +168,10 @@ const Register = () => {
         student_id: "",
       });
 
-      // Redirect to login after 2 seconds
+      // Redirect to login after 0.5 seconds
       setTimeout(() => {
         navigate("/login");
-      }, 2000);
+      }, 500);
     } catch (error) {
       console.error("Registration error:", error);
       setError(
@@ -194,15 +194,19 @@ const Register = () => {
   const languageFlags = {
     en: "🇺🇸",
     fr: "🇫🇷",
-    es: "🇪🇸",
     tr: "🇹🇷",
+    az: "🇦🇿",
+    es: "🇪🇸",
+    "pt-BR": "🇧🇷",
   };
 
   const languageNames = {
     en: "English",
     fr: "Français",
-    es: "Español",
     tr: "Türkçe",
+    az: "Azərbaycan",
+    es: "Español",
+    "pt-BR": "Português (BR)",
   };
 
   return (
@@ -265,16 +269,26 @@ const Register = () => {
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               {/* Error message */}
-              <div data-testid="register-error-message">
-                {error ? error : null}
-              </div>
+              {error && (
+                <div
+                  className="rounded-md bg-red-900/50 p-4 border border-red-500"
+                  data-testid="register-error-message"
+                >
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+                    <div className="ml-3">
+                      <p className="text-sm text-red-200">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {success && (
-                <div className="rounded-md bg-green-50 p-4 border border-green-200">
+                <div className="rounded-md bg-green-900/50 p-4 border border-green-500">
                   <div className="flex">
-                    <CheckCircle className="h-5 w-5 text-green-400" />
+                    <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
                     <div className="ml-3">
-                      <p className="text-sm text-green-800">{success}</p>
+                      <p className="text-sm text-green-200">{success}</p>
                     </div>
                   </div>
                 </div>

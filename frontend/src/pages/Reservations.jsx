@@ -268,7 +268,7 @@ const Reservations = () => {
       }
 
       const response = await api.get(
-        `/admin/export/reservations?${params.toString()}`,
+        `/api/admin/export/reservations?${params.toString()}`,
         {
           responseType: "blob",
         }
@@ -478,21 +478,21 @@ const Reservations = () => {
                   disabled={exportLoading}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
                 >
-                  {exportLoading ? "Exporting..." : "Export Excel"}
+                  {exportLoading ? "Exporting..." : "Export as Excel"}
                 </button>
                 <button
                   onClick={() => handleExport("csv")}
                   disabled={exportLoading}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
                 >
-                  {exportLoading ? "Exporting..." : "Export CSV"}
+                  {exportLoading ? "Exporting..." : "Export as CSV"}
                 </button>
                 <button
                   onClick={() => handleExport("pdf")}
                   disabled={exportLoading}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
                 >
-                  {exportLoading ? "Exporting..." : "Export PDF"}
+                  {exportLoading ? "Exporting..." : "Export as PDF"}
                 </button>
               </div>
             )}

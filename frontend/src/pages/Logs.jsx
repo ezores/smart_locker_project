@@ -186,9 +186,16 @@ const Logs = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
+      // Map format to correct file extension
+      const fileExtensions = {
+        csv: "csv",
+        excel: "xlsx",
+        pdf: "pdf",
+      };
+      const extension = fileExtensions[format] || format;
       link.setAttribute(
         "download",
-        `logs_${new Date().toISOString().split("T")[0]}.${format}`
+        `logs_${new Date().toISOString().split("T")[0]}.${extension}`
       );
       document.body.appendChild(link);
       link.click();
@@ -278,22 +285,22 @@ const Logs = () => {
             onClick={() => exportLogs("csv")}
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
-            <Download className="h-4 w-4" />
-            <span>{t("export_csv")}</span>
+            <FileText className="h-4 w-4" />
+            <span>Export as CSV</span>
           </button>
           <button
             onClick={() => exportLogs("excel")}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            <span>{t("export_excel")}</span>
+            <span>Export as Excel</span>
           </button>
           <button
             onClick={() => exportLogs("pdf")}
             className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            <span>PDF</span>
+            <span>Export as PDF</span>
           </button>
         </div>
       </div>

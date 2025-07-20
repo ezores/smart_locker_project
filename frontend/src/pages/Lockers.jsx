@@ -25,6 +25,9 @@ import {
   ArrowLeft,
   Zap,
   FileText,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
 } from "lucide-react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -44,12 +47,15 @@ const Lockers = () => {
     name: "",
     location: "",
     status: "available",
-    rs485_address: 0,
+    rs485_address: 1,
     rs485_locker_number: 1,
   });
   // Pagination state
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  // Sorting state
+  const [sortField, setSortField] = useState("id");
+  const [sortDirection, setSortDirection] = useState("asc");
 
   useEffect(() => {
     fetchData();
@@ -77,7 +83,13 @@ const Lockers = () => {
     try {
       await axios.post("/api/admin/lockers", formData);
       setShowAddModal(false);
-      setFormData({ name: "", location: "", status: "available" });
+      setFormData({
+        name: "",
+        location: "",
+        status: "available",
+        rs485_address: 1,
+        rs485_locker_number: 1,
+      });
       fetchData();
     } catch (error) {
       console.error("Error adding locker:", error);
@@ -90,7 +102,13 @@ const Lockers = () => {
     try {
       await axios.put(`/api/admin/lockers/${editingLocker.id}`, formData);
       setEditingLocker(null);
-      setFormData({ name: "", location: "", status: "available" });
+      setFormData({
+        name: "",
+        location: "",
+        status: "available",
+        rs485_address: 1,
+        rs485_locker_number: 1,
+      });
       fetchData();
     } catch (error) {
       console.error("Error updating locker:", error);
@@ -217,7 +235,7 @@ const Lockers = () => {
       name: locker.name || "",
       location: locker.location || "",
       status: locker.status || "available",
-      rs485_address: locker.rs485_address || 0,
+      rs485_address: locker.rs485_address || 1,
       rs485_locker_number: locker.rs485_locker_number || 1,
     });
   };
@@ -229,7 +247,7 @@ const Lockers = () => {
       name: "",
       location: "",
       status: "available",
-      rs485_address: 0,
+      rs485_address: 1,
       rs485_locker_number: 1,
     });
   };
@@ -265,6 +283,28 @@ const Lockers = () => {
     }
   };
 
+  // Sorting function
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Get sort icon for column
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return <ChevronsUpDown className="h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
+  };
+
   const filteredLockers = lockers
     .filter((locker) => {
       const lockerName = locker.name || locker.number || "";
@@ -276,16 +316,53 @@ const Lockers = () => {
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
-      // Sort by name first, then by number if names are equal
-      const nameA = a.name || "";
-      const nameB = b.name || "";
-      if (nameA !== nameB) {
-        return nameA.localeCompare(nameB);
+      let aValue, bValue;
+
+      switch (sortField) {
+        case "id":
+          aValue = a.id;
+          bValue = b.id;
+          break;
+        case "name":
+          aValue = a.name || a.number || "";
+          bValue = b.name || b.number || "";
+          break;
+        case "location":
+          aValue = a.location || "";
+          bValue = b.location || "";
+          break;
+        case "status":
+          aValue = a.status || "";
+          bValue = b.status || "";
+          break;
+        case "rs485_address":
+          aValue = a.rs485_address || 0;
+          bValue = b.rs485_address || 0;
+          break;
+        case "rs485_locker_number":
+          aValue = a.rs485_locker_number || 0;
+          bValue = b.rs485_locker_number || 0;
+          break;
+        default:
+          aValue = a.id;
+          bValue = b.id;
       }
-      // If names are equal, sort by number
-      const numA = parseInt(a.number?.replace(/\D/g, "") || "0");
-      const numB = parseInt(b.number?.replace(/\D/g, "") || "0");
-      return numA - numB;
+
+      // Handle string comparison
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === "asc" ? comparison : -comparison;
+      }
+
+      // Handle number comparison
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        const comparison = aValue - bValue;
+        return sortDirection === "asc" ? comparison : -comparison;
+      }
+
+      // Fallback to string comparison
+      const comparison = String(aValue).localeCompare(String(bValue));
+      return sortDirection === "asc" ? comparison : -comparison;
     });
 
   // Pagination logic
@@ -392,6 +469,27 @@ const Lockers = () => {
               }`}
             />
           </div>
+          {/* Status Filter */}
+          <div className="flex items-center space-x-2">
+            <span>{t("status")}:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className={`px-2 py-1 border rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            >
+              <option value="all">{t("all_statuses")}</option>
+              <option value="available">{t("available")}</option>
+              <option value="occupied">{t("occupied")}</option>
+              <option value="maintenance">{t("maintenance")}</option>
+            </select>
+          </div>
           {/* Page Size Selector */}
           <div className="flex items-center space-x-2">
             <span>{t("show")}</span>
@@ -452,6 +550,42 @@ const Lockers = () => {
         </button>
       </div>
 
+      {/* Summary */}
+      <div
+        className={`mb-4 p-4 rounded-lg ${
+          isDarkMode ? "bg-gray-700 text-white" : "bg-gray-50 text-gray-700"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm">
+              <strong>Total Lockers:</strong> {lockers.length}
+            </span>
+            <span className="text-sm">
+              <strong>Filtered:</strong> {filteredLockers.length}
+            </span>
+            <span className="text-sm">
+              <strong>Showing:</strong> {paginatedLockers.length}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm">
+            <span>
+              <strong>Sort:</strong> {sortField} ({sortDirection})
+            </span>
+            {statusFilter !== "all" && (
+              <span>
+                <strong>Status:</strong> {statusFilter}
+              </span>
+            )}
+            {searchTerm && (
+              <span>
+                <strong>Search:</strong> "{searchTerm}"
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Lockers Table */}
       <div className={`card ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
         {paginatedLockers.length === 0 ? (
@@ -474,25 +608,82 @@ const Lockers = () => {
               <thead className={`${isDarkMode ? "bg-gray-700" : "bg-gray-50"}`}>
                 <tr>
                   <th
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      isDarkMode ? "text-gray-300" : "text-gray-500"
+                    onClick={() => handleSort("id")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                      isDarkMode
+                        ? "text-gray-300 hover:bg-gray-600"
+                        : "text-gray-500"
                     }`}
                   >
-                    {t("locker_name")}
+                    <div className="flex items-center space-x-1">
+                      <span>ID</span>
+                      {getSortIcon("id")}
+                    </div>
                   </th>
                   <th
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      isDarkMode ? "text-gray-300" : "text-gray-500"
+                    onClick={() => handleSort("name")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                      isDarkMode
+                        ? "text-gray-300 hover:bg-gray-600"
+                        : "text-gray-500"
                     }`}
                   >
-                    {t("location")}
+                    <div className="flex items-center space-x-1">
+                      <span>{t("locker_name")}</span>
+                      {getSortIcon("name")}
+                    </div>
                   </th>
                   <th
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      isDarkMode ? "text-gray-300" : "text-gray-500"
+                    onClick={() => handleSort("location")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                      isDarkMode
+                        ? "text-gray-300 hover:bg-gray-600"
+                        : "text-gray-500"
                     }`}
                   >
-                    {t("status")}
+                    <div className="flex items-center space-x-1">
+                      <span>{t("location")}</span>
+                      {getSortIcon("location")}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort("rs485_address")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                      isDarkMode
+                        ? "text-gray-300 hover:bg-gray-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>RS485 Address</span>
+                      {getSortIcon("rs485_address")}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort("rs485_locker_number")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                      isDarkMode
+                        ? "text-gray-300 hover:bg-gray-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>RS485 Locker #</span>
+                      {getSortIcon("rs485_locker_number")}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort("status")}
+                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                      isDarkMode
+                        ? "text-gray-300 hover:bg-gray-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>{t("status")}</span>
+                      {getSortIcon("status")}
+                    </div>
                   </th>
                   <th
                     className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
@@ -520,6 +711,15 @@ const Lockers = () => {
                       }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`text-sm font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {locker.id}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             <div className="h-10 w-10 rounded-full flex items-center justify-center bg-purple-100">
@@ -539,7 +739,7 @@ const Lockers = () => {
                                 isDarkMode ? "text-gray-300" : "text-gray-500"
                               }`}
                             >
-                              ID: {locker.id}
+                              Number: {locker.number}
                             </div>
                           </div>
                         </div>
@@ -553,6 +753,24 @@ const Lockers = () => {
                           {locker.location ||
                             t("not_specified") ||
                             "Not specified"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`text-sm font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {locker.rs485_address || 1}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`text-sm font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {locker.rs485_locker_number || 1}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -738,6 +956,94 @@ const Lockers = () => {
                   </option>
                 </select>
               </div>
+
+              {/* RS485 Configuration Section */}
+              <div className="border-t pt-4 mt-4">
+                <h4
+                  className={`text-sm font-medium mb-3 ${
+                    isDarkMode ? "text-white" : "text-gray-700"
+                  }`}
+                >
+                  {t("rs485_configuration")}
+                </h4>
+                <p
+                  className={`text-xs mb-4 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  {t("rs485_protocol_info")}
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {t("rs485_address")}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="31"
+                      value={formData.rs485_address}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          rs485_address: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    />
+                    <p
+                      className={`text-xs mt-1 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {t("rs485_address_help")}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        isDarkMode ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {t("rs485_locker_number")}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="24"
+                      value={formData.rs485_locker_number}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          rs485_locker_number: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    />
+                    <p
+                      className={`text-xs mt-1 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {t("rs485_locker_number_help")}
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -899,7 +1205,7 @@ const Lockers = () => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          rs485_address: parseInt(e.target.value) || 0,
+                          rs485_address: parseInt(e.target.value) || 1,
                         })
                       }
                       className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${

@@ -1722,6 +1722,55 @@ def health_check():
         )
 
 
+def create_real_lockers_with_rs485():
+    """Create 62 lockers with proper RS485 mapping for real data mode"""
+    # RS485 mapping for 62 lockers
+    rs485_mapping = []
+    
+    # Lockers 1-14: RS485 Address 1, Locker Numbers 1-14
+    for i in range(1, 15):
+        rs485_mapping.append({
+            'name': f"Locker {i}",
+            'number': f"L{i}",
+            'rs485_address': 1,
+            'rs485_locker_number': i
+        })
+    
+    # Lockers 15-38: RS485 Address 2, Locker Numbers 1-24
+    for i in range(15, 39):
+        rs485_mapping.append({
+            'name': f"Locker {i}",
+            'number': f"L{i}",
+            'rs485_address': 2,
+            'rs485_locker_number': i - 14
+        })
+    
+    # Lockers 39-62: RS485 Address 3, Locker Numbers 1-24
+    for i in range(39, 63):
+        rs485_mapping.append({
+            'name': f"Locker {i}",
+            'number': f"L{i}",
+            'rs485_address': 3,
+            'rs485_locker_number': i - 38
+        })
+    
+    # Create lockers with RS485 mapping
+    for mapping in rs485_mapping:
+        locker = Locker(
+            name=mapping['name'],
+            number=mapping['number'],
+            location="Main Hall",
+            description=f"Locker {mapping['number']} with RS485 Address {mapping['rs485_address']}, Locker Number {mapping['rs485_locker_number']}",
+            status="active",
+            is_active=True,
+            rs485_address=mapping['rs485_address'],
+            rs485_locker_number=mapping['rs485_locker_number']
+        )
+        db.session.add(locker)
+    
+    db.session.commit()
+    logger.info(f"Created 62 lockers with RS485 mapping for real data mode")
+
 def init_db(minimal=False):
     """Initialize the database with default data"""
     with app.app_context():
@@ -2846,19 +2895,9 @@ if __name__ == "__main__":
                 print("Created admin user")
 
             if minimal:
-                # Create 40 empty lockers
-                for i in range(1, 41):
-                    locker = Locker(
-                        name=f"Locker {i}",
-                        number=f"L{i}",
-                        location="Main Hall",
-                        description=f"Locker number {i}",
-                        status="active",
-                        is_active=True,
-                    )
-                    db.session.add(locker)
-                db.session.commit()
-                print(f"Created 40 empty lockers for minimal mode")
+                # Create 62 lockers with RS485 mapping for real data mode
+                create_real_lockers_with_rs485()
+                print(f"Created 62 lockers with RS485 mapping for real data mode")
             else:
                 generate_dummy_data(force_regenerate=args.reset_db)
         print("Database initialization complete!")
@@ -2882,7 +2921,7 @@ if __name__ == "__main__":
             generate_dummy_data(force_regenerate=False)
         print("Demo data loaded!")
     elif args.minimal:
-        print("Minimal mode: only admin user and empty lockers.")
+        print("Minimal mode: admin user and 62 lockers with RS485 mapping.")
         with app.app_context():
             db.create_all()
             if not User.query.filter_by(username="admin").first():
@@ -2899,24 +2938,42 @@ if __name__ == "__main__":
                 db.session.commit()
                 print("Created admin user")
 
-            # Create 40 empty lockers
-            for i in range(1, 41):
-                locker = Locker(
-                    name=f"Locker {i}",
-                    number=f"L{i}",
-                    location="Main Hall",
-                    description=f"Locker number {i}",
-                    status="active",
-                    is_active=True,
-                )
-                db.session.add(locker)
-            db.session.commit()
-            print(f"Created 40 empty lockers for minimal mode")
+            # Create 62 lockers with RS485 mapping
+            create_real_lockers_with_rs485()
+            print(f"Created 62 lockers with RS485 mapping for minimal mode")
         print("Minimal DB initialized!")
+    else:
+        # Default mode: real data with 62 lockers and RS485 mapping
+        print("Real data mode: initializing with 62 lockers and RS485 mapping...")
+        with app.app_context():
+            db.create_all()
+            if not User.query.filter_by(username="admin").first():
+                admin = User(
+                    username="admin",
+                    email="admin@smartlocker.com",
+                    first_name="Admin",
+                    last_name="User",
+                    role="admin",
+                    department="IT",
+                )
+                admin.set_password("admin123")
+                db.session.add(admin)
+                db.session.commit()
+                print("Created admin user")
+            
+            # Check if lockers already exist
+            if Locker.query.count() == 0:
+                create_real_lockers_with_rs485()
+                print("Created 62 lockers with RS485 mapping for real data mode")
+            else:
+                print(f"Database already contains {Locker.query.count()} lockers")
+        print("Real data mode initialized!")
 
     print(f"Starting Smart Locker System on {args.host}:{args.port}")
     if args.minimal:
-        print("Running in minimal mode (admin user, empty lockers)")
-    if args.demo:
+        print("Running in minimal mode (admin user, 62 lockers with RS485 mapping)")
+    elif args.demo:
         print("Loading comprehensive demo data")
+    else:
+        print("Running in real data mode (62 lockers with RS485 mapping)")
     app.run(host=args.host, port=args.port, debug=True)

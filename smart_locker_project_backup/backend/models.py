@@ -51,6 +51,16 @@ def init_models(db):
         status = db.Column(db.String(20), default='active')  # active, maintenance, inactive
         is_active = db.Column(db.Boolean, default=True)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        
+        # RS485 Protocol Configuration
+        # Protocol: 5A5A 00 [ADDRESS] 00 04 00 01 [LOCKER_NUMBER] [CHECKSUM]
+        rs485_address = db.Column(
+            db.Integer, default=1
+        )  # Address card (0-31 dipswitch)
+        rs485_locker_number = db.Column(
+            db.Integer, default=1
+        )  # Number of locker (1-24)
+        
         items = db.relationship('Item', backref='locker', lazy=True)
 
         def to_dict(self):
@@ -64,6 +74,8 @@ def init_models(db):
                 'capacity': self.capacity,
                 'current_occupancy': self.current_occupancy,
                 'is_active': self.is_active,
+                'rs485_address': self.rs485_address,
+                'rs485_locker_number': self.rs485_locker_number,
                 'created_at': self.created_at.isoformat() if self.created_at else None
             }
 
@@ -240,19 +252,44 @@ def init_models(db):
             users.append(user)
             db.session.add(user)
         
-        # Create lockers - ensure each has a unique 'number' field
+        # Create exactly 62 lockers with precise RS485 mapping
         lockers = []
-        for i in range(1, 41):
+        # RS485 mapping based on the provided data - exactly 62 lockers
+        rs485_mapping = [
+            # Global, armoire, carte, casier, rs485_address, rs485_locker_number
+            (1, 1, 1, 1, 1, 1), (2, 1, 1, 2, 1, 2), (3, 1, 1, 3, 1, 3), (4, 1, 1, 4, 1, 4),
+            (5, 1, 1, 5, 1, 5), (6, 1, 1, 6, 1, 6), (7, 1, 1, 7, 1, 7), (8, 1, 1, 8, 1, 8),
+            (9, 1, 1, 9, 1, 9), (10, 1, 1, 10, 1, 10), (11, 1, 1, 11, 1, 11), (12, 1, 1, 12, 1, 12),
+            (13, 1, 1, 13, 1, 13), (14, 1, 1, 14, 1, 14),
+            
+            (15, 2, 2, 1, 2, 1), (16, 2, 2, 2, 2, 2), (17, 2, 2, 3, 2, 3), (18, 2, 2, 4, 2, 4),
+            (19, 2, 2, 5, 2, 5), (20, 2, 2, 6, 2, 6), (21, 2, 2, 7, 2, 7), (22, 2, 2, 8, 2, 8),
+            (23, 2, 2, 9, 2, 9), (24, 2, 2, 10, 2, 10), (25, 2, 2, 11, 2, 11), (26, 2, 2, 12, 2, 12),
+            (27, 2, 2, 13, 2, 13), (28, 2, 2, 14, 2, 14), (29, 2, 2, 15, 2, 15), (30, 2, 2, 16, 2, 16),
+            (31, 2, 2, 17, 2, 17), (32, 2, 2, 18, 2, 18), (33, 2, 2, 19, 2, 19), (34, 2, 2, 20, 2, 20),
+            (35, 2, 2, 21, 2, 21), (36, 2, 2, 22, 2, 22), (37, 2, 2, 23, 2, 23), (38, 2, 2, 24, 2, 24),
+            
+            (39, 2, 3, 1, 3, 1), (40, 2, 3, 2, 3, 2), (41, 2, 3, 3, 3, 3), (42, 2, 3, 4, 3, 4),
+            (43, 2, 3, 5, 3, 5), (44, 2, 3, 6, 3, 6), (45, 2, 3, 7, 3, 7), (46, 2, 3, 8, 3, 8),
+            (47, 2, 3, 9, 3, 9), (48, 2, 3, 10, 3, 10), (49, 2, 3, 11, 3, 11), (50, 2, 3, 12, 3, 12),
+            (51, 2, 3, 13, 3, 13), (52, 2, 3, 14, 3, 14), (53, 2, 3, 15, 3, 15), (54, 2, 3, 16, 3, 16),
+            (55, 2, 3, 17, 3, 17), (56, 2, 3, 18, 3, 18), (57, 2, 3, 19, 3, 19), (58, 2, 3, 20, 3, 20),
+            (59, 2, 3, 21, 3, 21), (60, 2, 3, 22, 3, 22), (61, 2, 3, 23, 3, 23), (62, 2, 3, 24, 3, 24)
+        ]
+        
+        for global_id, armoire, carte, casier, rs485_address, rs485_locker_number in rs485_mapping:
             locker = Locker(
-                name=f'Locker {i}',
-                number=f'L{i}',
-                location=f'Building {((i-1)//10)+1} - Floor {((i-1)%10)+1}',
-                description=f'Locker {i} description',
+                name=f'Locker {global_id}',
+                number=f'L{global_id}',
+                location=f'Armoire {armoire}, Carte {carte}, Casier {casier}',
+                description=f'Locker {global_id} description',
                 capacity=10,
                 current_occupancy=0,
                 status='active',
                 is_active=True,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
+                rs485_address=rs485_address,
+                rs485_locker_number=rs485_locker_number,
             )
             db.session.add(locker)
             lockers.append(locker)

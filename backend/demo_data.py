@@ -13,7 +13,7 @@ from werkzeug.security import generate_password_hash
 
 
 def create_demo_data(
-    db, User, Locker, Item, Log, Borrow, Payment, Notification, SystemSetting
+    db, User, Locker, Item, Log, Borrow, Payment
 ):
     """Create comprehensive demo data for testing the system"""
 
@@ -23,7 +23,6 @@ def create_demo_data(
     Log.query.delete()
     Borrow.query.delete()
     Payment.query.delete()
-    Notification.query.delete()
     Item.query.delete()
     Locker.query.delete()
     User.query.delete()  # Clear all users including admin
@@ -59,15 +58,41 @@ def create_demo_data(
         )
         db.session.add(user)
     db.session.commit()
-    # Create 10x more lockers
-    for i in range(1, 101):  # 100 lockers
+    # Create exactly 62 lockers with precise RS485 mapping
+    # RS485 mapping based on the provided data - exactly 62 lockers
+    rs485_mapping = [
+        # Global, armoire, carte, casier, rs485_address, rs485_locker_number
+        (1, 1, 1, 1, 1, 1), (2, 1, 1, 2, 1, 2), (3, 1, 1, 3, 1, 3), (4, 1, 1, 4, 1, 4),
+        (5, 1, 1, 5, 1, 5), (6, 1, 1, 6, 1, 6), (7, 1, 1, 7, 1, 7), (8, 1, 1, 8, 1, 8),
+        (9, 1, 1, 9, 1, 9), (10, 1, 1, 10, 1, 10), (11, 1, 1, 11, 1, 11), (12, 1, 1, 12, 1, 12),
+        (13, 1, 1, 13, 1, 13), (14, 1, 1, 14, 1, 14),
+        
+        (15, 2, 2, 1, 2, 1), (16, 2, 2, 2, 2, 2), (17, 2, 2, 3, 2, 3), (18, 2, 2, 4, 2, 4),
+        (19, 2, 2, 5, 2, 5), (20, 2, 2, 6, 2, 6), (21, 2, 2, 7, 2, 7), (22, 2, 2, 8, 2, 8),
+        (23, 2, 2, 9, 2, 9), (24, 2, 2, 10, 2, 10), (25, 2, 2, 11, 2, 11), (26, 2, 2, 12, 2, 12),
+        (27, 2, 2, 13, 2, 13), (28, 2, 2, 14, 2, 14), (29, 2, 2, 15, 2, 15), (30, 2, 2, 16, 2, 16),
+        (31, 2, 2, 17, 2, 17), (32, 2, 2, 18, 2, 18), (33, 2, 2, 19, 2, 19), (34, 2, 2, 20, 2, 20),
+        (35, 2, 2, 21, 2, 21), (36, 2, 2, 22, 2, 22), (37, 2, 2, 23, 2, 23), (38, 2, 2, 24, 2, 24),
+        
+        (39, 2, 3, 1, 3, 1), (40, 2, 3, 2, 3, 2), (41, 2, 3, 3, 3, 3), (42, 2, 3, 4, 3, 4),
+        (43, 2, 3, 5, 3, 5), (44, 2, 3, 6, 3, 6), (45, 2, 3, 7, 3, 7), (46, 2, 3, 8, 3, 8),
+        (47, 2, 3, 9, 3, 9), (48, 2, 3, 10, 3, 10), (49, 2, 3, 11, 3, 11), (50, 2, 3, 12, 3, 12),
+        (51, 2, 3, 13, 3, 13), (52, 2, 3, 14, 3, 14), (53, 2, 3, 15, 3, 15), (54, 2, 3, 16, 3, 16),
+        (55, 2, 3, 17, 3, 17), (56, 2, 3, 18, 3, 18), (57, 2, 3, 19, 3, 19), (58, 2, 3, 20, 3, 20),
+        (59, 2, 3, 21, 3, 21), (60, 2, 3, 22, 3, 22), (61, 2, 3, 23, 3, 23), (62, 2, 3, 24, 3, 24)
+    ]
+    
+    # Create exactly 62 lockers with correct RS485 mapping
+    for global_id, armoire, carte, casier, rs485_address, rs485_locker_number in rs485_mapping:
         locker = Locker(
-            name=f"Locker {i}",
-            number=f"L{i}",
-            location=f'Building {random.choice(["A","B","C","D","E","F"])}',
+            name=f"Locker {global_id}",
+            number=f"L{global_id}",
+            location=f"Armoire {armoire}, Carte {carte}, Casier {casier}",
             capacity=random.randint(5, 15),
             current_occupancy=0,
             status="available",
+            rs485_address=rs485_address,
+            rs485_locker_number=rs485_locker_number,
         )
         db.session.add(locker)
     db.session.commit()
@@ -180,20 +205,6 @@ def create_demo_data(
             )
             db.session.add(payment)
     db.session.commit()
-    # Create 10x more notifications
-    for user in User.query.all()[1:]:  # Use User.query.all() to get all users
-        for _ in range(random.randint(5, 15)):
-            notification = Notification(
-                user_id=user.id,
-                title=f"Notification for user {user.username}",
-                message="This is a demo notification.",
-                notification_type=random.choice(
-                    ["info", "warning", "error", "success"]
-                ),
-                is_read=random.choice([True, False]),
-            )
-            db.session.add(notification)
-    db.session.commit()
     # Create 10x more logs
     for i in range(1, 50001):  # 50,000 logs
         user = random.choice(User.query.all())  # Use User.query.all() to get all users
@@ -223,7 +234,7 @@ def create_demo_data(
         db.session.add(log)
     db.session.commit()
     print(
-        f"Demo data created: {len(User.query.all())} users, {len(Locker.query.all())} lockers, {len(Item.query.all())} items, {len(Borrow.query.all())} borrows, {len(Payment.query.all())} payments, {len(Notification.query.all())} notifications, {len(Log.query.all())} logs."
+        f"Demo data created: {len(User.query.all())} users, {len(Locker.query.all())} lockers, {len(Item.query.all())} items, {len(Borrow.query.all())} borrows, {len(Payment.query.all())} payments, {len(Log.query.all())} logs."
     )
     print("\nDemo credentials:")
     print("Username: admin, Password: admin123 (Admin)")
@@ -231,15 +242,12 @@ def create_demo_data(
         print(f"Username: {user.username}, Password: password123 (Student)")
 
 
-def load_simple_demo_data(db):
+def load_simple_demo_data(db, User, Locker, Item, Log, Borrow, Payment):
     """Create a small set of demo data for testing with PostgreSQL."""
     import random
     from datetime import datetime, timedelta
 
     from werkzeug.security import generate_password_hash
-
-    # Import models
-    from models import Borrow, Item, Locker, Log, Payment, Return, User
 
     # Clear existing data
     db.drop_all()
@@ -276,16 +284,41 @@ def load_simple_demo_data(db):
     )
     db.session.add(admin)
 
-    # Create lockers with proper number field
+    # Create exactly 62 lockers with precise RS485 mapping
     lockers = []
-    for i in range(1, 11):
+    # RS485 mapping for all 62 lockers (based on the provided data)
+    rs485_mapping_simple = [
+        # Global, armoire, carte, casier, rs485_address, rs485_locker_number
+        (1, 1, 1, 1, 1, 1), (2, 1, 1, 2, 1, 2), (3, 1, 1, 3, 1, 3), (4, 1, 1, 4, 1, 4),
+        (5, 1, 1, 5, 1, 5), (6, 1, 1, 6, 1, 6), (7, 1, 1, 7, 1, 7), (8, 1, 1, 8, 1, 8),
+        (9, 1, 1, 9, 1, 9), (10, 1, 1, 10, 1, 10), (11, 1, 1, 11, 1, 11), (12, 1, 1, 12, 1, 12),
+        (13, 1, 1, 13, 1, 13), (14, 1, 1, 14, 1, 14),
+        
+        (15, 2, 2, 1, 2, 1), (16, 2, 2, 2, 2, 2), (17, 2, 2, 3, 2, 3), (18, 2, 2, 4, 2, 4),
+        (19, 2, 2, 5, 2, 5), (20, 2, 2, 6, 2, 6), (21, 2, 2, 7, 2, 7), (22, 2, 2, 8, 2, 8),
+        (23, 2, 2, 9, 2, 9), (24, 2, 2, 10, 2, 10), (25, 2, 2, 11, 2, 11), (26, 2, 2, 12, 2, 12),
+        (27, 2, 2, 13, 2, 13), (28, 2, 2, 14, 2, 14), (29, 2, 2, 15, 2, 15), (30, 2, 2, 16, 2, 16),
+        (31, 2, 2, 17, 2, 17), (32, 2, 2, 18, 2, 18), (33, 2, 2, 19, 2, 19), (34, 2, 2, 20, 2, 20),
+        (35, 2, 2, 21, 2, 21), (36, 2, 2, 22, 2, 22), (37, 2, 2, 23, 2, 23), (38, 2, 2, 24, 2, 24),
+        
+        (39, 2, 3, 1, 3, 1), (40, 2, 3, 2, 3, 2), (41, 2, 3, 3, 3, 3), (42, 2, 3, 4, 3, 4),
+        (43, 2, 3, 5, 3, 5), (44, 2, 3, 6, 3, 6), (45, 2, 3, 7, 3, 7), (46, 2, 3, 8, 3, 8),
+        (47, 2, 3, 9, 3, 9), (48, 2, 3, 10, 3, 10), (49, 2, 3, 11, 3, 11), (50, 2, 3, 12, 3, 12),
+        (51, 2, 3, 13, 3, 13), (52, 2, 3, 14, 3, 14), (53, 2, 3, 15, 3, 15), (54, 2, 3, 16, 3, 16),
+        (55, 2, 3, 17, 3, 17), (56, 2, 3, 18, 3, 18), (57, 2, 3, 19, 3, 19), (58, 2, 3, 20, 3, 20),
+        (59, 2, 3, 21, 3, 21), (60, 2, 3, 22, 3, 22), (61, 2, 3, 23, 3, 23), (62, 2, 3, 24, 3, 24)
+    ]
+    
+    for global_id, armoire, carte, casier, rs485_address, rs485_locker_number in rs485_mapping_simple:
         locker = Locker(
-            name=f"Locker {i}",
-            number=f"L{i:03d}",
-            location=f"Room {i}",
+            name=f"Locker {global_id}",
+            number=f"L{global_id:03d}",
+            location=f"Armoire {armoire}, Carte {carte}, Casier {casier}",
             status="available",
             capacity=5,
             current_occupancy=0,
+            rs485_address=rs485_address,
+            rs485_locker_number=rs485_locker_number,
             is_active=True,
         )
         db.session.add(locker)
@@ -300,7 +333,7 @@ def load_simple_demo_data(db):
             category="Electronics",
             condition="good",
             status="available",
-            locker_id=lockers[i % 10].id,
+            locker_id=lockers[i % 62].id,  # Use modulo 62 for 62 lockers
             is_active=True,
         )
         db.session.add(item)
@@ -314,7 +347,7 @@ def load_simple_demo_data(db):
         borrow = Borrow(
             user_id=users[i % 10].id,
             item_id=items[i % 20].id,
-            locker_id=lockers[i % 10].id,
+            locker_id=lockers[i % 62].id,  # Use modulo 62 for 62 lockers
             borrowed_at=datetime.now(),
             due_date=datetime.now() + timedelta(days=7),
             status="active",
@@ -329,7 +362,7 @@ def load_simple_demo_data(db):
         log = Log(
             user_id=users[i % 10].id,
             item_id=items[i % 20].id,
-            locker_id=lockers[i % 10].id,
+            locker_id=lockers[i % 62].id,  # Use modulo 62 for 62 lockers
             action_type="borrow",
             timestamp=datetime.now(),
         )
@@ -339,17 +372,4 @@ def load_simple_demo_data(db):
     print("✓ Simple demo data loaded successfully!")
 
 
-def clear_demo_data(db, User, Locker, Item, Log, Borrow, Payment, Notification):
-    """Clear all demo data from the database"""
-    print("Clearing demo data...")
 
-    Log.query.delete()
-    Borrow.query.delete()
-    Payment.query.delete()
-    Notification.query.delete()
-    Item.query.delete()
-    Locker.query.delete()
-    User.query.filter(User.username != "admin").delete()
-
-    db.session.commit()
-    print("Demo data cleared successfully!")

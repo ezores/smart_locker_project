@@ -776,8 +776,12 @@ setup_environment() {
         log_success "Logs directory created"
     fi
     
-    # Create virtual environment if it doesn't exist
-    if [ ! -d ".venv" ]; then
+    # Create virtual environment if it doesn't exist or if it's corrupted
+    if [ ! -d ".venv" ] || [ ! -f ".venv/bin/activate" ] || [ ! -f ".venv/pyvenv.cfg" ]; then
+        if [ -d ".venv" ]; then
+            log_info "Virtual environment exists but appears corrupted. Recreating..."
+            rm -rf .venv
+        fi
         log_info "Creating Python virtual environment..."
         if ! python3 -m venv .venv; then
             log_error "Failed to create virtual environment"
@@ -794,31 +798,44 @@ setup_environment() {
                 exit 1
             fi
         fi
-    fi
-    
-    # Activate virtual environment - handle different shell types
-    log_info "Activating virtual environment..."
-    if [ -f ".venv/bin/activate" ]; then
-        source .venv/bin/activate
-    elif [ -f ".venv/Scripts/activate" ]; then
-        source .venv/Scripts/activate
+        log_success "Virtual environment created successfully"
     else
-        log_error "Virtual environment activation script not found"
+        log_info "Virtual environment already exists and appears valid"
+    fi
+    
+    # Set up virtual environment paths
+    log_info "Setting up virtual environment..."
+    
+    # Set virtual environment variables manually
+    export VIRTUAL_ENV="$PROJECT_ROOT/.venv"
+    export PATH="$VIRTUAL_ENV/bin:$PATH"
+    
+    # Verify virtual environment Python is available
+    if [ -f ".venv/bin/python" ]; then
+        VENV_PYTHON=".venv/bin/python"
+        VENV_PIP=".venv/bin/pip"
+        log_success "Virtual environment Python found: $VENV_PYTHON"
+        
+        # Test the virtual environment Python
+        PYTHON_VERSION=$($VENV_PYTHON --version 2>&1)
+        log_info "Virtual environment Python version: $PYTHON_VERSION"
+    elif [ -f ".venv/Scripts/python.exe" ]; then
+        VENV_PYTHON=".venv/Scripts/python.exe"
+        VENV_PIP=".venv/Scripts/pip.exe"
+        log_success "Virtual environment Python found: $VENV_PYTHON"
+    else
+        log_error "Virtual environment Python not found"
+        log_info "Available files in .venv/bin/:"
+        ls -la .venv/bin/ 2>/dev/null || log_error "Cannot list .venv/bin directory"
         exit 1
     fi
     
-    # Verify virtual environment is active
-    if [ -z "$VIRTUAL_ENV" ]; then
-        log_error "Failed to activate virtual environment"
-        exit 1
-    fi
+    log_success "Virtual environment configured: $VIRTUAL_ENV"
     
-    log_success "Virtual environment activated: $VIRTUAL_ENV"
-    
-    # Install Python dependencies
+    # Install Python dependencies using virtual environment pip
     log_info "Installing Python dependencies..."
-    pip install --upgrade pip setuptools wheel
-    pip install -r requirements.txt
+    $VENV_PIP install --upgrade pip setuptools wheel
+    $VENV_PIP install -r requirements.txt
     
     # Install Node.js dependencies
     log_info "Installing Node.js dependencies..."
@@ -1212,7 +1229,7 @@ setup_database() {
     # Run database migration for enhanced logging
     log_info "Running database migration for enhanced logging..."
     cd backend
-    if python db_migration.py; then
+    if $PROJECT_ROOT/$VENV_PYTHON db_migration.py; then
         log_success "Database migration completed successfully"
     else
         log_warning "Database migration failed, but continuing..."
@@ -1268,8 +1285,8 @@ start_backend() {
     
     log_info "Backend will use DATABASE_URL: $DATABASE_URL"
     
-    # Build command based on flags
-    local cmd="python app.py --port $BACKEND_PORT"
+    # Build command based on flags using virtual environment Python
+    local cmd="$PROJECT_ROOT/$VENV_PYTHON app.py --port $BACKEND_PORT"
     
     if [ "$DEMO_MODE" = true ]; then
         cmd="$cmd --demo"
@@ -1406,7 +1423,7 @@ run_tests() {
     # Run backend authentication tests
     log_info "Running comprehensive authentication tests..."
     cd backend
-    if python test_auth_comprehensive.py; then
+    if $PROJECT_ROOT/$VENV_PYTHON test_auth_comprehensive.py; then
         log_success "Authentication tests passed!"
     else
         log_warning "Some authentication tests failed. Check the output above for details."
@@ -1416,7 +1433,7 @@ run_tests() {
     # Run logging system tests
     log_info "Running logging system tests..."
     cd backend
-    if python test_logging.py; then
+    if $PROJECT_ROOT/$VENV_PYTHON test_logging.py; then
         log_success "Logging system tests passed!"
     else
         log_warning "Some logging tests failed. Check the output above for details."

@@ -246,10 +246,10 @@ install_postgresql() {
         # Check if PostgreSQL data directory exists
         if command -v brew &> /dev/null; then
             # macOS - use current user
-            pg_data_dir=$(psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+            pg_data_dir=$(psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "\-\-\-" | grep -v "rows" | tr -d ' ' || echo "")
         else
             # Linux - use postgres user
-            pg_data_dir=$(sudo -u postgres psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+            pg_data_dir=$(sudo -u postgres psql -c "SHOW data_directory;" 2>/dev/null | grep -v "data_directory" | grep -v "\-\-\-" | grep -v "rows" | tr -d ' ' || echo "")
         fi
         if [ -z "$pg_data_dir" ]; then
             log_info "PostgreSQL data directory not found. Initializing database cluster..."
@@ -276,14 +276,14 @@ install_postgresql() {
             
             # Configure PostgreSQL to allow trust authentication for local connections
             log_info "Configuring PostgreSQL authentication for local connections..."
-            pg_hba_conf=$(psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+            pg_hba_conf=$(psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "\-\-\-" | grep -v "rows" | tr -d ' ' || echo "")
         else
             # Linux - use postgres user
             sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
             
             # Configure PostgreSQL to allow trust authentication for local connections
             log_info "Configuring PostgreSQL authentication for local connections..."
-            pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "---" | grep -v "rows" | tr -d ' ' || echo "")
+            pg_hba_conf=$(sudo -u postgres psql -c "SHOW hba_file;" 2>/dev/null | grep -v "hba_file" | grep -v "\-\-\-" | grep -v "rows" | tr -d ' ' || echo "")
         fi
         
         if [ -n "$pg_hba_conf" ] && [ -f "$pg_hba_conf" ]; then
@@ -561,9 +561,22 @@ ensure_postgresql_auto_config() {
     # Only configure pg_hba.conf if PostgreSQL is not working
     log_info "PostgreSQL needs configuration. Attempting to configure pg_hba.conf..."
     
+    # Try to get pg_hba.conf location from PostgreSQL itself first
+    log_info "Attempting to get pg_hba.conf location from PostgreSQL..."
+    pg_hba_from_db=""
+    if command -v brew &> /dev/null; then
+        # macOS - try with current user
+        pg_hba_from_db=$(psql -t -c "SHOW hba_file;" 2>/dev/null | xargs || echo "")
+    else
+        # Linux - try with postgres user
+        pg_hba_from_db=$(sudo -u postgres psql -t -c "SHOW hba_file;" 2>/dev/null | xargs || echo "")
+    fi
+    
     # Try to find and configure pg_hba.conf
     pg_hba_locations=(
+        "$pg_hba_from_db"
         "/etc/postgresql/*/main/pg_hba.conf"
+        "/etc/postgresql/16/main/pg_hba.conf"
         "/var/lib/postgresql/data/pg_hba.conf"
         "/var/lib/pgsql/data/pg_hba.conf"
         "/usr/local/var/postgres/pg_hba.conf"
@@ -695,6 +708,18 @@ check_prerequisites() {
         exit 1
     fi
     
+    # Install python3-venv on Ubuntu/Debian systems
+    if command -v apt-get &> /dev/null; then
+        if ! python3 -c "import venv" 2>/dev/null; then
+            log_info "Installing python3-venv for Ubuntu/Debian..."
+            sudo apt-get update
+            sudo apt-get install -y python3-venv python3-pip
+            log_success "python3-venv installed successfully"
+        else
+            log_success "python3-venv is already available"
+        fi
+    fi
+    
     # Check for Homebrew on macOS
     if [[ "$OSTYPE" == "darwin"* ]] && ! command -v brew &> /dev/null; then
         log_error "Homebrew is required on macOS but not installed"
@@ -717,7 +742,7 @@ check_prerequisites() {
         install_nodejs
     else
         # Check Node.js version compatibility
-        NODE_VERSION=$(node --version | cut -d'v' -f2)
+        NODE_VERSION=$(node --version | sed 's/^v//')
         NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
         
         if [ "$NODE_MAJOR" -lt 20 ]; then
@@ -754,7 +779,21 @@ setup_environment() {
     # Create virtual environment if it doesn't exist
     if [ ! -d ".venv" ]; then
         log_info "Creating Python virtual environment..."
-        python3 -m venv .venv
+        if ! python3 -m venv .venv; then
+            log_error "Failed to create virtual environment"
+            log_info "Attempting to install python3-venv and retry..."
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get update
+                sudo apt-get install -y python3-venv python3-pip
+                if ! python3 -m venv .venv; then
+                    log_error "Still failed to create virtual environment after installing python3-venv"
+                    exit 1
+                fi
+            else
+                log_info "Please install python3-venv manually for your system"
+                exit 1
+            fi
+        fi
     fi
     
     # Activate virtual environment - handle different shell types
@@ -794,7 +833,7 @@ setup_environment() {
     fi
     
     # Check if we need to clean node_modules due to Node.js version upgrade
-    NODE_VERSION=$(node --version | cut -d'v' -f2)
+    NODE_VERSION=$(node --version | sed 's/^v//')
     NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
     
     # Clean node_modules only if necessary
@@ -959,12 +998,21 @@ setup_database() {
     elif command -v systemctl &> /dev/null; then
         # Linux with systemd
         log_info "Starting PostgreSQL on Linux..."
-        sudo systemctl start postgresql 2>/dev/null || sudo systemctl start postgresql@14 2>/dev/null || true
+        # Try different service names for different PostgreSQL versions
+        if sudo systemctl start postgresql 2>/dev/null; then
+            log_success "Started postgresql service"
+        elif sudo systemctl start postgresql@16 2>/dev/null; then
+            log_success "Started postgresql@16 service"
+        elif sudo systemctl start postgresql@14 2>/dev/null; then
+            log_success "Started postgresql@14 service"
+        else
+            log_warning "Could not start PostgreSQL service with systemctl"
+        fi
         
         # Ensure PostgreSQL is running and restart if needed
-        if ! sudo systemctl is-active --quiet postgresql && ! sudo systemctl is-active --quiet postgresql@14; then
+        if ! sudo systemctl is-active --quiet postgresql && ! sudo systemctl is-active --quiet postgresql@16 && ! sudo systemctl is-active --quiet postgresql@14; then
             log_warning "PostgreSQL not running, attempting to restart..."
-            sudo systemctl restart postgresql 2>/dev/null || sudo systemctl restart postgresql@14 2>/dev/null || true
+            sudo systemctl restart postgresql 2>/dev/null || sudo systemctl restart postgresql@16 2>/dev/null || sudo systemctl restart postgresql@14 2>/dev/null || true
             sleep 3
         fi
     elif command -v service &> /dev/null; then
@@ -1294,7 +1342,7 @@ start_frontend() {
     fi
     
     # Check if Vite is compatible with current Node.js version
-    NODE_VERSION=$(node --version | cut -d'v' -f2)
+    NODE_VERSION=$(node --version | sed 's/^v//')
     NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1)
     
     if [ "$NODE_MAJOR" -lt 20 ]; then

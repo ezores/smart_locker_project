@@ -47,6 +47,21 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Progress indicator for long-running operations
+show_progress() {
+    local pid=$1
+    local message=$2
+    local spin='-\|/'
+    local i=0
+    
+    while kill -0 $pid 2>/dev/null; do
+        i=$(( (i+1) %4 ))
+        printf "\r${BLUE}[INFO]${NC} $message ${spin:$i:1}"
+        sleep 1
+    done
+    printf "\r${BLUE}[INFO]${NC} $message ... done\n"
+}
+
 # Parse command line arguments
 DEMO_MODE=false
 RESET_DB=false
@@ -835,7 +850,47 @@ setup_environment() {
     # Install Python dependencies using virtual environment pip
     log_info "Installing Python dependencies..."
     $VENV_PIP install --upgrade pip setuptools wheel
-    $VENV_PIP install -r requirements.txt
+    
+    # Check if heavy packages are already installed
+    log_info "Checking for existing heavy packages..."
+    if $VENV_PYTHON -c "import pandas, reportlab, openpyxl" 2>/dev/null; then
+        log_success "Heavy packages already installed, installing remaining dependencies..."
+        $VENV_PIP install --prefer-binary --no-cache-dir -r requirements.txt
+    else
+        # Use optimized installation for faster setup
+        log_info "Installing dependencies with optimized settings..."
+        if [[ "$OSTYPE" == "linux-gnu"* ]] && [[ "$(uname -m)" == "aarch64" ]]; then
+            # ARM64 Linux - install heavy packages first with optimizations
+            log_info "Detected ARM64 Linux, installing heavy packages with optimizations..."
+            log_warning "Installing pandas and other heavy packages - this may take 5-10 minutes..."
+            log_info "You can monitor progress in another terminal with: tail -f /tmp/pip_install.log"
+            
+            # Install pandas separately with optimizations and logging
+            log_info "Installing pandas (this is the slow part)..."
+            if $VENV_PIP install --only-binary=pandas --prefer-binary --no-cache-dir pandas==2.0.3 > /tmp/pip_install.log 2>&1; then
+                log_success "Pandas installed from pre-built wheel"
+            else
+                log_warning "Pre-built pandas wheel not available, installing from source (this will take longer)..."
+                $VENV_PIP install --no-cache-dir pandas==2.0.3 > /tmp/pip_install.log 2>&1 &
+                show_progress $! "Building pandas from source"
+                wait $!
+            fi
+            
+            # Install other heavy packages
+            log_info "Installing other heavy packages..."
+            $VENV_PIP install --only-binary=all --prefer-binary --no-cache-dir reportlab openpyxl pyinstaller
+            
+            # Install remaining lighter packages
+            log_info "Installing remaining packages..."
+            $VENV_PIP install --prefer-binary --no-cache-dir -r requirements.txt
+        else
+            # Other systems - standard installation
+            log_info "Installing all packages..."
+            $VENV_PIP install --no-cache-dir -r requirements.txt
+        fi
+    fi
+    
+    log_success "Python dependencies installed successfully"
     
     # Install Node.js dependencies
     log_info "Installing Node.js dependencies..."
